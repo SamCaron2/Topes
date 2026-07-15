@@ -179,12 +179,12 @@ const ROSTER = [
 
 // Senior A regular-season games. type: "game"
 const SCHEDULE = [
-  { date: "2026-07-07", label: "Tue, Jul 7", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "TBD", home: true, result: "W 35–8", oppLogo: null },
-  { date: "2026-07-11", label: "Sat, Jul 11", opponent: "Omaha Rebels", vs: "@", location: "The IceBox · 1880 Transformation Dr, Lincoln, NE 68501", time: "5:00 PM", home: false, result: "W 23–8", oppLogo: null },
-  { date: "2026-07-12", label: "Sun, Jul 12", opponent: "Omaha Rebels", vs: "@", location: "The IceBox · 1880 Transformation Dr, Lincoln, NE 68501", time: "12:00 PM", home: false, result: "L 14–15", oppLogo: null },
-  { date: "2026-07-14", label: "Tue, Jul 14", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: "W 15–11", oppLogo: null },
-  { date: "2026-07-18", label: "Sat, Jul 18", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: null, oppLogo: null },
-  { date: "2026-07-28", label: "Tue, Jul 28", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: null, oppLogo: null },
+  { date: "2026-07-07", label: "Tue, Jul 7", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "TBD", home: true, result: "W 35–8", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+  { date: "2026-07-11", label: "Sat, Jul 11", opponent: "Omaha Rebels", vs: "@", location: "The IceBox · 1880 Transformation Dr, Lincoln, NE 68501", time: "5:00 PM", home: false, result: "W 23–8", oppLogo: "assets/img/opponents/omaha-rebels.png" },
+  { date: "2026-07-12", label: "Sun, Jul 12", opponent: "Omaha Rebels", vs: "@", location: "The IceBox · 1880 Transformation Dr, Lincoln, NE 68501", time: "12:00 PM", home: false, result: "L 14–15", oppLogo: "assets/img/opponents/omaha-rebels.png" },
+  { date: "2026-07-14", label: "Tue, Jul 14", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: "W 15–11", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+  { date: "2026-07-18", label: "Sat, Jul 18", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: null, oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+  { date: "2026-07-28", label: "Tue, Jul 28", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: null, oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
   { date: "2026-07-31", label: "Jul 31 – Aug 2", opponent: "Regional Playoffs", vs: "", location: "Site TBD", time: "TBD", home: null, result: null, oppLogo: null },
   { date: "2026-08-21", label: "Aug 21 – 23", opponent: "Senior A Nationals", vs: "", location: "Utica, New York", time: "TBD", home: null, result: null, oppLogo: null }
 ];
@@ -214,7 +214,8 @@ const JUNIORS_LOCATIONS = [
 
 // Photo gallery. category: "senior" | "juniors" | "events"
 const GALLERY = [
-  { src: "assets/img/action-01.png", caption: "Senior A in transition vs. Burnsville", category: "senior" },
-  { src: "assets/img/action-02.png", caption: "Isotopes offense working the crease", category: "senior" },
-  { src: "assets/img/action-03.png", caption: "Isotopes celebrate a home win", category: "senior" }
+  { src: "assets/img/team-huddle.jpg", caption: "Isotopes huddle up before the opening whistle", category: "senior" },
+  { src: "assets/img/action-04.jpg", caption: "Isotopes celebrate after a goal", category: "senior" },
+  { src: "assets/img/action-05.jpg", caption: "Isotopes offense pushes the ball vs. St. Paul Blueshirts", category: "senior" },
+  { src: "assets/img/action-06.jpg", caption: "Isotopes attacker crashes the crease vs. St. Paul Blueshirts", category: "senior" }
 ];
