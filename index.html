@@ -176,38 +176,40 @@
             <div class="form-field"><label for="r-age">Age</label><input type="number" id="r-age" placeholder="25" min="4"></div>
           </div>
           <div class="form-row">
-            <div class="form-field"><label for="r-email">Email</label><input type="email" id="r-email" placeholder="you@email.com" required></div>
-            <div class="form-field"><label for="r-phone">Phone</label><input type="tel" id="r-phone" placeholder="(612) 555-0100"></div>
+            <div class="form-field"><label for="r-birthdate">Birthdate</label><input type="date" id="r-birthdate"></div>
+            <div class="form-field"><label for="r-hand">Hand</label>
+              <select id="r-hand">
+                <option>Left</option>
+                <option>Right</option>
+              </select>
+            </div>
           </div>
           <div class="form-row">
-            <div class="form-field"><label for="r-program">Program</label>
-              <select id="r-program">
-                <option>Senior Tryout</option>
-                <option>Minnesota Juniors Box League (MJBL)</option>
-                <option>Not sure</option>
-              </select>
-            </div>
-            <div class="form-field"><label for="r-pos">Primary Position</label>
-              <select id="r-pos">
-                <option>Attack</option>
-                <option>Midfield</option>
-                <option>Defense / Transition</option>
-                <option>Goalie</option>
-                <option>Not sure</option>
+            <div class="form-field"><label for="r-city">Current City</label><input type="text" id="r-city" placeholder="Inver Grove Heights, MN"></div>
+            <div class="form-field"><label for="r-exp">Lacrosse Experience</label>
+              <select id="r-exp">
+                <option>None — field player</option>
+                <option>1–2 seasons</option>
+                <option>3–5 seasons</option>
+                <option>6+ seasons</option>
               </select>
             </div>
           </div>
-          <div class="form-field">
-            <label for="r-exp">Lacrosse Experience</label>
-            <select id="r-exp">
-              <option>None — field player</option>
-              <option>1–2 seasons</option>
-              <option>3–5 seasons</option>
-              <option>6+ seasons</option>
-            </select>
+          <div class="form-row">
+            <div class="form-field"><label for="r-contact-pref">Preferred Contact</label>
+              <select id="r-contact-pref">
+                <option>Email</option>
+                <option>Text</option>
+                <option>Call</option>
+              </select>
+            </div>
+            <div class="form-field"><label for="r-phone">Phone Number</label><input type="tel" id="r-phone" placeholder="(612) 555-0100"></div>
           </div>
           <div class="form-field">
-            <label for="r-notes">Anything else we should know?</label>
+            <label for="r-email">Email</label><input type="email" id="r-email" placeholder="you@email.com" required>
+          </div>
+          <div class="form-field">
+            <label for="r-notes">Anything Else to Include</label>
             <textarea id="r-notes" placeholder="Previous teams, availability notes, questions..."></textarea>
           </div>
           <button type="submit" class="btn btn-primary" style="width:100%">Send My Info</button>
