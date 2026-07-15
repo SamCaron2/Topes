@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule & Events | Inver Grove Isotopes</title>
+<meta name="description" content="2026 Senior A game schedule and team events for the Inver Grove Isotopes box lacrosse club.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header id="header" class="solid">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <img src="assets/img/logo.png" alt="Inver Grove Isotopes logo">
+      <div class="nav-logo-text">
+        Inver Grove Isotopes
+        <span>Senior A · NABLL · IBLA</span>
+      </div>
+    </a>
+    <nav class="links">
+      <a href="index.html">Home</a>
+      <a href="schedule.html">Schedule</a>
+      <a href="roster.html">Roster</a>
+      <a href="juniors.html">Juniors</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="index.html#about">About</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html#recruiting" class="btn btn-primary">Try Out</a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</header>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html">Home</a>
+  <a href="schedule.html">Schedule</a>
+  <a href="roster.html">Roster</a>
+  <a href="juniors.html">Juniors</a>
+  <a href="gallery.html">Gallery</a>
+  <a href="index.html#about">About</a>
+  <a href="index.html#recruiting">Join the Team</a>
+</div>
+
+<!-- ── PAGE HERO ── -->
+<section class="page-hero">
+  <div class="page-hero-bg" style="background-image:url('assets/img/action-02.png');"></div>
+  <div class="page-hero-overlay"></div>
+  <div class="container page-hero-content">
+    <p class="breadcrumb"><a href="index.html">Home</a> / Schedule & Events</p>
+    <p class="label">2026 Season</p>
+    <h1 class="display">Schedule &amp; Events</h1>
+    <p class="sub">Every Senior A game plus club events — clinics, alumni games, fundraisers, and the season banquet — all in one place.</p>
+  </div>
+</section>
+
+<!-- ── SCHEDULE ── -->
+<section class="schedule section">
+  <div class="container">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-filter="all">All</button>
+      <button class="tab-btn" data-filter="game">Games</button>
+      <button class="tab-btn" data-filter="event">Events</button>
+    </div>
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Opponent / Event</th>
+          <th>Location</th>
+          <th>Time</th>
+          <th>H/A</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody id="scheduleBody"></tbody>
+    </table>
+    <div class="event-cards" id="scheduleCards"></div>
+    <p class="schedule-note">* Home games played at Veterans Memorial Community Center, 8055 Barbara Ave, Inver Grove Heights, MN 55076. Schedule subject to change — check back for updates.</p>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer id="contact">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="nav-logo">
+          <img src="assets/img/logo.png" alt="Inver Grove Isotopes logo">
+          <div class="nav-logo-text">
+            Inver Grove Isotopes
+            <span>Senior A · NABLL · IBLA</span>
+          </div>
+        </div>
+        <p>Senior A men's box lacrosse in Inver Grove Heights, MN. Competing in the North American Box Lacrosse League and Interstate Box Lacrosse Association. Home of the Isotopes Juniors program.</p>
+        <div style="margin-top:16px;">
+          <span class="league-badge"><span class="dot"></span>NABLL Member Club</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h5>Navigate</h5>
+        <ul>
+          <li><a href="schedule.html">2026 Schedule</a></li>
+          <li><a href="roster.html">Roster</a></li>
+          <li><a href="juniors.html">Isotopes Juniors</a></li>
+          <li><a href="gallery.html">Photo Gallery</a></li>
+          <li><a href="index.html#about">About the Team</a></li>
+          <li><a href="index.html#recruiting">Join the Team</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Contact</h5>
+        <ul>
+          <li><a href="mailto:info@isotopeslax.com">info@isotopeslax.com</a></li>
+          <li><a href="#">Veterans Memorial CC</a></li>
+          <li><a>8055 Barbara Ave</a></li>
+          <li><a>Inver Grove Heights, MN 55076</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Inver Grove Isotopes. All rights reserved.</span>
+      <span>#GoTopes</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/main.js"></script>
+<script>renderSchedulePage();</script>
+</body>
+</html>
