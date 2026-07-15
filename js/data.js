@@ -6,7 +6,7 @@
 
   - ROSTER: add/remove players. `photo` can point to a real headshot
     in /assets/img/roster/ — leave null to show the jersey-number tile.
-  - SCHEDULE: Senior A game list. `oppLogo` can point to a team logo in
+  - SCHEDULE: Senior game list. `oppLogo` can point to a team logo in
     /assets/img/opponents/ (e.g. "assets/img/opponents/blueshirts.png")
     — leave null to show just the opponent name with no logo.
   - EVENTS: non-game team events (banquets, clinics, fundraisers, etc).
@@ -133,7 +133,7 @@ const ROSTER = [
     shoots: "Right",
     experience: "3 seasons",
     photo: null,
-    bio: "A hometown product who grew up through the Isotopes Juniors program before earning a Senior A roster spot. Adam's stick discipline and communication make him a coach favorite.",
+    bio: "A hometown product who grew up through the Isotopes Juniors program before earning a Senior roster spot. Adam's stick discipline and communication make him a coach favorite.",
     stats: { games: 14, goals: 0, assists: 2, points: 2, penMin: 14 }
   },
   {
@@ -177,7 +177,7 @@ const ROSTER = [
   }
 ];
 
-// Senior A regular-season games. type: "game"
+// Senior regular-season games. type: "game"
 const SCHEDULE = [
   { date: "2026-07-07", label: "Tue, Jul 7", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: "W 35–8", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
   { date: "2026-07-11", label: "Sat, Jul 11", opponent: "Omaha Rebels", vs: "@", location: "The IceBox · 1880 Transformation Dr, Lincoln, NE 68501", time: "5:00 PM", home: false, result: "W 23–8", oppLogo: "assets/img/opponents/omaha-rebels.png" },
@@ -186,7 +186,7 @@ const SCHEDULE = [
   { date: "2026-07-18", label: "Sat, Jul 18", opponent: "Minneapolis Wheatkings", vs: "@", location: "Away · Site TBD", time: "7:00 PM", home: false, result: null, oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
   { date: "2026-07-28", label: "Tue, Jul 28", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: null, oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
   { date: "2026-07-31", label: "Jul 31 – Aug 2", opponent: "Regional Playoffs", vs: "", location: "Site TBD", time: "TBD", home: null, result: null, oppLogo: null },
-  { date: "2026-08-21", label: "Aug 21 – 23", opponent: "Senior A Nationals", vs: "", location: "Utica, New York", time: "TBD", home: null, result: null, oppLogo: null }
+  { date: "2026-08-21", label: "Aug 21 – 23", opponent: "Senior Nationals", vs: "", location: "Utica, New York", time: "TBD", home: null, result: null, oppLogo: null }
 ];
 
 // Non-game club events (banquets, clinics, fundraisers, etc). Empty
