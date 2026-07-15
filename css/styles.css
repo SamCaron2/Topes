@@ -1050,8 +1050,9 @@ footer {
   .hero-btns .btn { flex: 1 1 140px; }
   .about-facts { grid-template-columns: 1fr 1fr; }
   .footer-inner { grid-template-columns: 1fr; }
-  .schedule-table { display: none; }
+  #seniorScheduleTable { display: none; }
   .event-cards { display: flex; }
+  .table-scroll-wrap { overflow-x: auto; }
   .quicklink-grid { grid-template-columns: 1fr; }
   .roster-grid { grid-template-columns: 1fr 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }

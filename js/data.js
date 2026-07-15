@@ -6,10 +6,15 @@
 
   - ROSTER: add/remove players. `photo` can point to a real headshot
     in /assets/img/roster/ — leave null to show the jersey-number tile.
-  - SCHEDULE: Senior A game list.
+  - SCHEDULE: Senior A game list. `oppLogo` can point to a team logo in
+    /assets/img/opponents/ (e.g. "assets/img/opponents/blueshirts.png")
+    — leave null to show just the opponent name with no logo.
   - EVENTS: non-game team events (banquets, clinics, fundraisers, etc).
     Shown together with SCHEDULE on schedule.html.
-  - JUNIORS_SCHEDULE / JUNIORS_LOCATIONS: juniors.html content.
+  - JUNIORS_SCHEDULE: Isotopes Juniors is a youth league the Isotopes
+    organize and run at VMCC (not a traveling team), so entries are
+    events (Tryouts, Game 1, Championship, etc.), not opponents.
+  - JUNIORS_LOCATIONS: juniors.html location cards.
   - GALLERY: photo gallery. `category` = "senior" | "juniors" | "events".
 */
 
@@ -174,43 +179,37 @@ const ROSTER = [
 
 // Senior A regular-season games. type: "game"
 const SCHEDULE = [
-  { date: "2026-05-16", label: "Sat, May 16", opponent: "Minneapolis Storm", vs: "vs", location: "Veterans Memorial CC · Inver Grove Heights", time: "7:00 PM", home: true, result: "W 11–8" },
-  { date: "2026-05-23", label: "Sat, May 23", opponent: "St. Paul Razors", vs: "@", location: "East Side Arena · St. Paul", time: "6:30 PM", home: false, result: "L 7–9" },
-  { date: "2026-05-30", label: "Sat, May 30", opponent: "Burnsville Thunder", vs: "vs", location: "Veterans Memorial CC · Inver Grove Heights", time: "7:00 PM", home: true, result: "W 13–10" },
-  { date: "2026-06-06", label: "Sat, Jun 6", opponent: "Eagan Eagles", vs: "@", location: "Eagan Civic Arena · Eagan", time: "8:00 PM", home: false, result: "W 10–9" },
-  { date: "2026-06-20", label: "Sat, Jun 20", opponent: "Woodbury Wolves", vs: "vs", location: "Veterans Memorial CC · Inver Grove Heights", time: "7:00 PM", home: true, result: "L 8–12" },
-  { date: "2026-06-27", label: "Sat, Jun 27", opponent: "Minneapolis Storm", vs: "@", location: "North Side Arena · Minneapolis", time: "6:30 PM", home: false, result: "W 14–6" },
-  { date: "2026-07-11", label: "Sat, Jul 11", opponent: "St. Paul Razors", vs: "vs", location: "Veterans Memorial CC · Inver Grove Heights", time: "7:00 PM", home: true, result: "W 12–10" },
-  { date: "2026-07-25", label: "Sat, Jul 25", opponent: "Burnsville Thunder", vs: "@", location: "Burnsville Ice Center · Burnsville", time: "8:00 PM", home: false, result: null },
-  { date: "2026-08-08", label: "Sat, Aug 8", opponent: "Eagan Eagles", vs: "vs", location: "Veterans Memorial CC · Inver Grove Heights", time: "7:00 PM", home: true, result: null },
-  { date: "2026-08-15", label: "Sat, Aug 15", opponent: "Woodbury Wolves", vs: "@", location: "Woodbury Community Center · Woodbury", time: "6:30 PM", home: false, result: null },
-  { date: "2026-08-29", label: "Sat, Aug 29", opponent: "NABLL Playoffs · Round 1", vs: "TBD", location: "Higher seed hosts · Site TBD", time: "TBD", home: null, result: null }
+  { date: "2026-07-07", label: "Tue, Jul 7", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "TBD", home: true, result: "W 35–8", oppLogo: null },
+  { date: "2026-07-11", label: "Sat, Jul 11", opponent: "Omaha Rebels", vs: "@", location: "The IceBox · 1880 Transformation Dr, Lincoln, NE 68501", time: "5:00 PM", home: false, result: "W 23–8", oppLogo: null },
+  { date: "2026-07-12", label: "Sun, Jul 12", opponent: "Omaha Rebels", vs: "@", location: "The IceBox · 1880 Transformation Dr, Lincoln, NE 68501", time: "12:00 PM", home: false, result: "L 14–15", oppLogo: null },
+  { date: "2026-07-14", label: "Tue, Jul 14", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: "W 15–11", oppLogo: null },
+  { date: "2026-07-18", label: "Sat, Jul 18", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: null, oppLogo: null },
+  { date: "2026-07-28", label: "Tue, Jul 28", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veterans Memorial Community Center (VMCC) · 8055 Barbara Ave, Inver Grove Heights, MN 55077", time: "7:00 PM", home: true, result: null, oppLogo: null },
+  { date: "2026-07-31", label: "Jul 31 – Aug 2", opponent: "Regional Playoffs", vs: "", location: "Site TBD", time: "TBD", home: null, result: null, oppLogo: null },
+  { date: "2026-08-21", label: "Aug 21 – 23", opponent: "Senior A Nationals", vs: "", location: "Utica, New York", time: "TBD", home: null, result: null, oppLogo: null }
 ];
 
-// Non-game club events. type: "event"
-const EVENTS = [
-  { date: "2026-06-13", label: "Sat, Jun 13", title: "Isotopes Youth Clinic", location: "Veterans Memorial CC · Inver Grove Heights", time: "10:00 AM", desc: "Free stick-skills clinic for the Juniors program, run by the Senior A roster." },
-  { date: "2026-07-18", label: "Sat, Jul 18", title: "Alumni Game & Cookout", location: "Veterans Memorial CC · Inver Grove Heights", time: "5:00 PM", desc: "Current roster faces off against Isotopes alumni, followed by a cookout for players and families." },
-  { date: "2026-08-22", label: "Sat, Aug 22", title: "Team Fundraiser Night", location: "Inver Grove Tap House", time: "6:00 PM", desc: "Raffle and silent auction supporting the Isotopes' travel and equipment fund." },
-  { date: "2026-09-12", label: "Sat, Sep 12", title: "End of Season Banquet", location: "Veterans Memorial CC · Inver Grove Heights", time: "6:30 PM", desc: "Awards, highlight reel, and a season send-off for players, coaches, and families." }
-];
+// Non-game club events (banquets, clinics, fundraisers, etc). Empty
+// until real events are added — add entries like:
+// { date: "2026-08-22", label: "Sat, Aug 22", title: "Team Fundraiser Night",
+//   location: "...", time: "6:00 PM", desc: "..." }
+const EVENTS = [];
 
-// Isotopes Juniors league schedule
+// Isotopes Juniors — a youth box lacrosse league the Isotopes organize
+// and run at VMCC (not a traveling team), so this is an event calendar
+// rather than a team-vs-opponent schedule.
 const JUNIORS_SCHEDULE = [
-  { date: "2026-05-17", label: "Sun, May 17", opponent: "Rosemount Youth Lacrosse", division: "14U", location: "Veterans Memorial CC · Inver Grove Heights", time: "1:00 PM", home: true },
-  { date: "2026-05-17", label: "Sun, May 17", opponent: "Eagan Juniors", division: "16U", location: "Veterans Memorial CC · Inver Grove Heights", time: "2:30 PM", home: true },
-  { date: "2026-05-31", label: "Sun, May 31", opponent: "Burnsville Youth Box", division: "14U", location: "Burnsville Ice Center · Burnsville", time: "12:00 PM", home: false },
-  { date: "2026-06-14", label: "Sun, Jun 14", opponent: "Woodbury Wolves Juniors", division: "16U", location: "Woodbury Community Center · Woodbury", time: "1:30 PM", home: false },
-  { date: "2026-06-28", label: "Sun, Jun 28", opponent: "St. Paul Razors Juniors", division: "14U", location: "Veterans Memorial CC · Inver Grove Heights", time: "1:00 PM", home: true },
-  { date: "2026-07-19", label: "Sun, Jul 19", opponent: "Eagan Juniors", division: "16U", location: "Eagan Civic Arena · Eagan", time: "2:00 PM", home: false },
-  { date: "2026-08-02", label: "Sun, Aug 2", opponent: "Rosemount Youth Lacrosse", division: "14U", location: "Veterans Memorial CC · Inver Grove Heights", time: "1:00 PM", home: true },
-  { date: "2026-08-16", label: "Sun, Aug 16", opponent: "Regional Jamboree", division: "14U / 16U", location: "Elm Creek Fieldhouse · Maple Grove", time: "9:00 AM", home: false }
+  { date: "2026-07-16", label: "Thu, Jul 16", title: "Juniors Tryouts", type: "Tryouts", time: "6:00 – 8:00 PM", location: "Veterans Memorial Community Center (VMCC)" },
+  { date: "2026-07-23", label: "Thu, Jul 23", title: "Juniors Game 1", type: "Game", time: "6:00 – 8:00 PM", location: "Veterans Memorial Community Center (VMCC)" },
+  { date: "2026-07-24", label: "Jul 24 – 26", title: "Juniors Tournament — Vermont", type: "Tournament", time: "TBD", location: "Vermont (away trip)" },
+  { date: "2026-07-30", label: "Thu, Jul 30", title: "Juniors Game 2", type: "Game", time: "7:00 – 9:00 PM", location: "Veterans Memorial Community Center (VMCC)" },
+  { date: "2026-08-06", label: "Thu, Aug 6", title: "Juniors Game 3", type: "Game", time: "7:00 – 9:00 PM", location: "Veterans Memorial Community Center (VMCC)" },
+  { date: "2026-08-13", label: "Thu, Aug 13", title: "Juniors Championship", type: "Championship", time: "7:00 – 9:00 PM", location: "Veterans Memorial Community Center (VMCC)" }
 ];
 
 const JUNIORS_LOCATIONS = [
-  { name: "Veterans Memorial Community Center", tag: "Primary Home Venue", address: "8055 Barbara Ave, Inver Grove Heights, MN 55076", note: "Home box for both 14U and 16U divisions, plus all practices." },
-  { name: "Simley Middle School Fieldhouse", tag: "Practice Facility", address: "2920 80th St E, Inver Grove Heights, MN 55076", note: "Weeknight practice space during peak spring scheduling." },
-  { name: "Various League Venues", tag: "Away Games", address: "Rotates across the metro youth box league", note: "Away opponents host at their home facility — see schedule for each week's location." }
+  { name: "Veterans Memorial Community Center", tag: "Home of the League", address: "8055 Barbara Ave, Inver Grove Heights, MN 55077", note: "Every Juniors tryout, game, and the championship are hosted here." },
+  { name: "Vermont — Away Tournament", tag: "Jul 24 – 26", address: "Location TBD", note: "One away trip on the calendar this season — a multi-day tournament in Vermont." }
 ];
 
 // Photo gallery. category: "senior" | "juniors" | "events"

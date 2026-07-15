@@ -85,11 +85,23 @@ function renderSchedulePage() {
       : `<span class="badge badge-away">Away</span>`;
   }
 
+  function oppLogoImg(item) {
+    if (item.type !== 'game' || !item.oppLogo) return '';
+    return `<img src="${item.oppLogo}" alt="${item.opponent} logo" style="width:22px;height:22px;object-fit:contain;border-radius:3px;margin-right:8px;vertical-align:middle;">`;
+  }
+
   function draw(filter) {
     const rows = combined.filter(item => filter === 'all' ? true : item.type === filter);
+
+    if (rows.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="6" style="padding:24px 16px;color:var(--muted);">No ${filter === 'event' ? 'events' : 'games'} on the calendar yet — check back soon.</td></tr>`;
+      if (cardsWrap) cardsWrap.innerHTML = `<div class="event-card" style="color:var(--muted);">No ${filter === 'event' ? 'events' : 'games'} on the calendar yet — check back soon.</div>`;
+      return;
+    }
+
     tableBody.innerHTML = rows.map(item => {
       const title = item.type === 'game'
-        ? `<span class="game-opponent"><span class="vs">${item.vs}</span>${item.opponent}</span>`
+        ? `<span class="game-opponent">${oppLogoImg(item)}<span class="vs">${item.vs}</span>${item.opponent}</span>`
         : `<span class="game-opponent">${item.title}</span>`;
       return `<tr>
         <td><span class="game-date">${item.label}</span></td>
@@ -103,7 +115,7 @@ function renderSchedulePage() {
 
     if (cardsWrap) {
       cardsWrap.innerHTML = rows.map(item => {
-        const title = item.type === 'game' ? `${item.vs} ${item.opponent}` : item.title;
+        const title = item.type === 'game' ? `${oppLogoImg(item)}${item.vs} ${item.opponent}` : item.title;
         return `<div class="event-card">
           <div class="row1"><span class="game-date">${item.label}</span>${resultBadge(item)}</div>
           <div class="opp">${title}</div>
@@ -222,14 +234,16 @@ function renderPlayerDetail() {
 function renderJuniorsSchedule() {
   const tableBody = document.getElementById('juniorsScheduleBody');
   if (!tableBody) return;
+  const typeBadge = (type) => type === 'Game'
+    ? `<span class="badge badge-game">${type}</span>`
+    : `<span class="badge badge-event">${type}</span>`;
   tableBody.innerHTML = JUNIORS_SCHEDULE.map(g => `
     <tr>
       <td><span class="game-date">${g.label}</span></td>
-      <td><span class="badge badge-game">${g.division}</span></td>
-      <td><span class="game-opponent"><span class="vs">${g.home ? 'vs' : '@'}</span>${g.opponent}</span></td>
+      <td><span class="game-opponent">${g.title}</span></td>
+      <td>${typeBadge(g.type)}</td>
       <td><span class="game-location">${g.location}</span></td>
       <td><span class="game-time">${g.time}</span></td>
-      <td>${g.home ? '<span class="badge badge-home">Home</span>' : '<span class="badge badge-away">Away</span>'}</td>
     </tr>
   `).join('');
 }
