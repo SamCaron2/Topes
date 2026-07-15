@@ -6,6 +6,7 @@
 
   - ROSTER: add/remove players. `photo` can point to a real headshot
     in /assets/img/roster/ — leave null to show the jersey-number tile.
+  - STAFF: coaches/front office, shown on roster.html.
   - SCHEDULE: Senior game list. `oppLogo` can point to a team logo in
     /assets/img/opponents/ (e.g. "assets/img/opponents/blueshirts.png")
     — leave null to show just the opponent name with no logo.
@@ -19,162 +20,42 @@
 */
 
 const ROSTER = [
-  {
-    id: 1,
-    number: 4,
-    name: "Jake Reimer",
-    position: "Attack",
-    hometown: "Inver Grove Heights, MN",
-    height: "5'11\"",
-    shoots: "Right",
-    experience: "6 seasons",
-    photo: "assets/img/action-01.png",
-    bio: "Jake has been a fixture on the Isotopes' front line since the club's second season. A crafty finisher with a quick release, he reads the floor a step ahead of most defenders and does his best work off the pick. Off the floor, he helps run the club's youth clinics.",
-    stats: { games: 14, goals: 22, assists: 11, points: 33, penMin: 12 }
-  },
-  {
-    id: 2,
-    number: 64,
-    name: "Marcus Odell",
-    position: "Midfield",
-    hometown: "St. Paul, MN",
-    height: "6'1\"",
-    shoots: "Left",
-    experience: "4 seasons",
-    photo: "assets/img/action-03.png",
-    bio: "A tone-setting transition midfielder who thrives in the open floor. Marcus logs heavy minutes and brings the physicality the Isotopes are known for, anchoring both special teams units.",
-    stats: { games: 14, goals: 9, assists: 14, points: 23, penMin: 24 }
-  },
-  {
-    id: 3,
-    number: 39,
-    name: "Devon Whitcomb",
-    position: "Midfield",
-    hometown: "Woodbury, MN",
-    height: "5'10\"",
-    shoots: "Right",
-    experience: "3 seasons",
-    photo: null,
-    bio: "Devon brings relentless motor and faceoff-wing awareness to the Isotopes' midfield rotation. Known for his work in transition, he's become one of the league's more dependable two-way players.",
-    stats: { games: 13, goals: 6, assists: 8, points: 14, penMin: 10 }
-  },
-  {
-    id: 4,
-    number: 8,
-    name: "Trevor Nash",
-    position: "Defense",
-    hometown: "Eagan, MN",
-    height: "6'3\"",
-    shoots: "Right",
-    experience: "7 seasons",
-    photo: null,
-    bio: "The Isotopes' longest-tenured defender and a two-time club captain. Trevor's positioning and stick checks set the tone defensively, and he mentors every new face that comes through tryouts.",
-    stats: { games: 14, goals: 1, assists: 5, points: 6, penMin: 28 }
-  },
-  {
-    id: 5,
-    number: 22,
-    name: "Riley Voss",
-    position: "Defense",
-    hometown: "Burnsville, MN",
-    height: "6'0\"",
-    shoots: "Left",
-    experience: "2 seasons",
-    photo: null,
-    bio: "A physical, close defender who took over a starting spot as a rookie. Riley's footwork and film study have made him one of the most improved players on the roster.",
-    stats: { games: 12, goals: 0, assists: 3, points: 3, penMin: 20 }
-  },
-  {
-    id: 6,
-    number: 1,
-    name: "Sam Okafor",
-    position: "Goalie",
-    hometown: "Minneapolis, MN",
-    height: "5'11\"",
-    shoots: "Right",
-    experience: "5 seasons",
-    photo: null,
-    bio: "Sam anchors the Isotopes' crease with quick hands and calm decision-making under pressure. A former field lacrosse goalie, he made the full transition to box in 2022 and hasn't looked back.",
-    stats: { games: 14, goals: 0, assists: 1, points: 1, penMin: 4 }
-  },
-  {
-    id: 7,
-    number: 17,
-    name: "Colton Baird",
-    position: "Attack",
-    hometown: "Rosemount, MN",
-    height: "5'9\"",
-    shoots: "Left",
-    experience: "1 season",
-    photo: null,
-    bio: "The newest addition to the offensive unit, Colton earned his spot at open tryouts this spring. Explosive first step and a knack for finding soft spots in zone coverage.",
-    stats: { games: 10, goals: 8, assists: 4, points: 12, penMin: 6 }
-  },
-  {
-    id: 8,
-    number: 91,
-    name: "Ben Kowalski",
-    position: "Midfield",
-    hometown: "Woodbury, MN",
-    height: "6'2\"",
-    shoots: "Right",
-    experience: "5 seasons",
-    photo: null,
-    bio: "Ben's size and reach make him a matchup problem at both ends of the floor. He's the club's active leader in loose-ball recoveries over the last three seasons.",
-    stats: { games: 13, goals: 5, assists: 7, points: 12, penMin: 16 }
-  },
-  {
-    id: 9,
-    number: 12,
-    name: "Adam Levesque",
-    position: "Defense",
-    hometown: "Inver Grove Heights, MN",
-    height: "6'0\"",
-    shoots: "Right",
-    experience: "3 seasons",
-    photo: null,
-    bio: "A hometown product who grew up through the Isotopes Juniors program before earning a Senior roster spot. Adam's stick discipline and communication make him a coach favorite.",
-    stats: { games: 14, goals: 0, assists: 2, points: 2, penMin: 14 }
-  },
-  {
-    id: 10,
-    number: 6,
-    name: "Wyatt Sorenson",
-    position: "Attack",
-    hometown: "Apple Valley, MN",
-    height: "5'10\"",
-    shoots: "Right",
-    experience: "4 seasons",
-    photo: null,
-    bio: "Wyatt's off-ball movement creates space for the rest of the offense, and his shot selection has steadily improved every season. A high-IQ player coaches trust in late-game situations.",
-    stats: { games: 14, goals: 15, assists: 9, points: 24, penMin: 8 }
-  },
-  {
-    id: 11,
-    number: 44,
-    name: "Isaac Ferro",
-    position: "Midfield",
-    hometown: "St. Paul, MN",
-    height: "5'11\"",
-    shoots: "Left",
-    experience: "2 seasons",
-    photo: null,
-    bio: "A high-motor transition player who has carved out a role on the penalty-kill unit. Isaac's speed in the open floor consistently creates odd-man opportunities.",
-    stats: { games: 11, goals: 4, assists: 6, points: 10, penMin: 12 }
-  },
-  {
-    id: 12,
-    number: 3,
-    name: "Cole Ashworth",
-    position: "Defense",
-    hometown: "Burnsville, MN",
-    height: "6'4\"",
-    shoots: "Right",
-    experience: "6 seasons",
-    photo: null,
-    bio: "The biggest presence on the Isotopes' back end, Cole clears the crease and wins the physical battles that decide close games. Also serves as an assistant coach for the Juniors program.",
-    stats: { games: 14, goals: 1, assists: 4, points: 5, penMin: 30 }
-  }
+  { id: 1, number: 78, name: "Brenden Bloedel", position: "Forward", height: "5'11\"", weight: 185, hometown: "Cottage Grove, MN", photo: null },
+  { id: 2, number: 32, name: "Jaydan Buck", position: "Transition", height: "5'10\"", weight: 200, hometown: "Red Wing/Hudson, MN", photo: null },
+  { id: 3, number: 34, name: "Miles Chism", position: "Defense", height: "5'9\"", weight: 180, hometown: "Hopkins, MN", photo: null },
+  { id: 4, number: 94, name: "Jordan Chock", position: "Forward", height: "6'1\"", weight: 185, hometown: "Lonsdale, MN", photo: null },
+  { id: 5, number: 35, name: "John Chorlton", position: "Transition", height: "6'0\"", weight: 205, hometown: "Hastings, MN", photo: null },
+  { id: 6, number: 97, name: "Luke Chorlton", position: "Transition", height: "5'10\"", weight: 185, hometown: "Hastings, MN", photo: null },
+  { id: 7, number: 22, name: "Victor Flores", position: "Forward", height: "5'10\"", weight: 260, hometown: "Inver Grove, MN", photo: null },
+  { id: 8, number: 23, name: "Jimmy Garay-Triviski", position: "Defense", height: "5'10\"", weight: 240, hometown: "Oakdale, MN", photo: null },
+  { id: 9, number: 14, name: "Charlie Gee", position: "Transition", height: "6'2\"", weight: 190, hometown: "Minneapolis, MN", photo: null },
+  { id: 10, number: 88, name: "Beck Hagen", position: "Goalie", height: "5'11\"", weight: 160, hometown: "Hopkins, MN", photo: null },
+  { id: 11, number: 44, name: "Josh Harris", position: "Goalie", height: "5'9\"", weight: 180, hometown: "Blaine, MN", photo: null },
+  { id: 12, number: 93, name: "Talon Heath", position: "Forward", height: "5'10\"", weight: 185, hometown: "Elk River, MN", photo: null },
+  { id: 13, number: 3, name: "Brody Illies", position: "Defense", height: "5'9\"", weight: 220, hometown: "New Prague, MN", photo: null },
+  { id: 14, number: 92, name: "Bradley Johnson", position: "Forward", height: "5'10\"", weight: 160, hometown: "Cottage Grove, MN", photo: null },
+  { id: 15, number: 84, name: "Lukas Johnson", position: "Forward", height: "6'2\"", weight: 220, hometown: "Inver Grove Heights, MN", photo: null },
+  { id: 16, number: 64, name: "Gavin Krcil", position: "Defense", height: "6'5\"", weight: 230, hometown: "Hanover, MN", photo: null },
+  { id: 17, number: 91, name: "Maxwell Krueger", position: "Transition", height: "5'10\"", weight: 180, hometown: "Hudson, WI", photo: null },
+  { id: 18, number: 54, name: "Spencer Krueger", position: "Transition", height: "5'9\"", weight: 185, hometown: "Hudson, WI", photo: null },
+  { id: 19, number: 11, name: "Jacob McCoy", position: "Forward", height: "6'1\"", weight: 210, hometown: "Chaska, MN", photo: null },
+  { id: 20, number: 20, name: "James McDonald", position: "Forward", height: "6'3\"", weight: 200, hometown: "Saint Paul, MN", photo: null },
+  { id: 21, number: 43, name: "Maxwell Olson-Burkman", position: "Defense", height: "6'1\"", weight: 210, hometown: "Becker, MN", photo: null },
+  { id: 22, number: 0, name: "Daltin Pedersen", position: "Forward", height: "6'1\"", weight: 180, hometown: "Inver Grove Heights, MN", photo: null },
+  { id: 23, number: 1, name: "Leyton Scribner", position: "Forward", height: "6'0\"", weight: 150, hometown: "Webster, MN", photo: null },
+  { id: 24, number: 39, name: "Dawson Sheets", position: "Forward", height: "6'2\"", weight: 210, hometown: "Lakeville, MN", photo: null },
+  { id: 25, number: 86, name: "Aidan Siegfried", position: "Transition", height: "5'11\"", weight: 185, hometown: "St. Paul, MN", photo: null },
+  { id: 26, number: 47, name: "Jameson Stahl", position: "Defense", height: "6'5\"", weight: 220, hometown: "Stillwater, MN", photo: null },
+  { id: 27, number: 55, name: "Jaston Tank", position: "Defense", height: "5'11\"", weight: 203, hometown: "Farmington, MN", photo: null },
+  { id: 28, number: 12, name: "Dominic Thone", position: "Defense", height: "5'9\"", weight: 180, hometown: "The Shire, MN", photo: null },
+  { id: 29, number: 65, name: "Hayden Ungs", position: "Forward", height: "5'10\"", weight: 155, hometown: "New Prague, MN", photo: null },
+  { id: 30, number: 7, name: "Alex Wallis", position: "Defense", height: "5'11\"", weight: 205, hometown: "St. Paul, MN", photo: null },
+  { id: 31, number: 16, name: "Sam Caron", position: "Transition", height: "6'3\"", weight: 205, hometown: "Saint Michael, MN", photo: null }
+];
+
+const STAFF = [
+  { name: "Richard Chorlton", role: "Head Coach" },
+  { name: "Rachel Anderson", role: "President" }
 ];
 
 // Senior regular-season games. type: "game"

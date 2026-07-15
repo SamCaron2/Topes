@@ -63,12 +63,25 @@
   <div class="container">
     <div class="tab-bar roster-filters">
       <button class="tab-btn active" data-pos="All">All</button>
-      <button class="tab-btn" data-pos="Attack">Attack</button>
-      <button class="tab-btn" data-pos="Midfield">Midfield</button>
+      <button class="tab-btn" data-pos="Forward">Forward</button>
+      <button class="tab-btn" data-pos="Transition">Transition</button>
       <button class="tab-btn" data-pos="Defense">Defense</button>
       <button class="tab-btn" data-pos="Goalie">Goalie</button>
     </div>
     <div class="roster-grid" id="rosterGrid"></div>
+  </div>
+</section>
+
+<!-- ── STAFF ── -->
+<section class="section" style="background:var(--dark);">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <p class="label">Behind the Bench</p>
+        <h2 class="display">Team Staff</h2>
+      </div>
+    </div>
+    <div class="staff-grid" id="staffGrid"></div>
   </div>
 </section>
 
@@ -129,6 +142,6 @@
 
 <script src="js/data.js"></script>
 <script src="js/main.js"></script>
-<script>renderRoster();</script>
+<script>renderRoster(); renderStaff();</script>
 </body>
 </html>

@@ -175,6 +175,22 @@ function renderRoster() {
   });
 }
 
+/* ── STAFF (roster.html) ── */
+function renderStaff() {
+  const grid = document.getElementById('staffGrid');
+  if (!grid) return;
+  function initials(name) {
+    return name.split(' ').map(w => w[0]).join('').toUpperCase();
+  }
+  grid.innerHTML = STAFF.map(s => `
+    <div class="staff-card">
+      <div class="avatar">${initials(s.name)}</div>
+      <h4>${s.name}</h4>
+      <div class="role">${s.role}</div>
+    </div>
+  `).join('');
+}
+
 /* ── PLAYER DETAIL (player.html) ── */
 function renderPlayerDetail() {
   const wrap = document.getElementById('playerDetail');
@@ -214,17 +230,9 @@ function renderPlayerDetail() {
         <div class="player-meta-row">
           <div class="m-item"><span class="k">Hometown</span><span class="v">${p.hometown}</span></div>
           <div class="m-item"><span class="k">Height</span><span class="v">${p.height}</span></div>
-          <div class="m-item"><span class="k">Shoots</span><span class="v">${p.shoots}</span></div>
-          <div class="m-item"><span class="k">Experience</span><span class="v">${p.experience}</span></div>
+          <div class="m-item"><span class="k">Weight</span><span class="v">${p.weight} lbs</span></div>
         </div>
-        <p class="player-bio">${p.bio}</p>
-        <p class="label" style="margin-bottom:16px;">2026 Season Stats</p>
-        <div class="stats-grid">
-          <div class="stat-box"><div class="val">${p.stats.games}</div><div class="lbl">Games</div></div>
-          <div class="stat-box"><div class="val">${p.stats.goals}</div><div class="lbl">Goals</div></div>
-          <div class="stat-box"><div class="val">${p.stats.assists}</div><div class="lbl">Assists</div></div>
-          <div class="stat-box"><div class="val">${p.stats.points}</div><div class="lbl">Points</div></div>
-        </div>
+        <p style="color:var(--muted);font-size:0.9rem;">Bio and season stats coming soon.</p>
       </div>
     </div>
   `;
