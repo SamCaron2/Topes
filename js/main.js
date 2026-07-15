@@ -149,7 +149,10 @@ function renderRoster() {
   }
 
   function draw(filter) {
-    const players = ROSTER.filter(p => filter === 'All' ? true : p.position === filter);
+    const players = ROSTER
+      .filter(p => filter === 'All' ? true : p.position === filter)
+      .slice()
+      .sort((a, b) => a.number - b.number);
     grid.innerHTML = players.map(p => `
       <a class="player-card" href="player.html?id=${p.id}">
         <div class="photo">
