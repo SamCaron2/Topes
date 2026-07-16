@@ -321,7 +321,6 @@ function renderGallery() {
     grid.innerHTML = galleryFiltered.map((g, i) => `
       <div class="gallery-item${i % 5 === 0 ? ' wide' : ''}" onclick="openLightbox(${i})">
         <img src="${g.src}" alt="${g.caption}" loading="lazy">
-        <div class="cap">${g.caption}</div>
       </div>
     `).join('');
   }
