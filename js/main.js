@@ -136,6 +136,45 @@ function renderSchedulePage() {
   });
 }
 
+/* ── PAST SEASONS (schedule.html) ── */
+function renderSeasonHistory() {
+  const tableBody = document.getElementById('seasonHistoryBody');
+  const recordEl = document.getElementById('seasonRecord');
+  if (!tableBody) return;
+
+  function oppLogoImg(item) {
+    if (!item.oppLogo) return '';
+    return `<img src="${item.oppLogo}" alt="${item.opponent} logo" style="width:22px;height:22px;object-fit:contain;border-radius:3px;margin-right:8px;vertical-align:middle;">`;
+  }
+
+  function draw(year) {
+    const games = SEASON_HISTORY[year] || [];
+    const wins = games.filter(g => g.result && g.result.startsWith('W')).length;
+    const losses = games.filter(g => g.result && g.result.startsWith('L')).length;
+    if (recordEl) recordEl.textContent = `${year} Season Record: ${wins}–${losses}`;
+
+    tableBody.innerHTML = games.map(item => `
+      <tr>
+        <td><span class="game-date">${item.label}</span></td>
+        <td><span class="game-opponent">${oppLogoImg(item)}<span class="vs">${item.vs}</span>${item.opponent}</span></td>
+        <td><span class="game-location">${item.location}</span></td>
+        <td><span class="game-time">${item.time}</span></td>
+        <td>${item.home ? '<span class="badge badge-home">Home</span>' : '<span class="badge badge-away">Away</span>'}</td>
+        <td>${item.result.startsWith('W') ? `<span class="badge badge-result-w">${item.result}</span>` : `<span class="badge badge-result-l">${item.result}</span>`}</td>
+      </tr>
+    `).join('');
+  }
+
+  draw('2025');
+  document.querySelectorAll('.tab-btn[data-year]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn[data-year]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      draw(btn.dataset.year);
+    });
+  });
+}
+
 /* ── ROSTER GRID (roster.html) ── */
 function renderRoster() {
   const grid = document.getElementById('rosterGrid');

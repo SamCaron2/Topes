@@ -7,6 +7,7 @@
   - ROSTER: add/remove players. `photo` can point to a real headshot
     in /assets/img/roster/ — leave null to show the jersey-number tile.
   - STAFF: coaches/front office, shown on roster.html.
+  - SEASON_HISTORY: past-season results by year, shown on schedule.html.
   - SCHEDULE: Senior game list. `oppLogo` can point to a team logo in
     /assets/img/opponents/ (e.g. "assets/img/opponents/blueshirts.png")
     — leave null to show just the opponent name with no logo.
@@ -57,6 +58,50 @@ const STAFF = [
   { name: "Richard Chorlton", role: "Head Coach" },
   { name: "Rachel Anderson", role: "President" }
 ];
+
+// Past season results, most recent year first. `home` reflects the
+// designated home team for that game (not always the physical venue —
+// see 2023-07-23, which was hosted at VMCC but Isotopes were away).
+const SEASON_HISTORY = {
+  "2025": [
+    { date: "2025-06-26", label: "Thu, Jun 26", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "W 16–14", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+    { date: "2025-06-28", label: "Sat, Jun 28", opponent: "Omaha Rebels", vs: "vs", location: "Veteran's Memorial Community Center", time: "5:00 PM", home: true, result: "W 17–14", oppLogo: "assets/img/opponents/omaha-rebels.png" },
+    { date: "2025-06-29", label: "Sun, Jun 29", opponent: "Omaha Rebels", vs: "vs", location: "Veteran's Memorial Community Center", time: "12:00 PM", home: true, result: "W 23–11", oppLogo: "assets/img/opponents/omaha-rebels.png" },
+    { date: "2025-07-15", label: "Tue, Jul 15", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "W 12–9", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2025-07-26", label: "Sat, Jul 26", opponent: "Minneapolis Wheatkings", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "L 10–17", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2025-07-29", label: "Tue, Jul 29", opponent: "St. Paul Blueshirts", vs: "@", location: "Ken Yackel-West Side Arena", time: "7:00 PM", home: false, result: "W 12–11", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+    { date: "2025-08-02", label: "Sat, Aug 2", opponent: "Minneapolis Wheatkings", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "L 12–14", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" }
+  ],
+  "2024": [
+    { date: "2024-06-15", label: "Sat, Jun 15", opponent: "Iowa Dogfish", vs: "vs", location: "Veteran's Memorial Community Center", time: "12:00 PM", home: true, result: "W 17–12", oppLogo: null },
+    { date: "2024-06-15", label: "Sat, Jun 15", opponent: "Iowa Dogfish", vs: "vs", location: "Veteran's Memorial Community Center", time: "3:30 PM", home: true, result: "W 17–5", oppLogo: null },
+    { date: "2024-06-22", label: "Sat, Jun 22", opponent: "Omaha Rebels", vs: "@", location: "Off the Wall", time: "1:00 PM", home: false, result: "W 18–11", oppLogo: "assets/img/opponents/omaha-rebels.png" },
+    { date: "2024-06-22", label: "Sat, Jun 22", opponent: "Omaha Rebels", vs: "@", location: "Off the Wall", time: "7:00 PM", home: false, result: "L 10–11", oppLogo: "assets/img/opponents/omaha-rebels.png" },
+    { date: "2024-07-01", label: "Mon, Jul 1", opponent: "Minneapolis Wheatkings", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "L 15–17", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2024-07-23", label: "Tue, Jul 23", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "L 5–13", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2024-07-25", label: "Thu, Jul 25", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "W 22–14", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+    { date: "2024-07-31", label: "Wed, Jul 31", opponent: "St. Paul Blueshirts", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "L 15–19", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+    { date: "2024-08-02", label: "Fri, Aug 2", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veteran's Memorial Community Center", time: "6:30 PM", home: true, result: "L 21–22", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" }
+  ],
+  "2023": [
+    { date: "2023-07-10", label: "Mon, Jul 10", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:15 PM", home: true, result: "L 16–19", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2023-07-13", label: "Thu, Jul 13", opponent: "St. Paul Blueshirts", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "W 18–8", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+    { date: "2023-07-17", label: "Mon, Jul 17", opponent: "St. Paul Blueshirts", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:15 PM", home: true, result: "W 14–9", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+    { date: "2023-07-20", label: "Thu, Jul 20", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "L 8–12", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2023-07-22", label: "Sat, Jul 22", opponent: "Minneapolis Wheatkings", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "L 8–20", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2023-07-23", label: "Sun, Jul 23", opponent: "St. Paul Blueshirts", vs: "@", location: "Veteran's Memorial Community Center", time: "3:00 PM", home: false, result: "W 15–14", oppLogo: "assets/img/opponents/stpaul-blueshirts.jpg" },
+    { date: "2023-07-28", label: "Fri, Jul 28", opponent: "Minneapolis Wheatkings", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "L 12–17", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2023-07-29", label: "Sat, Jul 29", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "L 7–17", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" }
+  ],
+  "2022": [
+    { date: "2022-07-23", label: "Sat, Jul 23", opponent: "Minnesota Freeze", vs: "@", location: "Charles M. Schulz - Highland Arena", time: "7:00 PM", home: false, result: "W 14–13", oppLogo: "assets/img/opponents/minnesota-freeze.jpg" },
+    { date: "2022-07-30", label: "Sat, Jul 30", opponent: "Minnesota Freeze", vs: "vs", location: "Veteran's Memorial Community Center", time: "1:00 PM", home: true, result: "L 9–15", oppLogo: "assets/img/opponents/minnesota-freeze.jpg" },
+    { date: "2022-07-30", label: "Sat, Jul 30", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "L 13–15", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2022-08-12", label: "Fri, Aug 12", opponent: "Minneapolis Wheatkings", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "L 7–21", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2022-08-16", label: "Tue, Aug 16", opponent: "Minneapolis Wheatkings", vs: "@", location: "Northeast Ice Arena", time: "7:00 PM", home: false, result: "L 7–16", oppLogo: "assets/img/opponents/mpls-wheatkings.jpg" },
+    { date: "2022-08-20", label: "Sat, Aug 20", opponent: "Minnesota Freeze", vs: "vs", location: "Veteran's Memorial Community Center", time: "7:00 PM", home: true, result: "W 13–11", oppLogo: "assets/img/opponents/minnesota-freeze.jpg" }
+  ]
+};
 
 // Senior regular-season games. type: "game"
 const SCHEDULE = [

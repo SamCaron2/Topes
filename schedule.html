@@ -84,6 +84,40 @@
   </div>
 </section>
 
+<!-- ── PAST SEASONS ── -->
+<section class="schedule section" style="background:var(--navy);">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <p class="label">Season Archive</p>
+        <h2 class="display">Past Seasons</h2>
+      </div>
+    </div>
+    <div class="tab-bar" id="seasonTabs">
+      <button class="tab-btn active" data-year="2025">2025</button>
+      <button class="tab-btn" data-year="2024">2024</button>
+      <button class="tab-btn" data-year="2023">2023</button>
+      <button class="tab-btn" data-year="2022">2022</button>
+    </div>
+    <p id="seasonRecord" style="color:var(--muted);margin-bottom:20px;font-size:0.9rem;"></p>
+    <div class="table-scroll-wrap">
+      <table class="schedule-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Opponent</th>
+            <th>Location</th>
+            <th>Time</th>
+            <th>H/A</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="seasonHistoryBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 <!-- ── FOOTER ── -->
 <footer id="contact">
   <div class="container">
@@ -141,6 +175,6 @@
 
 <script src="js/data.js"></script>
 <script src="js/main.js"></script>
-<script>renderSchedulePage();</script>
+<script>renderSchedulePage(); renderSeasonHistory();</script>
 </body>
 </html>
