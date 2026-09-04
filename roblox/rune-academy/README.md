@@ -1,7 +1,8 @@
 # Rune Academy
 
 Incremental/idle Roblox game. See `DESIGN.md` for the full system design
-(resource chain, stats, Runes, Ascension, leaderboards, monetization plan).
+(16-currency zone system, stats, Runes, Ascension, leaderboards,
+monetization plan).
 
 ## Setup (do this on your gaming PC Monday)
 
@@ -17,27 +18,36 @@ Incremental/idle Roblox game. See `DESIGN.md` for the full system design
    ```
 5. In Studio, open the Rojo plugin panel and click **Connect**. Everything
    in `src/` will sync into the place.
-6. Build in Studio as normal (terrain, the academy courtyard, node parts
-   tagged `ManaNode` via CollectionService, UI) — code changes you make in
-   your editor sync live; UI/building changes you make in Studio should be
-   done in parts of the tree Rojo doesn't own (or synced back manually,
+6. Build in Studio as normal (terrain, each zone's area, node parts tagged
+   `ResourceNode` via CollectionService with `ZoneKey`/`CurrencyKey`
+   attributes set to match `GameConfig.Zones`, UI) — code changes you make
+   in your editor sync live; UI/building changes you make in Studio should
+   be done in parts of the tree Rojo doesn't own (or synced back manually,
    since this is a code-first Rojo setup, not two-way).
 
 ## What's already scaffolded
 
-- `GameConfig.lua` — every tunable number lives here (resource tiers, stat
-  definitions, Rune rarity odds + boosts, Ascension tiers). Change balance
-  here, not in the handler scripts.
+- `GameConfig.lua` — every tunable number lives here: the 16-currency
+  `Zones` config (upgrades, self-prestige tiers, chain resets, floor
+  tiles), stat definitions, Rune rarity odds + boosts, Ascension tiers.
+  Change balance here, not in the handler scripts.
 - `NumberFormat.lua` — K/M/B/T/Qd/... suffix formatting for big numbers.
-- `PlayerData.lua` — DataStore load/save/autosave, leaderstats.
-- `CollectionHandler.lua` — server-authoritative Mana collection (distance +
-  debounce checked server-side).
+- `PlayerData.lua` — DataStore load/save/autosave, leaderstats, and
+  `defaultData()` builds every zone/currency's save-data shape straight
+  from `GameConfig.Zones` (add a currency to config, its save slot exists
+  automatically — no separate PlayerData change needed).
+- `ResourceEngine.lua` — the generic engine every currency runs on:
+  server-authoritative collect (click/stand, distance + debounce checked),
+  buy upgrade (one/max), self-prestige, chain reset, and floor tile
+  purchases. All 16 currencies go through this one module.
 - `RuneHandler.lua` — server-authoritative gacha pull, Fortune-weighted odds.
-- `ResetHandler.lua` — tier resets (Mana→Essence→Gold) and Ascension.
+- `ResetHandler.lua` — Ascension only (per-currency resets live in
+  ResourceEngine now).
 - `Main.server.lua` — wires up RemoteEvents/Functions between client and
   the handlers above.
-- `CollectionClient.client.lua` — touches a `ManaNode`-tagged part → asks
-  the server to collect it.
+- `ResourceCollectionClient.client.lua` — touches a `ResourceNode`-tagged
+  part → asks the server to collect it, reading which zone/currency off
+  the part's attributes (works for every currency, not just Mana).
 - `StoreHandler.lua` — the Power Store. Processes GamePass and Developer
   Product purchases server-side, grants stat multipliers/Gems/Scrolls/an
   instant Ascension, tracks Robux spent for the leaderboard, and guards
@@ -68,15 +78,35 @@ Incremental/idle Roblox game. See `DESIGN.md` for the full system design
 
 ## Not yet built (next steps)
 
-- Actual UI (rune pull screen, upgrade tree tiles, leaderboards, codes
-  input, a Store menu that fires `RequestPurchase`, a "Main" profile
-  screen that calls `GetProfile` and a title-picker that calls
-  `EquipTitle`) — this is all backend/logic scaffolding right now, no GUI.
-- The walkable upgrade tree layout + tile parts in the 3D world.
+- Actual UI (per-currency upgrade panel with Buy/Max buttons, self-prestige
+  + chain-reset buttons, rune pull screen, floor tile tree, leaderboards,
+  codes input, a Store menu that fires `RequestPurchase`, a "Main" profile
+  screen that calls `GetProfile`, a title-picker that calls `EquipTitle`)
+  — this is all backend/logic scaffolding right now, no GUI.
+- The actual 3D zones: 5 areas, each with its resource node parts (tagged
+  `ResourceNode` with `ZoneKey`/`CurrencyKey` attributes) and a walkable
+  floor tile layout.
 - OrderedDataStore-backed leaderboards (Gold / Runes Opened / Playtime /
   Robux Spent, Global + F2P split).
 - Community codes module + redemption remote.
 - Familiar auto-collect loop (currently just a stat number + an
-  `AutoCollectPass` flag, no actual passive collection behavior yet).
+  `AutoCollectPass` flag, no actual passive collection behavior yet) — once
+  built, it should call `ResourceEngine.getEffectiveRate(data, zone,
+  currency, "auto")` per nearby node on a tick, same engine as manual
+  collect just with the Focus stat instead of Power.
 - An in-game admin command to grant Tester/Admin manually instead of only
   via the `GameConfig` UserId allowlists.
+- Balance pass on `GameConfig.Zones`' numbers against the ~2 week
+  completion target (see DESIGN.md's Pacing section) — current numbers are
+  a reasonable first pass, not simulated/tuned.
+- `leaderstats.Gold` is set once on join and doesn't live-update as Gold
+  changes — needs a periodic sync from `data.zones.Academy.currencies.Gold.amount`.
+- **Save migration**: `PlayerData.load` uses whatever `zones` shape was
+  saved for a returning player as-is. That's fine pre-launch since nothing
+  is saved yet, but the moment real players exist, adding a 17th currency
+  (or renaming/removing one) will leave existing saves missing that
+  currency's state, and any code touching it will error on a nil index.
+  Before adding content post-launch, `PlayerData.load` needs a migration
+  step that fills in any zone/currency present in `GameConfig.Zones` but
+  missing from a loaded save (same shape `defaultZoneState()` already
+  builds, just merged onto existing data instead of replacing it).

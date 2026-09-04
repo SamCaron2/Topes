@@ -36,7 +36,7 @@ end
 -- applied twice).
 local function applyGrant(data, grants)
 	if grants.gems then
-		data.resources.Gems = (data.resources.Gems or 0) + grants.gems
+		data.gems = (data.gems or 0) + grants.gems
 	end
 
 	if grants.freeScrolls then

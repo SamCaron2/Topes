@@ -2,13 +2,262 @@
 
 local GameConfig = {}
 
--- Resource chain: each tier resets the one above it (index 1 resets into index 2, etc).
-GameConfig.ResourceTiers = {
-	{ name = "Mana", resetsInto = "Essence", baseRate = 1 },
-	{ name = "Essence", resetsInto = "Gold", resetRequirement = 1000 },
-	{ name = "Gold", resetsInto = "Gems", resetRequirement = 1e6 },
-	{ name = "Gems", resetsInto = nil }, -- premium-feel currency, not resettable
+-- ============================================================================
+-- ZONES & CURRENCIES
+-- 16 currencies total, grouped into zones that unlock progressively via
+-- Ascension count. Every currency runs on the same generic engine
+-- (ResourceEngine.lua) through three independent, stackable layers:
+--
+--   1. upgrades       - 3 resettable production-multiplier slots per
+--                        currency (the "More X / More X II / Faster X"
+--                        buttons). Reset by that currency's own chainReset.
+--   2. selfPrestige    - an ordered list of {cost, multiplier} tiers, each
+--                        spendable once in order. Buying one resets this
+--                        currency's amount + upgrade levels but permanently
+--                        multiplies its base rate going forward - the
+--                        "Prestige 1: 10k Shells -> resets Shells, starts
+--                        at x5" mechanic. Optional; omit for currencies
+--                        that don't have it.
+--   3. chainReset      - converts the currency into the NEXT one in its
+--                        zone's chain once `requirement` is reached.
+--                        Grants floor(amount / requirement) of the next
+--                        currency and permanently bumps that next
+--                        currency's base rate by intoStartMultiplier,
+--                        stacking every time you reset into it (so the
+--                        more you've cycled Tier 1, the faster Tier 2
+--                        starts out). Omit on a chain's top currency.
+--
+-- collectMode: "click" (tap a node), "stand" (stand on a part while it
+-- ticks), or "chainOnly" (never collected directly - only gained via a
+-- previous currency's chainReset, like Essence/Gold/Iron/Sand above tier 1).
+--
+-- Every currency's effective production rate is:
+--   baseRate * (upgrade slot multipliers) * selfPrestige multiplier
+--   * chainReset intoStartMultiplier bonus * floor tile multipliers
+--   * global Stats (Power for click, Focus for stand/tick - see Stats below)
+--
+-- All numbers below are a reasonable FIRST PASS aimed at the "~2 weeks of
+-- casual F2P play to fully complete" target, not final balance - see
+-- DESIGN.md's Pacing section for the tuning method. Change freely; nothing
+-- else in the codebase hardcodes these values.
+-- ============================================================================
+
+local function standardUpgrades(prefix, baseCost)
+	return {
+		{ id = prefix .. "1", displayName = "More " .. prefix, maxLevel = 200, baseCost = baseCost, costGrowth = 1.12, multiplierPerLevel = 1.03 },
+		{ id = prefix .. "2", displayName = "More " .. prefix .. " II", maxLevel = 100, baseCost = baseCost * 15, costGrowth = 1.15, multiplierPerLevel = 1.02 },
+		{ id = prefix .. "3", displayName = "Faster " .. prefix, maxLevel = 10, baseCost = baseCost * 100, costGrowth = 1.6, multiplierPerLevel = 1.1 },
+	}
+end
+
+GameConfig.Zones = {
+	{
+		key = "Academy",
+		displayName = "Rune Academy",
+		unlockRequirement = nil, -- starting zone, always unlocked
+		currencies = {
+			{
+				key = "Mana",
+				displayName = "Mana",
+				collectMode = "click",
+				baseRate = 1,
+				upgrades = standardUpgrades("Mana", 10),
+				selfPrestigeTiers = {
+					{ cost = 10000, multiplier = 5 },
+					{ cost = 100000, multiplier = 4 },
+					{ cost = 1000000, multiplier = 3 },
+				},
+				chainReset = { requirement = 5000000, into = "Essence", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Essence",
+				displayName = "Essence",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Essence", 50),
+				selfPrestigeTiers = {
+					{ cost = 50000, multiplier = 5 },
+					{ cost = 500000, multiplier = 4 },
+				},
+				chainReset = { requirement = 1e7, into = "Gold", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Gold",
+				displayName = "Gold",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Gold", 200),
+				selfPrestigeTiers = {
+					{ cost = 500000, multiplier = 5 },
+				},
+				chainReset = nil, -- top of the Academy chain; spent on Ascension instead (see AscensionTiers)
+			},
+		},
+		floorTiles = {
+			{ key = "ManaVein1", displayName = "Mana Vein I", costCurrency = "Mana", cost = 500000, targetCurrency = "Mana", multiplier = 1.5 },
+			{ key = "ManaVein2", displayName = "Mana Vein II", costCurrency = "Mana", cost = 5000000, targetCurrency = "Mana", multiplier = 1.5 },
+			{ key = "EssenceWell1", displayName = "Essence Well I", costCurrency = "Essence", cost = 1000000, targetCurrency = "Essence", multiplier = 1.5 },
+		},
+	},
+	{
+		key = "FamiliarGrounds",
+		displayName = "Familiar Grounds",
+		unlockRequirement = { type = "ascensionCount", value = 0 }, -- open from the start alongside Academy
+		currencies = {
+			{
+				key = "Whispers",
+				displayName = "Whispers",
+				collectMode = "click",
+				baseRate = 1,
+				upgrades = standardUpgrades("Whispers", 15),
+				selfPrestigeTiers = {
+					{ cost = 20000, multiplier = 5 },
+					{ cost = 200000, multiplier = 4 },
+				},
+				chainReset = nil, -- endless side grind; feeds its own floor tiles rather than a further tier
+			},
+		},
+		floorTiles = {
+			{ key = "WhisperEcho1", displayName = "Echoing Whisper I", costCurrency = "Whispers", cost = 750000, targetCurrency = "Whispers", multiplier = 1.5 },
+		},
+	},
+	{
+		key = "Foundry",
+		displayName = "The Foundry",
+		unlockRequirement = { type = "ascensionCount", value = 1 },
+		currencies = {
+			{
+				key = "Copper",
+				displayName = "Copper",
+				collectMode = "stand",
+				baseRate = 1,
+				upgrades = standardUpgrades("Copper", 10),
+				selfPrestigeTiers = { { cost = 10000, multiplier = 5 } },
+				chainReset = { requirement = 5e6, into = "Tin", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Tin",
+				displayName = "Tin",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Tin", 100),
+				selfPrestigeTiers = { { cost = 100000, multiplier = 5 } },
+				chainReset = { requirement = 1e8, into = "Steel", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Steel",
+				displayName = "Steel",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Steel", 1000),
+				selfPrestigeTiers = { { cost = 1000000, multiplier = 5 } },
+				chainReset = { requirement = 1e10, into = "Mithril", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Mithril",
+				displayName = "Mithril",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Mithril", 10000),
+				selfPrestigeTiers = { { cost = 1e7, multiplier = 5 } },
+				chainReset = nil, -- top of the Foundry chain
+			},
+		},
+		floorTiles = {
+			{ key = "CopperSeam1", displayName = "Copper Seam I", costCurrency = "Copper", cost = 2000000, targetCurrency = "Copper", multiplier = 1.5 },
+			{ key = "TinSeam1", displayName = "Tin Seam I", costCurrency = "Tin", cost = 5e7, targetCurrency = "Tin", multiplier = 1.5 },
+		},
+	},
+	{
+		key = "TidalGrotto",
+		displayName = "Tidal Grotto",
+		unlockRequirement = { type = "ascensionCount", value = 2 },
+		currencies = {
+			{
+				key = "Pearls",
+				displayName = "Pearls",
+				collectMode = "click",
+				baseRate = 1,
+				upgrades = standardUpgrades("Pearls", 10),
+				selfPrestigeTiers = { { cost = 10000, multiplier = 5 } },
+				chainReset = { requirement = 5e6, into = "Coral", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Coral",
+				displayName = "Coral",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Coral", 100),
+				selfPrestigeTiers = { { cost = 100000, multiplier = 5 } },
+				chainReset = { requirement = 1e8, into = "Driftglass", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Driftglass",
+				displayName = "Driftglass",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Driftglass", 1000),
+				selfPrestigeTiers = { { cost = 1000000, multiplier = 5 } },
+				chainReset = { requirement = 1e10, into = "AbyssalSalt", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "AbyssalSalt",
+				displayName = "Abyssal Salt",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("AbyssalSalt", 10000),
+				selfPrestigeTiers = { { cost = 1e7, multiplier = 5 } },
+				chainReset = nil, -- top of the Tidal Grotto chain
+			},
+		},
+		floorTiles = {
+			{ key = "PearlBed1", displayName = "Pearl Bed I", costCurrency = "Pearls", cost = 2000000, targetCurrency = "Pearls", multiplier = 1.5 },
+			{ key = "CoralReef1", displayName = "Coral Reef I", costCurrency = "Coral", cost = 5e7, targetCurrency = "Coral", multiplier = 1.5 },
+		},
+	},
+	{
+		key = "StarfallPeak",
+		displayName = "Starfall Peak",
+		unlockRequirement = { type = "ascensionCount", value = 3 },
+		currencies = {
+			{
+				key = "Stardust",
+				displayName = "Stardust",
+				collectMode = "click",
+				baseRate = 1,
+				upgrades = standardUpgrades("Stardust", 100),
+				selfPrestigeTiers = { { cost = 100000, multiplier = 5 } },
+				chainReset = { requirement = 5e8, into = "CometShards", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "CometShards",
+				displayName = "Comet Shards",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("CometShards", 1000),
+				selfPrestigeTiers = { { cost = 1000000, multiplier = 5 } },
+				chainReset = { requirement = 1e11, into = "Celestium", intoStartMultiplier = 1.05 },
+			},
+			{
+				key = "Celestium",
+				displayName = "Celestium",
+				collectMode = "chainOnly",
+				baseRate = 1,
+				upgrades = standardUpgrades("Celestium", 10000),
+				selfPrestigeTiers = { { cost = 1e8, multiplier = 5 } },
+				chainReset = nil, -- final currency; maxing this out is "100% completion"
+			},
+		},
+		floorTiles = {
+			{ key = "StardustField1", displayName = "Stardust Field I", costCurrency = "Stardust", cost = 2e8, targetCurrency = "Stardust", multiplier = 1.5 },
+		},
+	},
 }
+
+-- Gems is intentionally NOT in a zone: it's the global premium currency
+-- (see Power Store below), earned in tiny amounts from milestones or
+-- bought with Robux, never reset by chain resets, self-prestige, or
+-- Ascension.
 
 -- Stats raised by the upgrade tree and by Runes.
 GameConfig.Stats = {
@@ -35,22 +284,40 @@ GameConfig.RuneRanks = {
 
 GameConfig.ScrollCostPerPull = 1
 
--- Ascension tiers. requirement is measured in Gold at time of ascending.
+-- Ascension tiers. requirement is measured in Academy Gold at time of
+-- ascending (Gold is the top of the Academy chain - our equivalent of the
+-- reference game's "Cash used for rebirths"). Reaching a tier also unlocks
+-- the next Zone (see Zones' unlockRequirement = { type = "ascensionCount" }),
+-- which is what paces zone-by-zone progress toward the ~2 week completion
+-- target instead of everything being available at once.
 GameConfig.AscensionTiers = {
 	{
 		name = "Ascension I",
+		requirementZone = "Academy",
+		requirementCurrency = "Gold",
 		requirement = 1e7,
 		rewards = { statMultiplierAll = 2, unlocksRuneRankIndex = 2 },
 	},
 	{
 		name = "Ascension II",
+		requirementZone = "Academy",
+		requirementCurrency = "Gold",
 		requirement = 1e9,
 		rewards = { autoCollect = true, hasteBonus = 5, unlocksRuneRankIndex = 4 },
 	},
 	{
 		name = "Ascension III",
+		requirementZone = "Academy",
+		requirementCurrency = "Gold",
 		requirement = 1e12,
 		rewards = { statMultiplierAll = 2, unlocksRuneRankIndex = 6 },
+	},
+	{
+		name = "Ascension IV",
+		requirementZone = "Academy",
+		requirementCurrency = "Gold",
+		requirement = 1e15,
+		rewards = { statMultiplierAll = 2 },
 	},
 }
 

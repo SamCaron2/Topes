@@ -14,26 +14,96 @@ permanently boost your stats, and periodically **Ascend** to reset your
 progress for a permanent multiplier and access to new content. Compete on
 leaderboards, chase rare rune pulls, redeem community codes for boosts.
 
-## 2. Resource chain (the reset ladder)
+## 2. Zones & the 16-currency system
 
-Four tiers, each one "cashes in" the tier below it for a permanent boost.
-This is the core session-length driver — you always have a next resource to
-chase.
+16 currencies total, split across 5 zones plus the global premium currency
+(Gems). Every currency runs on the same generic engine
+(`ResourceEngine.lua`) rather than being hand-built per currency — adding,
+renaming, or rebalancing one is a `GameConfig.Zones` edit, never new code.
+This is the actual depth driver behind the "keep people playing for a
+while" goal: each currency you unlock is a fresh on-ramp with its own fast
+early progress, which is what makes this genre addictive (see section on
+pacing below).
 
-| Tier | Name | How you get it | What it resets |
-|---|---|---|---|
-| 1 | **Mana** | Walk to glowing crystal nodes / auto-collected by Familiars | — |
-| 2 | **Essence** | Spend Mana at the Distillery once you hit the tier requirement | Resets Mana + Mana upgrades, grants permanent Essence/sec multiplier |
-| 3 | **Gold** | Spend Essence at the Vault once you hit the tier requirement | Resets Essence + Essence upgrades, grants permanent Gold/sec multiplier |
-| 4 | **Gems** (premium-feel) | Slow passive trickle from Gold milestones, or bought with Robux | Not resettable — spent on Rune pulls & instant boosts |
+**Four independent layers, per currency:**
 
-Each tier's "Buy Max" screen shows current rate, next-level rate, and cost —
-mirrors the source game's Coins/Cash upgrade panel (More Coins / More Cash
-side-by-side buttons, Buy vs Max).
+1. **Collect** — click a node or stand on a plate. Only the first currency
+   in each zone's chain is collected this way; everything above it is
+   `chainOnly` (only obtained by resetting the tier below).
+2. **Upgrades** — 3 resettable multiplier slots per currency ("More X /
+   More X II / Faster X"), each with its own level cap and cost curve.
+   Mirrors the reference game's Shells Upgrades panel exactly.
+3. **Self-Prestige** — an ordered list of one-time tiers *within the same
+   currency*: spend enough of it, and it resets to 0 (upgrades too) but
+   permanently multiplies its own base rate forever after. This is the
+   "Prestige 1 costs 10k Shells → resets Shells, starts back at x5"
+   mechanic — distinct from converting to the next tier, and the layer
+   that makes early grinding on a currency feel like it's compounding
+   before you've even moved on.
+4. **Chain Reset** — once a currency crosses its threshold, convert it into
+   the next currency in the chain (Bronze→Iron style). Grants
+   `floor(amount / requirement)` of the next currency, and permanently
+   bumps that next currency's base rate a little more every time you reset
+   into it — so a chain you've cycled through many times starts you off
+   faster the next time you reach it.
+
+**Floor tiles** are a fifth, separate layer: a walkable, permanent
+production-multiplier tree per zone (e.g. "500k Bronze → x1.5 Bronze
+production"). Never reset by anything — the permanent investment layer,
+same category as Runes and Ascension count.
+
+**The 16 currencies, by zone:**
+
+| Zone | Currencies | Unlocks at |
+|---|---|---|
+| Rune Academy (start) | Mana → Essence → Gold | Always open |
+| Familiar Grounds | Whispers | Always open (side-grind, no chain reset) |
+| The Foundry | Copper → Tin → Steel → Mithril | Ascension I |
+| Tidal Grotto | Pearls → Coral → Driftglass → Abyssal Salt | Ascension II |
+| Starfall Peak | Stardust → Comet Shards → Celestium | Ascension III |
+| *(global)* | Gems | Always open, premium |
+
+Zones gating on Ascension count is what paces the whole game — you can't
+rush to Starfall Peak on day one, you have to actually build up the
+Academy chain enough to Ascend three times first. **Gold** (top of the
+Academy chain) is our equivalent of the reference game's "Cash used for
+rebirths" — it's what `AscensionTiers` requirements are measured in.
+**Celestium** (top of Starfall Peak, no further chain reset) is the final
+currency — maxing its self-prestige tiers is "100% completion."
+
+Each currency's effective production rate is:
+
+```
+baseRate
+  × (product of that currency's 3 upgrade slot multipliers)
+  × (self-prestige cumulative multiplier)
+  × (chain-reset "started faster" bonus, stacks per reset into it)
+  × (floor tile multipliers targeting it)
+  × global Power stat (manual collect) or Focus stat (Familiar auto-collect)
+```
 
 Number formatting: standard suffix notation (K, M, B, T, Qd, Qt, Sx, Sp, Oc,
 No, Dc...) via a shared `NumberFormat` module — required once numbers exceed
 ~1e6, which happens fast in this genre.
+
+### Pacing target: ~2 weeks casual F2P to 100%
+
+The numbers currently in `GameConfig.Zones` are a first-pass scaffold, not
+tuned balance — getting 16 currencies × 3 upgrade slots × self-prestige
+tiers × chain thresholds to actually sum to "~2 weeks of casual play, a
+little less with spending" needs simulation or real playtest data, not
+guesswork. The method once there's something playable:
+
+1. Instrument a debug command that fast-forwards a simulated "optimal
+   player" through the whole game (buy the best-value upgrade each tick,
+   chain-reset/self-prestige the moment it's worth it) and logs how long
+   each currency and each zone takes.
+2. Tune each zone's cost-growth rates and thresholds until the simulated
+   total lands in the ~2 week range, biasing early zones (Academy) toward
+   faster completion than late ones (Starfall Peak) — front-loaded
+   momentum is what hooks new players.
+3. Re-run after every balance change. Because everything is config-driven,
+   this is editing numbers in `GameConfig.lua`, never rewriting logic.
 
 ## 3. Stats (multiply everything)
 
@@ -41,14 +111,18 @@ Reskin of Strength/Luck/Bulk/Speed/Clone:
 
 | Stat | Effect |
 |---|---|
-| **Power** | Multiplies Mana gained per node collected |
+| **Power** | Multiplies every manual collect (click/stand), on every currency in every zone |
 | **Fortune** | Improves Rune pull odds toward rarer tiers |
-| **Focus** | Multiplies Mana gained per collection tick (bulk per action) |
+| **Focus** | Multiplies every Familiar auto-collect tick, on every currency in every zone |
 | **Haste** | Increases walkspeed + auto-collect tick rate |
 | **Familiar** | Spawns spectral duplicates that auto-collect nearby nodes (stacks) |
 
-All five are raised via the walkable upgrade tree (see below) and via Rune
-pulls. Total output = `baseRate * Power * Focus * (ascension multiplier)`.
+Unlike the per-currency upgrades/self-prestige/chain-reset layers (section
+2), these five Stats are global — raised via the walkable upgrade tree
+(see below), Ascension, and Rune pulls, and they apply on top of every
+single currency's own production math at once. They're the account-wide
+multiplier layer that makes progress in one zone carry over as a boost to
+every other zone.
 
 ## 4. Walkable upgrade tree
 
@@ -101,12 +175,18 @@ Multi-tier prestige, each tier permanent once reached:
 - **Ascension II** — Requires higher Gold + Ascension I. Grants: passive
   auto-collect (Familiars work without you present), +Haste baseline,
   unlocks a second upgrade tree.
-- **Ascension III+** — Escalating requirements, each unlocking new upgrade
-  trees, new rune tiers, and flat stat multipliers.
+- **Ascension III** — unlocks Tidal Grotto, escalating Gold requirement,
+  new rune tiers, flat stat multipliers.
+- **Ascension IV+** — further zones and content as they're designed;
+  Starfall Peak's unlock (Ascension III) is currently the last zone gate,
+  Ascension IV is a flat stat-multiplier-only tier beyond it.
 
-Ascending resets Mana/Essence/Gold and their upgrades but **never** resets
-Runes, Ascension count, or Gems — those are the "permanent progress" that
-keeps players from feeling like ascension is a punishment.
+Ascending resets every currency's amount and upgrade levels, across every
+zone, but **never** resets Runes, Ascension count, Gems, floor tiles,
+self-prestige tiers, or chain-reset bonuses — those are the "permanent
+progress" layers that keep players from feeling like ascension is a
+punishment (see section 2's four-layer breakdown for why those specific
+things survive a reset).
 
 ## 7. Leaderboards
 

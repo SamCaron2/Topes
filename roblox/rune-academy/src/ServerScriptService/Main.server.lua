@@ -5,7 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerData = require(script.Parent.PlayerData)
-local CollectionHandler = require(script.Parent.CollectionHandler)
+local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
 local StoreHandler = require(script.Parent.StoreHandler) -- self-wires MarketplaceService on require
@@ -29,18 +29,51 @@ local function newRemoteFunction(name: string): RemoteFunction
 	return remote
 end
 
-local collectNodeEvent = newRemoteEvent("CollectNode")
+local collectNodeEvent = newRemoteEvent("CollectNode") -- args: zoneKey, currencyKey, part
+local buyUpgradeFunction = newRemoteFunction("BuyUpgrade") -- args: zoneKey, currencyKey, slotId, mode ("one"|"max")
+local selfPrestigeFunction = newRemoteFunction("SelfPrestige") -- args: zoneKey, currencyKey
+local chainResetFunction = newRemoteFunction("ChainReset") -- args: zoneKey, currencyKey
+local buyFloorTileFunction = newRemoteFunction("BuyFloorTile") -- args: zoneKey, tileKey
 local pullRuneFunction = newRemoteFunction("PullRune")
-local resetTierFunction = newRemoteFunction("ResetTier")
 local ascendFunction = newRemoteFunction("Ascend")
 local runePulledEvent = newRemoteEvent("RunePulledBroadcast") -- feeds the live-feed UI
 local requestPurchaseEvent = newRemoteEvent("RequestPurchase")
 local getProfileFunction = newRemoteFunction("GetProfile")
 local equipTitleFunction = newRemoteFunction("EquipTitle")
 
-collectNodeEvent.OnServerEvent:Connect(function(player, node)
-	CollectionHandler.collectNode(player, node)
+collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
+	if type(zoneKey) == "string" and type(currencyKey) == "string" then
+		ResourceEngine.collect(player, zoneKey, currencyKey, part)
+	end
 end)
+
+buyUpgradeFunction.OnServerInvoke = function(player, zoneKey, currencyKey, slotId, mode)
+	if type(zoneKey) ~= "string" or type(currencyKey) ~= "string" or type(slotId) ~= "string" then
+		return false, "Invalid request"
+	end
+	return ResourceEngine.buyUpgrade(player, zoneKey, currencyKey, slotId, mode)
+end
+
+selfPrestigeFunction.OnServerInvoke = function(player, zoneKey, currencyKey)
+	if type(zoneKey) ~= "string" or type(currencyKey) ~= "string" then
+		return false, "Invalid request"
+	end
+	return ResourceEngine.selfPrestige(player, zoneKey, currencyKey)
+end
+
+chainResetFunction.OnServerInvoke = function(player, zoneKey, currencyKey)
+	if type(zoneKey) ~= "string" or type(currencyKey) ~= "string" then
+		return false, "Invalid request"
+	end
+	return ResourceEngine.chainReset(player, zoneKey, currencyKey)
+end
+
+buyFloorTileFunction.OnServerInvoke = function(player, zoneKey, tileKey)
+	if type(zoneKey) ~= "string" or type(tileKey) ~= "string" then
+		return false, "Invalid request"
+	end
+	return ResourceEngine.buyFloorTile(player, zoneKey, tileKey)
+end
 
 pullRuneFunction.OnServerInvoke = function(player)
 	local rank, err = RuneHandler.pull(player)
@@ -48,10 +81,6 @@ pullRuneFunction.OnServerInvoke = function(player)
 		runePulledEvent:FireAllClients(player.Name, rank.name)
 	end
 	return rank, err
-end
-
-resetTierFunction.OnServerInvoke = function(player, tierName)
-	return ResetHandler.resetTier(player, tierName)
 end
 
 ascendFunction.OnServerInvoke = function(player)
@@ -73,8 +102,8 @@ getProfileFunction.OnServerInvoke = function(player)
 	end
 
 	return {
-		gold = data.resources.Gold or 0,
-		gems = data.resources.Gems or 0,
+		gold = data.zones.Academy.currencies.Gold.amount or 0,
+		gems = data.gems or 0,
 		playtimeSeconds = data.playtimeSeconds or 0,
 		robuxSpent = data.robuxSpent or 0,
 		unlockedTitles = data.unlockedTitles,

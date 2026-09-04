@@ -13,19 +13,35 @@ local AUTOSAVE_INTERVAL = 120
 local PlayerData = {}
 local sessions = {} -- [player] = dataTable
 
-local function defaultData()
-	local resources = {}
-	for _, tier in GameConfig.ResourceTiers do
-		resources[tier.name] = 0
+-- Builds the { [zoneKey] = { currencies = { [currencyKey] = {...} }, floorTiles = {} } }
+-- shape entirely from GameConfig.Zones, so a new/renamed zone or currency
+-- never needs a matching change here.
+local function defaultZoneState()
+	local zones = {}
+	for _, zone in GameConfig.Zones do
+		local currencies = {}
+		for _, currency in zone.currencies do
+			currencies[currency.key] = {
+				amount = 0,
+				upgradeLevels = {}, -- [slotId] = level
+				selfPrestigeTier = 0, -- count of selfPrestigeTiers purchased so far
+				chainBonusMultiplier = 1, -- permanent bonus from being chain-reset INTO repeatedly
+			}
+		end
+		zones[zone.key] = { currencies = currencies, floorTiles = {} } -- floorTiles: [tileKey] = true
 	end
+	return zones
+end
 
+local function defaultData()
 	local stats = {}
 	for statName, statInfo in GameConfig.Stats do
 		stats[statName] = statInfo.base
 	end
 
 	return {
-		resources = resources,
+		zones = defaultZoneState(),
+		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,
 		runesOpened = 0,
@@ -83,7 +99,7 @@ function PlayerData.load(player: Player)
 
 	local gold = Instance.new("NumberValue")
 	gold.Name = "Gold"
-	gold.Value = data.resources.Gold or 0
+	gold.Value = data.zones.Academy.currencies.Gold.amount or 0
 	gold.Parent = leaderstats
 
 	local ascensions = Instance.new("IntValue")
