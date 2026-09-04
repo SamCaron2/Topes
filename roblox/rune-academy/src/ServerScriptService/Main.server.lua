@@ -8,6 +8,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local CollectionHandler = require(script.Parent.CollectionHandler)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
+local StoreHandler = require(script.Parent.StoreHandler) -- self-wires MarketplaceService on require
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -32,6 +33,7 @@ local pullRuneFunction = newRemoteFunction("PullRune")
 local resetTierFunction = newRemoteFunction("ResetTier")
 local ascendFunction = newRemoteFunction("Ascend")
 local runePulledEvent = newRemoteEvent("RunePulledBroadcast") -- feeds the live-feed UI
+local requestPurchaseEvent = newRemoteEvent("RequestPurchase")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, node)
 	CollectionHandler.collectNode(player, node)
@@ -52,6 +54,12 @@ end
 ascendFunction.OnServerInvoke = function(player)
 	return ResetHandler.ascend(player)
 end
+
+requestPurchaseEvent.OnServerEvent:Connect(function(player, kind, key)
+	if type(kind) == "string" and type(key) == "string" then
+		StoreHandler.promptPurchase(player, kind, key)
+	end
+end)
 
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered
 -- before any player join events fire from this point on.

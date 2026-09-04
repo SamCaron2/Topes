@@ -57,4 +57,41 @@ GameConfig.AscensionTiers = {
 GameConfig.CollectionTickSeconds = 1
 GameConfig.AutoCollectYieldFraction = 0.5 -- Familiars collect at half a manual collect's rate, per Familiar
 
+-- ============================================================================
+-- POWER STORE
+-- Real IDs are placeholders (0) until you create the matching GamePass /
+-- Developer Product in Studio's Monetize tab and paste the real asset ID in.
+-- Grant shapes, handled by StoreHandler.applyGrant:
+--   gems             : number, added to Gems resource
+--   freeScrolls      : number, added to Scrolls
+--   statMultiplierAll: number, multiplies EVERY current stat (repeatable, stacks per purchase)
+--   statMultiplier   : { StatName = number }, multiplies named stats (gamepass, applied once)
+--   statAdd          : { StatName = number }, adds flat amount to named stats (gamepass, applied once)
+--   instantAscend    : true, forces the next Ascension tier regardless of Gold requirement
+--   autoCollect      : true, flags AutoCollectPass owned (read by the future Familiar auto-collect loop)
+-- ============================================================================
+
+-- Developer Products: repeatable purchases. PowerSurge is the core "spend more,
+-- get stronger" lever - uncapped, stacks every time, this is what drives
+-- long-term Robux spend from committed players rather than a one-time cap.
+GameConfig.DevProducts = {
+	{ key = "PowerSurge_Small", id = 0, priceRobuxHint = 99, grants = { statMultiplierAll = 1.25 } },
+	{ key = "PowerSurge_Medium", id = 0, priceRobuxHint = 299, grants = { statMultiplierAll = 1.6 } },
+	{ key = "PowerSurge_Large", id = 0, priceRobuxHint = 999, grants = { statMultiplierAll = 2.5 } },
+	{ key = "GemPack_Small", id = 0, priceRobuxHint = 99, grants = { gems = 100 } },
+	{ key = "GemPack_Medium", id = 0, priceRobuxHint = 399, grants = { gems = 500 } },
+	{ key = "GemPack_Large", id = 0, priceRobuxHint = 999, grants = { gems = 1500 } },
+	{ key = "ScrollBundle_10", id = 0, priceRobuxHint = 249, grants = { freeScrolls = 10 } },
+	{ key = "InstantAscend", id = 0, priceRobuxHint = 199, grants = { instantAscend = true } },
+}
+
+-- GamePasses: one-time purchases, permanent effect, granted once (tracked via
+-- data.ownedPasses so a repeat "purchase" / rejoin never double-applies).
+GameConfig.GamePasses = {
+	{ key = "ArchmagePass", id = 0, priceRobuxHint = 349, grants = { statMultiplier = { Power = 3 } } },
+	{ key = "FortunePass", id = 0, priceRobuxHint = 349, grants = { statMultiplier = { Fortune = 3 } } },
+	{ key = "AutoCollectPass", id = 0, priceRobuxHint = 249, grants = { autoCollect = true } },
+	{ key = "VIPFamiliar", id = 0, priceRobuxHint = 149, grants = { statAdd = { Familiar = 2 } } },
+}
+
 return GameConfig

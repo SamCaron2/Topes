@@ -38,14 +38,30 @@ Incremental/idle Roblox game. See `DESIGN.md` for the full system design
   the handlers above.
 - `CollectionClient.client.lua` — touches a `ManaNode`-tagged part → asks
   the server to collect it.
+- `StoreHandler.lua` — the Power Store. Processes GamePass and Developer
+  Product purchases server-side, grants stat multipliers/Gems/Scrolls/an
+  instant Ascension, tracks Robux spent for the leaderboard, and guards
+  against double-granting a retried purchase.
+
+## One manual step required before the store works
+
+`GameConfig.DevProducts` and `GameConfig.GamePasses` list every product
+with a placeholder `id = 0`. In Studio: **Home → Monetize** (or the game's
+page on the Creator Dashboard) → create each GamePass and Developer
+Product listed there with matching prices, then paste the real asset ID
+back into `GameConfig.lua`. Nothing will prompt a real purchase until
+that's done — `StoreHandler.promptPurchase` silently no-ops on `id = 0` on
+purpose, so a half-configured store can't accidentally prompt Studio's
+test/placeholder asset IDs.
 
 ## Not yet built (next steps)
 
 - Actual UI (rune pull screen, upgrade tree tiles, leaderboards, codes
-  input) — this is all backend/logic scaffolding right now, no GUI.
+  input, and a Store menu that fires `RequestPurchase`) — this is all
+  backend/logic scaffolding right now, no GUI.
 - The walkable upgrade tree layout + tile parts in the 3D world.
 - OrderedDataStore-backed leaderboards (Gold / Runes Opened / Playtime /
   Robux Spent, Global + F2P split).
 - Community codes module + redemption remote.
-- Gamepass/dev product purchase handling (`MarketplaceService`).
-- Familiar auto-collect loop (currently just a stat number, no behavior).
+- Familiar auto-collect loop (currently just a stat number + an
+  `AutoCollectPass` flag, no actual passive collection behavior yet).

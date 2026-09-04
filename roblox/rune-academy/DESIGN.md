@@ -132,20 +132,54 @@ one-time or timed effects: bonus Scrolls, a temporary 2x Mana multiplier,
 a free Rune pull. Standard marketing lever — codes get posted on the game's
 Discord/social to drive spikes in DAU around updates.
 
-## 9. Monetization plan
+## 9. Monetization plan — the Power Store
 
-| Product | Type | Price idea |
+The stated goal for this project is Robux spend, not just engagement, so the
+store isn't cosmetic-first — it's a direct, uncapped power lever. Two kinds
+of product, each doing a different job:
+
+**GamePasses (one-time, permanent)** — the "get invested" purchases. Cheap
+(~150-350 Robux) so the first purchase is an easy yes:
+
+| Pass | Effect |
+|---|---|
+| Archmage Pass | Permanent x3 Power |
+| Fortune Pass | Permanent x3 Fortune (much better Rune odds) |
+| Auto-Collect Pass | Familiars collect passively before you'd normally unlock it at Ascension II |
+| VIP Familiar | +2 flat Familiars, cosmetic aura, chat tag |
+
+**Developer Products (repeatable) — the real spend driver.** Unlike a
+gamepass, these have no ceiling: a committed player can buy them over and
+over, and each purchase visibly moves their numbers. This is the standard
+whale-monetization pattern for the genre (mirrors the source game's Diamond
+purchases) and is the main reason `statMultiplierAll` exists as a grant type
+distinct from the one-time gamepass `statMultiplier`:
+
+| Product | Effect | Price idea |
 |---|---|---|
-| Gem packs | Dev Product | Several tiers, e.g. 100/500/1500/5000 Gems |
-| 2x Mana Gamepass | Gamepass | Permanent passive multiplier |
-| 2x Rune Luck Gamepass | Gamepass | Permanent Fortune boost |
-| Auto-Collect Gamepass | Gamepass | Unlocks Familiar auto-collect before Ascension II |
-| VIP Familiar | Gamepass | Cosmetic + small stat perk, chat tag |
-| Instant Ascend Dev Product | Dev Product | Skips the current tier's grind once |
+| Power Surge (S/M/L) | Instantly multiplies **every current stat** by 1.25x/1.6x/2.5x, stacks with every purchase | 99 / 299 / 999 Robux |
+| Gem Pack (S/M/L) | Direct Gems, spent on extra Rune pulls | 99 / 399 / 999 Robux |
+| Scroll Bundle | 10 Rune pulls worth of Scrolls | 249 Robux |
+| Instant Ascend | Skips the current tier's Gold requirement and forces the next Ascension immediately | 199 Robux |
 
-Keep early gamepasses cheap (~50-99 Robux) to drive first-purchase
-conversion; mid-game Gem packs are where the real revenue comes from once
-players are invested (matches how the source game structures its Diamonds).
+Because Power Surge multiplies *current* stats rather than adding a flat
+bonus, it compounds with everything else a player has (Rune pulls,
+Ascension multipliers) — the more invested a player already is, the more
+a single Power Surge is worth, which is exactly the dynamic that gets
+high-spenders to keep buying rather than stopping at one purchase.
+
+The **Robux Spent leaderboard** (section 7) is what makes this visible and
+socially competitive — spend converts directly into a public rank, which
+is a proven driver of repeat purchases in this genre.
+
+Implementation: `GameConfig.DevProducts` / `GameConfig.GamePasses` define
+every product's grant; `StoreHandler.lua` processes purchases
+server-side via `MarketplaceService.ProcessReceipt` (dev products) and
+`PromptGamePassPurchaseFinished` (gamepasses), with purchase-history
+tracking so a retried receipt is never double-granted. See the README for
+the one manual step left: creating the real GamePass/Dev Product assets in
+Studio and pasting their IDs into `GameConfig.lua` (they're all placeholder
+`id = 0` right now).
 
 ## 10. Tech plan
 

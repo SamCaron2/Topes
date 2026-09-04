@@ -43,20 +43,13 @@ function ResetHandler.resetTier(player: Player, tierName: string)
 	return true, nil
 end
 
-function ResetHandler.ascend(player: Player)
-	local data = PlayerData.get(player)
-	if not data then
-		return false, "No data loaded"
-	end
-
+-- Applies the next Ascension tier's reset + rewards to data, unconditionally.
+-- Shared by the normal (requirement-gated) ascend and the Power Store's
+-- InstantAscend dev product, which skips the requirement check.
+local function applyNextAscension(data)
 	local nextTier = GameConfig.AscensionTiers[data.ascensionCount + 1]
 	if not nextTier then
-		return false, "No further Ascension tiers"
-	end
-
-	local gold = data.resources.Gold or 0
-	if gold < nextTier.requirement then
-		return false, "Requirement not met"
+		return nil
 	end
 
 	for _, tier in GameConfig.ResourceTiers do
@@ -73,7 +66,38 @@ function ResetHandler.ascend(player: Player)
 
 	data.ascensionCount += 1
 
-	return true, nextTier
+	return nextTier
+end
+
+function ResetHandler.ascend(player: Player)
+	local data = PlayerData.get(player)
+	if not data then
+		return false, "No data loaded"
+	end
+
+	local nextTier = GameConfig.AscensionTiers[data.ascensionCount + 1]
+	if not nextTier then
+		return false, "No further Ascension tiers"
+	end
+
+	local gold = data.resources.Gold or 0
+	if gold < nextTier.requirement then
+		return false, "Requirement not met"
+	end
+
+	local grantedTier = applyNextAscension(data)
+	return true, grantedTier
+end
+
+-- Bypasses the Gold requirement entirely - used by the Power Store's
+-- InstantAscend purchase. Still returns nil (no-op) if already at max tier.
+function ResetHandler.forceAscend(player: Player)
+	local data = PlayerData.get(player)
+	if not data then
+		return nil
+	end
+
+	return applyNextAscension(data)
 end
 
 return ResetHandler

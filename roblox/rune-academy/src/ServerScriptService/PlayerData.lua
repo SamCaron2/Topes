@@ -33,6 +33,8 @@ local function defaultData()
 		ascensionCount = 0,
 		robuxSpent = 0,
 		playtimeSeconds = 0,
+		ownedPasses = {}, -- [gamePassKey] = true, gates one-time gamepass grants from reapplying
+		purchaseHistory = {}, -- bounded list of processed receiptInfo.PurchaseId, guards against double-granting a dev product
 	}
 end
 
@@ -65,10 +67,14 @@ function PlayerData.load(player: Player)
 	return data
 end
 
-function PlayerData.save(player: Player)
+-- Returns true only if the save actually reached the DataStore. Callers that
+-- just granted something purchase-critical (dev products especially) should
+-- check this and avoid marking the purchase processed on failure, so Roblox's
+-- automatic ProcessReceipt retry can grant it again later instead of losing it.
+function PlayerData.save(player: Player): boolean
 	local data = sessions[player]
 	if not data then
-		return
+		return false
 	end
 
 	local success, err = pcall(function()
@@ -78,6 +84,8 @@ function PlayerData.save(player: Player)
 	if not success then
 		warn(("RuneAcademy: failed to save data for %s: %s"):format(player.Name, tostring(err)))
 	end
+
+	return success
 end
 
 function PlayerData.release(player: Player)
