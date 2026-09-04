@@ -181,7 +181,61 @@ the one manual step left: creating the real GamePass/Dev Product assets in
 Studio and pasting their IDs into `GameConfig.lua` (they're all placeholder
 `id = 0` right now).
 
-## 10. Tech plan
+## 10. Profile & Titles
+
+**"Main" profile screen** (not yet built as a UI, but the server side is —
+`GetProfile` RemoteFunction returns everything it needs): account name +
+avatar picture (drawn client-side from the `Player` instance / Roblox's
+thumbnail API, not stored by us), current Gold + Gems totals, playtime, and
+Robux spent. Same numbers driving the leaderboards, just scoped to you.
+
+**Titles** — one equipped at a time, shown as a colored label floating
+above the player's head (matches the reference screenshot). Unlocking and
+equipping are separate: earning a title just makes it selectable, players
+choose which one to actually display. This is a status/collection layer
+independent of the resource-chain — someone can be un-equipped and grinding
+quietly, or decked out in "Rich" showing off.
+
+| Title | Unlocks when | Color |
+|---|---|---|
+| OG | Joined within 24h of release | Gold |
+| Fan | Member of the game's Roblox group | Pink |
+| Newbie | 1 hour playtime | Gray |
+| Regular | 1 day playtime | Green |
+| VIP | 7 days playtime | Blue |
+| No Life | 30 days playtime | Purple |
+| Supporter | 100+ Robux spent | Teal |
+| Boss | 1,000+ Robux spent | Orange |
+| **Rich** | 10,000+ Robux spent | **Animated rainbow** |
+| Ultimate Spender | 100,000+ Robux spent | Red |
+| EliteGP | Owns the Elite gamepass | Cyan |
+| Tester | Manually granted | Mint |
+| Admin | Manually granted | Red |
+| Owner | Manually granted | Gold |
+
+The spend-gated titles (Supporter → Ultimate Spender) do double duty with
+the Power Store: they're free status rewards for the same spending that's
+already buying Power Surges, so a whale gets both mechanical power *and*
+visible rank from one purchase — reinforces the same loop rather than
+competing with it.
+
+Implementation: `GameConfig.Titles` defines the list + unlock conditions;
+`TitleHandler.lua` checks conditions (on join, after any purchase, and on
+a periodic sweep for playtime-based ones), persists unlocks + the equipped
+title in `PlayerData`, and mirrors the equipped title onto `Player`
+attributes so it replicates to every client automatically.
+`TitleDisplayClient.client.lua` reads those attributes and draws the
+`BillboardGui` above each player's head, including the rainbow animation
+for Rich. Tester/Admin/Owner are granted via UserId allowlists in
+`GameConfig` (`OwnerUserIds`/`AdminUserIds`/`TesterUserIds`) until an
+in-game admin command exists to grant them live.
+
+Three things need real values before these work as intended (see README):
+`GameConfig.ReleaseTimestampUnix` (for OG), `GameConfig.FanGroupId` (for
+Fan), and the UserId allowlists (for Tester/Admin/Owner) — all placeholder
+`nil`/`0`/`{}` right now.
+
+## 11. Tech plan
 
 - **Rojo**-based project (`default.project.json`) so this folder stays the
   source of truth and syncs into Roblox Studio — install the Rojo plugin
@@ -192,7 +246,7 @@ Studio and pasting their IDs into `GameConfig.lua` (they're all placeholder
   autosave, retry-on-fail) — start simple, harden before launch.
 - `NumberFormat` module shared client/server for suffix notation.
 
-## 11. Open questions for you
+## 12. Open questions for you
 
 - Final game name (placeholder: "Rune Academy")
 - Visual style: low-poly fantasy (matches source game's blocky look) vs.

@@ -9,6 +9,7 @@ local CollectionHandler = require(script.Parent.CollectionHandler)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
 local StoreHandler = require(script.Parent.StoreHandler) -- self-wires MarketplaceService on require
+local TitleHandler = require(script.Parent.TitleHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -34,6 +35,8 @@ local resetTierFunction = newRemoteFunction("ResetTier")
 local ascendFunction = newRemoteFunction("Ascend")
 local runePulledEvent = newRemoteEvent("RunePulledBroadcast") -- feeds the live-feed UI
 local requestPurchaseEvent = newRemoteEvent("RequestPurchase")
+local getProfileFunction = newRemoteFunction("GetProfile")
+local equipTitleFunction = newRemoteFunction("EquipTitle")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, node)
 	CollectionHandler.collectNode(player, node)
@@ -60,6 +63,31 @@ requestPurchaseEvent.OnServerEvent:Connect(function(player, kind, key)
 		StoreHandler.promptPurchase(player, kind, key)
 	end
 end)
+
+-- Feeds the "Main" profile screen: account name/picture are drawn client-side
+-- from the Player instance itself, everything else comes from here.
+getProfileFunction.OnServerInvoke = function(player)
+	local data = PlayerData.get(player)
+	if not data then
+		return nil
+	end
+
+	return {
+		gold = data.resources.Gold or 0,
+		gems = data.resources.Gems or 0,
+		playtimeSeconds = data.playtimeSeconds or 0,
+		robuxSpent = data.robuxSpent or 0,
+		unlockedTitles = data.unlockedTitles,
+		equippedTitle = data.equippedTitle,
+	}
+end
+
+equipTitleFunction.OnServerInvoke = function(player, key)
+	if key ~= nil and type(key) ~= "string" then
+		return false, "Invalid title key"
+	end
+	return TitleHandler.equipTitle(player, key)
+end
 
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered
 -- before any player join events fire from this point on.

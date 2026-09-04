@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local PlayerData = require(script.Parent.PlayerData)
 local ResetHandler = require(script.Parent.ResetHandler)
+local TitleHandler = require(script.Parent.TitleHandler)
 
 local StoreHandler = {}
 
@@ -109,6 +110,7 @@ function StoreHandler.processReceipt(receiptInfo)
 	applyGrant(data, product.grants)
 
 	data.robuxSpent = (data.robuxSpent or 0) + receiptInfo.CurrencySpent
+	TitleHandler.checkUnlocks(player)
 
 	table.insert(data.purchaseHistory, receiptInfo.PurchaseId)
 	while #data.purchaseHistory > PURCHASE_HISTORY_LIMIT do
@@ -164,27 +166,8 @@ function StoreHandler.grantGamePass(player: Player, pass)
 		data.robuxSpent = (data.robuxSpent or 0) + productInfo.PriceInRobux
 	end
 
+	TitleHandler.checkUnlocks(player) -- covers robuxSpent thresholds and the EliteGP gamePassOwned condition
 	PlayerData.save(player)
-end
-
-local DATA_LOAD_WAIT_TIMEOUT = 10
-local DATA_LOAD_POLL_INTERVAL = 0.5
-
--- PlayerData.load runs in its own PlayerAdded listener, which Roblox spawns
--- as an independent thread - a yield in it (the DataStore call) does not
--- block other PlayerAdded listeners from starting, so this can run before
--- data exists. Poll briefly rather than silently skipping verification.
-local function waitForData(player: Player)
-	local elapsed = 0
-	while elapsed < DATA_LOAD_WAIT_TIMEOUT do
-		local data = PlayerData.get(player)
-		if data then
-			return data
-		end
-		task.wait(DATA_LOAD_POLL_INTERVAL)
-		elapsed += DATA_LOAD_POLL_INTERVAL
-	end
-	return nil
 end
 
 -- Re-verifies gamepass ownership on join in case a purchase's
@@ -192,7 +175,7 @@ end
 -- game's store page while offline). Cheap since it's one call per pass, once
 -- per join, not on any hot path.
 function StoreHandler.reverifyGamePasses(player: Player)
-	local data = waitForData(player)
+	local data = PlayerData.waitForLoad(player)
 	if not data then
 		warn(("StoreHandler: gave up waiting for %s's data to verify gamepasses"):format(player.Name))
 		return

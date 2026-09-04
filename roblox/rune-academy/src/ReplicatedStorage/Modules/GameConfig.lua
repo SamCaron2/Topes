@@ -92,6 +92,57 @@ GameConfig.GamePasses = {
 	{ key = "FortunePass", id = 0, priceRobuxHint = 349, grants = { statMultiplier = { Fortune = 3 } } },
 	{ key = "AutoCollectPass", id = 0, priceRobuxHint = 249, grants = { autoCollect = true } },
 	{ key = "VIPFamiliar", id = 0, priceRobuxHint = 149, grants = { statAdd = { Familiar = 2 } } },
+	{ key = "ElitePass", id = 0, priceRobuxHint = 799, grants = { statMultiplier = { Power = 1.5, Fortune = 1.5 } } },
+}
+
+-- ============================================================================
+-- TITLES
+-- One equippable title per player, shown above their head (see
+-- TitleDisplayClient.client.lua). Every title needs: key (save-data id),
+-- displayName (shown in-game), color (Color3), and a condition that
+-- TitleHandler.lua checks to decide when it unlocks. rainbow = true
+-- overrides color with an animated hue cycle client-side.
+--
+-- condition.type options:
+--   "playtimeSeconds"  { value = seconds }              - data.playtimeSeconds >= value
+--   "robuxSpent"       { value = robux }                 - data.robuxSpent >= value
+--   "groupMember"                                        - player is in GameConfig.FanGroupId
+--   "gamePassOwned"    { passKey = "GamePassKey" }        - data.ownedPasses[passKey]
+--   "joinWindow"                                          - firstJoinedAt within OGWindowSeconds of ReleaseTimestampUnix
+--   "manual"                                              - never auto-unlocked; granted via
+--                                                            TitleHandler.grantManualTitle (admin/tester/owner allowlists, or a future admin command)
+-- ============================================================================
+
+-- Set this to the real launch time (os.time() value, e.g. via a one-off
+-- `print(os.time())` in a test server) before release so the OG title means
+-- something. Left nil until then - the OG condition never unlocks with it unset.
+GameConfig.ReleaseTimestampUnix = nil
+GameConfig.OGWindowSeconds = 24 * 60 * 60
+
+-- Your group's id (from the group's page URL) for the Fan title. 0 = disabled.
+GameConfig.FanGroupId = 0
+
+-- UserIds auto-granted their title on join. Fill in with real UserIds
+-- (yours included, for Owner) before shipping.
+GameConfig.OwnerUserIds = {}
+GameConfig.AdminUserIds = {}
+GameConfig.TesterUserIds = {}
+
+GameConfig.Titles = {
+	{ key = "OG", displayName = "OG", color = Color3.fromRGB(255, 215, 0), condition = { type = "joinWindow" } },
+	{ key = "Fan", displayName = "Fan", color = Color3.fromRGB(255, 105, 180), condition = { type = "groupMember" } },
+	{ key = "Newbie", displayName = "Newbie", color = Color3.fromRGB(170, 170, 170), condition = { type = "playtimeSeconds", value = 60 * 60 } },
+	{ key = "Regular", displayName = "Regular", color = Color3.fromRGB(100, 200, 120), condition = { type = "playtimeSeconds", value = 24 * 60 * 60 } },
+	{ key = "VIP", displayName = "VIP", color = Color3.fromRGB(80, 160, 255), condition = { type = "playtimeSeconds", value = 7 * 24 * 60 * 60 } },
+	{ key = "NoLife", displayName = "No Life", color = Color3.fromRGB(160, 80, 220), condition = { type = "playtimeSeconds", value = 30 * 24 * 60 * 60 } },
+	{ key = "Supporter", displayName = "Supporter", color = Color3.fromRGB(80, 220, 180), condition = { type = "robuxSpent", value = 100 } },
+	{ key = "Boss", displayName = "Boss", color = Color3.fromRGB(255, 140, 0), condition = { type = "robuxSpent", value = 1000 } },
+	{ key = "Rich", displayName = "Rich", color = Color3.fromRGB(255, 255, 255), rainbow = true, condition = { type = "robuxSpent", value = 10000 } },
+	{ key = "UltimateSpender", displayName = "Ultimate Spender", color = Color3.fromRGB(255, 0, 60), condition = { type = "robuxSpent", value = 100000 } },
+	{ key = "EliteGP", displayName = "EliteGP", color = Color3.fromRGB(0, 200, 255), condition = { type = "gamePassOwned", passKey = "ElitePass" } },
+	{ key = "Tester", displayName = "Tester", color = Color3.fromRGB(0, 255, 150), condition = { type = "manual" } },
+	{ key = "Admin", displayName = "Admin", color = Color3.fromRGB(255, 40, 40), condition = { type = "manual" } },
+	{ key = "Owner", displayName = "Owner", color = Color3.fromRGB(255, 215, 0), condition = { type = "manual" } },
 }
 
 return GameConfig

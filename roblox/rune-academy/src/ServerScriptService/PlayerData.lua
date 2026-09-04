@@ -35,11 +35,35 @@ local function defaultData()
 		playtimeSeconds = 0,
 		ownedPasses = {}, -- [gamePassKey] = true, gates one-time gamepass grants from reapplying
 		purchaseHistory = {}, -- bounded list of processed receiptInfo.PurchaseId, guards against double-granting a dev product
+		unlockedTitles = {}, -- [titleKey] = true
+		equippedTitle = nil,
+		firstJoinedAt = nil, -- os.time() the first time this player's data was ever loaded; drives the OG title
 	}
 end
 
 function PlayerData.get(player: Player)
 	return sessions[player]
+end
+
+local DATA_LOAD_WAIT_TIMEOUT = 10
+local DATA_LOAD_POLL_INTERVAL = 0.5
+
+-- Other server modules that need a player's data right at PlayerAdded (title
+-- checks, gamepass re-verification) can't assume PlayerData.load has finished:
+-- Roblox spawns each PlayerAdded listener as an independent thread, so a
+-- yield in load() (the DataStore call) doesn't block other listeners from
+-- starting. Poll briefly instead of racing it.
+function PlayerData.waitForLoad(player: Player)
+	local elapsed = 0
+	while elapsed < DATA_LOAD_WAIT_TIMEOUT do
+		local data = sessions[player]
+		if data then
+			return data
+		end
+		task.wait(DATA_LOAD_POLL_INTERVAL)
+		elapsed += DATA_LOAD_POLL_INTERVAL
+	end
+	return nil
 end
 
 function PlayerData.load(player: Player)
@@ -48,6 +72,9 @@ function PlayerData.load(player: Player)
 	end)
 
 	local data = (success and result) or defaultData()
+	if not data.firstJoinedAt then
+		data.firstJoinedAt = os.time()
+	end
 	sessions[player] = data
 
 	local leaderstats = Instance.new("Folder")
@@ -106,6 +133,17 @@ task.spawn(function()
 		task.wait(AUTOSAVE_INTERVAL)
 		for _, player in Players:GetPlayers() do
 			PlayerData.save(player)
+		end
+	end
+end)
+
+-- Drives the playtime-based titles (Newbie/Regular/VIP/No Life). Ticks every
+-- session in memory once a second rather than per-player loops.
+task.spawn(function()
+	while true do
+		task.wait(1)
+		for _, data in sessions do
+			data.playtimeSeconds = (data.playtimeSeconds or 0) + 1
 		end
 	end
 end)

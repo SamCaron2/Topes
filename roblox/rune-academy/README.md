@@ -42,26 +42,41 @@ Incremental/idle Roblox game. See `DESIGN.md` for the full system design
   Product purchases server-side, grants stat multipliers/Gems/Scrolls/an
   instant Ascension, tracks Robux spent for the leaderboard, and guards
   against double-granting a retried purchase.
+- `TitleHandler.lua` — unlocks and equips Titles (`GameConfig.Titles`),
+  mirrors the equipped one onto Player attributes.
+- `TitleDisplayClient.client.lua` — draws the equipped title above every
+  player's head, including the animated rainbow for Rich.
 
-## One manual step required before the store works
+## Manual steps required before everything works
 
-`GameConfig.DevProducts` and `GameConfig.GamePasses` list every product
-with a placeholder `id = 0`. In Studio: **Home → Monetize** (or the game's
-page on the Creator Dashboard) → create each GamePass and Developer
-Product listed there with matching prices, then paste the real asset ID
-back into `GameConfig.lua`. Nothing will prompt a real purchase until
-that's done — `StoreHandler.promptPurchase` silently no-ops on `id = 0` on
-purpose, so a half-configured store can't accidentally prompt Studio's
-test/placeholder asset IDs.
+1. **Power Store**: `GameConfig.DevProducts` and `GameConfig.GamePasses`
+   list every product with a placeholder `id = 0`. In Studio: **Home →
+   Monetize** (or the game's page on the Creator Dashboard) → create each
+   GamePass and Developer Product listed there with matching prices, then
+   paste the real asset ID back into `GameConfig.lua`. Nothing will prompt
+   a real purchase until that's done — `StoreHandler.promptPurchase`
+   silently no-ops on `id = 0` on purpose, so a half-configured store can't
+   accidentally prompt Studio's test/placeholder asset IDs.
+2. **Titles**: three `GameConfig` values are placeholders until you fill
+   them in —
+   - `ReleaseTimestampUnix` (nil right now): set to the real launch time so
+     the OG title means something. The OG condition never unlocks while
+     this is nil.
+   - `FanGroupId` (0 right now): your Roblox group's id, for the Fan title.
+   - `OwnerUserIds` / `AdminUserIds` / `TesterUserIds` (all empty): add your
+     own UserId to `OwnerUserIds` so you get the Owner title on join.
 
 ## Not yet built (next steps)
 
 - Actual UI (rune pull screen, upgrade tree tiles, leaderboards, codes
-  input, and a Store menu that fires `RequestPurchase`) — this is all
-  backend/logic scaffolding right now, no GUI.
+  input, a Store menu that fires `RequestPurchase`, a "Main" profile
+  screen that calls `GetProfile` and a title-picker that calls
+  `EquipTitle`) — this is all backend/logic scaffolding right now, no GUI.
 - The walkable upgrade tree layout + tile parts in the 3D world.
 - OrderedDataStore-backed leaderboards (Gold / Runes Opened / Playtime /
   Robux Spent, Global + F2P split).
 - Community codes module + redemption remote.
 - Familiar auto-collect loop (currently just a stat number + an
   `AutoCollectPass` flag, no actual passive collection behavior yet).
+- An in-game admin command to grant Tester/Admin manually instead of only
+  via the `GameConfig` UserId allowlists.
