@@ -13,6 +13,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local PlayerData = require(script.Parent.PlayerData)
+local FriendBoostHandler = require(script.Parent.FriendBoostHandler)
 
 local ResourceEngine = {}
 
@@ -117,6 +118,16 @@ local function floorTileMultiplier(zone, currencyKey: string, zoneState)
 	return multiplier
 end
 
+-- +10%/friend currently in this server, only for currencies flagged
+-- friendBoost = true (see GameConfig.FriendBoost).
+local function friendMultiplier(player: Player, currency): number
+	if not currency.friendBoost then
+		return 1
+	end
+	local friendCount = math.min(FriendBoostHandler.getFriendCount(player), GameConfig.FriendBoost.maxFriends)
+	return 1 + GameConfig.FriendBoost.perFriend * friendCount
+end
+
 -- source: "manual" (click/stand, player-initiated) uses Power; "auto"
 -- (Familiar passive ticks) uses Focus. See GameConfig.Stats for why.
 function ResourceEngine.getEffectiveRate(data, zoneKey: string, currencyKey: string, source: string): number
@@ -175,7 +186,7 @@ function ResourceEngine.collect(player: Player, zoneKey: string, currencyKey: st
 	end
 
 	local state = getCurrencyState(data, zoneKey, currencyKey)
-	local gained = ResourceEngine.getEffectiveRate(data, zoneKey, currencyKey, "manual")
+	local gained = ResourceEngine.getEffectiveRate(data, zoneKey, currencyKey, "manual") * friendMultiplier(player, currency)
 	state.amount += gained
 
 	return true, gained
@@ -295,11 +306,13 @@ function ResourceEngine.chainReset(player: Player, zoneKey: string, currencyKey:
 	end
 
 	local intoKey = currency.chainReset.into
+	local intoCurrency = ResourceEngine.findCurrency(zone, intoKey)
 	local intoState = getCurrencyState(data, zoneKey, intoKey)
-	intoState.amount += conversions
+	local grantedAmount = conversions * friendMultiplier(player, intoCurrency)
+	intoState.amount += grantedAmount
 	intoState.chainBonusMultiplier = (intoState.chainBonusMultiplier or 1) * currency.chainReset.intoStartMultiplier
 
-	return true, conversions, intoKey
+	return true, grantedAmount, intoKey
 end
 
 -- ============================================================================

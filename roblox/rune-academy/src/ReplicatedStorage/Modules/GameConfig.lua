@@ -91,6 +91,7 @@ GameConfig.Zones = {
 					{ cost = 500000, multiplier = 5 },
 				},
 				chainReset = nil, -- top of the Academy chain; spent on Ascension instead (see AscensionTiers)
+				friendBoost = true, -- +10%/friend in server (GameConfig.FriendBoost), applied when Essence chain-resets into Gold
 			},
 		},
 		floorTiles = {
@@ -323,6 +324,15 @@ GameConfig.AscensionTiers = {
 
 GameConfig.CollectionTickSeconds = 1
 GameConfig.AutoCollectYieldFraction = 0.5 -- Familiars collect at half a manual collect's rate, per Familiar
+
+-- Friend Boost: currencies with friendBoost = true (see Zones' Gold entry)
+-- get multiplied by 1 + (perFriend * friends currently in this server),
+-- capped at maxFriends. Tracked live by FriendBoostHandler.lua - never
+-- persisted, since it should reflect who's online with you right now.
+GameConfig.FriendBoost = {
+	perFriend = 0.10,
+	maxFriends = 20,
+}
 
 -- ============================================================================
 -- POWER STORE

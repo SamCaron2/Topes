@@ -56,6 +56,10 @@ monetization plan).
   mirrors the equipped one onto Player attributes.
 - `TitleDisplayClient.client.lua` — draws the equipped title above every
   player's head, including the animated rainbow for Rich.
+- `FriendBoostHandler.lua` — tracks how many of a player's Roblox friends
+  are in the same server (live, never saved); `ResourceEngine` applies
+  `GameConfig.FriendBoost` on top of any currency flagged
+  `friendBoost = true` (currently just Gold).
 
 ## Manual steps required before everything works
 

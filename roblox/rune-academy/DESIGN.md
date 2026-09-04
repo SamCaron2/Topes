@@ -124,6 +124,19 @@ single currency's own production math at once. They're the account-wide
 multiplier layer that makes progress in one zone carry over as a boost to
 every other zone.
 
+### Friend Boost
+
++10% Gold for every one of your Roblox friends currently in the same
+server (capped at 20 friends, `GameConfig.FriendBoost`), tracked live and
+never persisted — it reflects who's actually online with you right now,
+not a history. This is a virality lever: it gives players a concrete,
+immediate reason to invite friends into the *same* server rather than
+just recommending the game generally, and it stacks with everything else
+(Stats, Runes, Ascension), so a full server of friends is a real,
+visible boost. Any currency can opt into this by setting
+`friendBoost = true` on it in `GameConfig.Zones` — Gold is the only one
+flagged right now.
+
 ## 4. Walkable upgrade tree
 
 Physically laid out as a grid of tiles across the academy courtyard the
