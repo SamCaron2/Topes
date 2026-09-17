@@ -103,8 +103,6 @@ monetization plan).
 - Balance pass on `GameConfig.Zones`' numbers against the ~2 week
   completion target (see DESIGN.md's Pacing section) — current numbers are
   a reasonable first pass, not simulated/tuned.
-- `leaderstats.Gold` is set once on join and doesn't live-update as Gold
-  changes — needs a periodic sync from `data.zones.Academy.currencies.Gold.amount`.
 - **Save migration**: `PlayerData.load` uses whatever `zones` shape was
   saved for a returning player as-is. That's fine pre-launch since nothing
   is saved yet, but the moment real players exist, adding a 17th currency
