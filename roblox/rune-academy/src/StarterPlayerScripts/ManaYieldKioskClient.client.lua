@@ -21,6 +21,7 @@ local COLOR_CAN_BUY = Color3.fromRGB(70, 190, 60)
 local COLOR_CANT_AFFORD = Color3.fromRGB(200, 55, 55)
 local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
 local COLOR_MAXED_OUT = Color3.fromRGB(90, 90, 90)
+local TEXT_STROKE_TRANSPARENCY = 0.4 -- a subtle black outline behind every label, for a slight 3D look
 
 -- The card isn't rotated (its local axes match world axes), and it sits east
 -- of the platform, so the face pointing back at the player is the -X face -
@@ -58,21 +59,22 @@ titleText.BackgroundTransparency = 1
 titleText.Font = Enum.Font.GothamBold
 titleText.TextScaled = true
 titleText.TextColor3 = Color3.fromRGB(255, 220, 90)
-titleText.TextStrokeTransparency = 0.5
+titleText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 titleText.Text = "Mana Upgrades"
 titleText.Parent = titleBanner
 
 -- One column, left-aligned, with empty space to the right for more later.
+-- Generously spaced out top to bottom, not packed tight against each other.
 local column = Instance.new("Frame")
-column.Size = UDim2.new(0.3, 0, 0.75, 0)
-column.Position = UDim2.new(0.03, 0, 0.23, 0)
+column.Size = UDim2.new(0.32, 0, 0.78, 0)
+column.Position = UDim2.new(0.04, 0, 0.2, 0)
 column.BackgroundTransparency = 1
 column.Parent = background
 
 -- Fake icon for now - a plain circle standing in for a real Mana icon later.
 local iconFrame = Instance.new("Frame")
-iconFrame.Size = UDim2.new(0.6, 0, 0.3, 0)
-iconFrame.Position = UDim2.new(0.2, 0, 0, 0)
+iconFrame.Size = UDim2.new(0.55, 0, 0.22, 0)
+iconFrame.Position = UDim2.new(0.225, 0, 0, 0)
 iconFrame.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
 iconFrame.BorderSizePixel = 0
 iconFrame.Parent = column
@@ -86,57 +88,60 @@ iconCorner.CornerRadius = UDim.new(1, 0)
 iconCorner.Parent = iconFrame
 
 local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(1, 0, 0.13, 0)
-nameLabel.Position = UDim2.new(0, 0, 0.32, 0)
+nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
+nameLabel.Position = UDim2.new(0, 0, 0.28, 0)
 nameLabel.BackgroundTransparency = 1
 nameLabel.Font = Enum.Font.GothamBold
 nameLabel.TextScaled = true
 nameLabel.TextColor3 = Color3.fromRGB(255, 220, 90)
-nameLabel.TextStrokeTransparency = 0.6
+nameLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 nameLabel.Text = "More Mana"
 nameLabel.Parent = column
 
 local levelLabel = Instance.new("TextLabel")
-levelLabel.Size = UDim2.new(1, 0, 0.11, 0)
-levelLabel.Position = UDim2.new(0, 0, 0.46, 0)
+levelLabel.Size = UDim2.new(1, 0, 0.08, 0)
+levelLabel.Position = UDim2.new(0, 0, 0.4, 0)
 levelLabel.BackgroundTransparency = 1
 levelLabel.Font = Enum.Font.GothamBold
 levelLabel.TextScaled = true
 levelLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-levelLabel.TextStrokeTransparency = 0.6
+levelLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 levelLabel.Text = "(-/-)"
 levelLabel.Parent = column
 
 local yieldLabel = Instance.new("TextLabel")
-yieldLabel.Size = UDim2.new(1, 0, 0.11, 0)
-yieldLabel.Position = UDim2.new(0, 0, 0.58, 0)
+yieldLabel.Size = UDim2.new(1, 0, 0.08, 0)
+yieldLabel.Position = UDim2.new(0, 0, 0.5, 0)
 yieldLabel.BackgroundTransparency = 1
 yieldLabel.Font = Enum.Font.GothamBold
 yieldLabel.TextScaled = true
 yieldLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-yieldLabel.TextStrokeTransparency = 0.6
+yieldLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 yieldLabel.Text = "+- > +-"
 yieldLabel.Parent = column
 
 local costLabel = Instance.new("TextLabel")
-costLabel.Size = UDim2.new(1, 0, 0.1, 0)
-costLabel.Position = UDim2.new(0, 0, 0.7, 0)
+costLabel.Size = UDim2.new(1, 0, 0.08, 0)
+costLabel.Position = UDim2.new(0, 0, 0.6, 0)
 costLabel.BackgroundTransparency = 1
 costLabel.Font = Enum.Font.Gotham
 costLabel.TextScaled = true
 costLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-costLabel.TextStrokeTransparency = 0.6
+costLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 costLabel.Text = "Cost: -"
 costLabel.Parent = column
 
--- Bigger buttons spanning the bottom of the column.
+-- Buttons near the bottom, with clear space above them. UIPadding shrinks
+-- the area TextScaled fits into, so "Buy"/"Max" read smaller inside the box
+-- instead of stretching edge-to-edge.
 local buyButton = Instance.new("TextButton")
-buyButton.Size = UDim2.new(0.48, 0, 0.22, 0)
-buyButton.Position = UDim2.new(0, 0, 0.78, 0)
+buyButton.Size = UDim2.new(0.46, 0, 0.16, 0)
+buyButton.Position = UDim2.new(0, 0, 0.82, 0)
 buyButton.BackgroundColor3 = COLOR_CAN_BUY
 buyButton.Font = Enum.Font.GothamBold
 buyButton.TextScaled = true
 buyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+buyButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 buyButton.Text = "Buy"
 buyButton.Parent = column
 
@@ -144,19 +149,34 @@ local buyCorner = Instance.new("UICorner")
 buyCorner.CornerRadius = UDim.new(0.3, 0)
 buyCorner.Parent = buyButton
 
+local buyPadding = Instance.new("UIPadding")
+buyPadding.PaddingTop = UDim.new(0.22, 0)
+buyPadding.PaddingBottom = UDim.new(0.22, 0)
+buyPadding.PaddingLeft = UDim.new(0.15, 0)
+buyPadding.PaddingRight = UDim.new(0.15, 0)
+buyPadding.Parent = buyButton
+
 local maxButton = Instance.new("TextButton")
-maxButton.Size = UDim2.new(0.48, 0, 0.22, 0)
-maxButton.Position = UDim2.new(0.52, 0, 0.78, 0)
+maxButton.Size = UDim2.new(0.46, 0, 0.16, 0)
+maxButton.Position = UDim2.new(0.54, 0, 0.82, 0)
 maxButton.BackgroundColor3 = COLOR_MAX_ACTIVE
 maxButton.Font = Enum.Font.GothamBold
 maxButton.TextScaled = true
-maxButton.TextColor3 = Color3.fromRGB(60, 50, 0)
+maxButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+maxButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 maxButton.Text = "Max"
 maxButton.Parent = column
 
 local maxCorner = Instance.new("UICorner")
 maxCorner.CornerRadius = UDim.new(0.3, 0)
 maxCorner.Parent = maxButton
+
+local maxPadding = Instance.new("UIPadding")
+maxPadding.PaddingTop = UDim.new(0.22, 0)
+maxPadding.PaddingBottom = UDim.new(0.22, 0)
+maxPadding.PaddingLeft = UDim.new(0.15, 0)
+maxPadding.PaddingRight = UDim.new(0.15, 0)
+maxPadding.Parent = maxButton
 
 local currentMana = 0
 local nextLevelCost = nil -- nil once maxed

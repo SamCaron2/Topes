@@ -136,8 +136,8 @@ local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
 	card.CanCollide = true
 	card.Material = Enum.Material.SmoothPlastic
 	card.Color = Color3.fromRGB(45, 45, 60)
-	card.Size = Vector3.new(1, 13, 24)
-	card.CFrame = CFrame.new(centerX + offsetX, groundY + 6.5, centerZ + offsetZ)
+	card.Size = Vector3.new(1, 18, 26)
+	card.CFrame = CFrame.new(centerX + offsetX, groundY + 9, centerZ + offsetZ)
 	card.Parent = kiosksFolder
 	return card
 end

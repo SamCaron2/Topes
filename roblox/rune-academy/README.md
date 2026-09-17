@@ -107,9 +107,11 @@ design notes.
   just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`, wide and
   mostly empty on purpose so more upgrade columns can go left-to-right on
   the same board later). Styled like a typical incremental-game upgrades
-  board: a "Mana Upgrades" title banner across the top, then a column per
-  upgrade (currently just "More Mana") with a placeholder icon, level
-  `(x/20)`, a `+N > +N` yield preview, cost, and Buy/Max buttons. Its UI
+  board: a "Mana Upgrades" title banner across the top, then a
+  spaced-out column per upgrade (currently just "More Mana") with a
+  placeholder icon, level `(x/20)`, a `+N > +N` yield preview, cost, and
+  Buy/Max buttons (white text on both, padded so labels don't stretch
+  edge-to-edge, all text with a subtle stroke for a slight 3D look). Its UI
   is a `SurfaceGui` painted onto the card's face (not a `BillboardGui` -
   a Billboard always turns to face the camera, so it visibly slides
   around as you walk past; a SurfaceGui is flat against the physical
