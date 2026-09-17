@@ -110,7 +110,7 @@ end
 spawnManaNode()
 
 -- Upgrade cards live outside the platform, a few studs past the border.
--- ManaYieldKioskClient finds this part by name and builds its BillboardGui UI.
+-- ManaYieldKioskClient finds this part by name and builds its SurfaceGui UI.
 local kiosksFolder = Workspace:FindFirstChild("Kiosks")
 if kiosksFolder then
 	kiosksFolder:Destroy()
@@ -119,9 +119,10 @@ kiosksFolder = Instance.new("Folder")
 kiosksFolder.Name = "Kiosks"
 kiosksFolder.Parent = Workspace
 
--- Sized bigger than one upgrade needs so more slots can be added to the same
--- board later without rebuilding it. Rotated 90 degrees so its wide face
--- (not its thin edge) points back at the platform, toward the player.
+-- Wide and mostly empty on purpose: one upgrade column fills the left side,
+-- leaving room to add more columns left-to-right later without resizing the
+-- board. Thin along X (the approach direction), wide along Z, so its wide
+-- face - not its thin edge - points back at the platform, toward the player.
 local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
 	local card = Instance.new("Part")
 	card.Name = name
@@ -129,8 +130,8 @@ local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
 	card.CanCollide = true
 	card.Material = Enum.Material.SmoothPlastic
 	card.Color = Color3.fromRGB(45, 45, 60)
-	card.Size = Vector3.new(1, 14, 10) -- thin along X (the approach direction), wide along Z
-	card.CFrame = CFrame.new(centerX + offsetX, groundY + 7, centerZ + offsetZ)
+	card.Size = Vector3.new(1, 13, 24)
+	card.CFrame = CFrame.new(centerX + offsetX, groundY + 6.5, centerZ + offsetZ)
 	card.Parent = kiosksFolder
 	return card
 end

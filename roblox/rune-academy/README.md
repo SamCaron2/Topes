@@ -90,8 +90,10 @@ design notes.
 - `ManaHandler.lua` — server-authoritative Mana collection and its one
   upgrade so far: "Mana Per Pickup" (level 1-20, +1 Mana per pickup per
   level, level costs `level * 10` Mana — a placeholder linear curve).
-  Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones` for
-  now — a fresh, much simpler mechanic until the new vision needs more.
+  `buyYieldUpgrade` takes an optional `"max"` mode that buys as many
+  levels in a row as currently affordable. Deliberately kept separate
+  from `ResourceEngine`/`GameConfig.Zones` for now — a fresh, much
+  simpler mechanic until the new vision needs more.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
@@ -101,15 +103,18 @@ design notes.
   `CenterX`/`CenterZ`/`Size`/`GroundY`). `RING_RADIUS` is the one number
   to bump later for a "bigger collection ring" upgrade.
 - `ManaYieldKioskClient.client.lua` — the first 3D upgrade card, standing
-  just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`, sized
-  bigger than one upgrade needs so more slots can go on the same board
-  later). Its UI is a `SurfaceGui` painted onto the card's face (not a
-  `BillboardGui` - a Billboard always turns to face the camera, so it
-  visibly slides around as you walk past; a SurfaceGui is flat against
-  the physical face, unreadable from behind, exactly like a real sign).
-  Shows the current "Mana Per Pickup" level, current yield, and a Buy
-  button for the next level, wired to
-  `GetManaYieldState`/`BuyManaYieldUpgrade`.
+  just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`, wide and
+  mostly empty on purpose so more upgrade columns can go left-to-right on
+  the same board later). Styled like a typical incremental-game upgrades
+  board: a "Mana Upgrades" title banner across the top, then a column per
+  upgrade (currently just "More Mana") with a placeholder icon, level
+  `(x/20)`, a `+N > +N` yield preview, cost, and Buy/Max buttons. Its UI
+  is a `SurfaceGui` painted onto the card's face (not a `BillboardGui` -
+  a Billboard always turns to face the camera, so it visibly slides
+  around as you walk past; a SurfaceGui is flat against the physical
+  face, unreadable from behind, exactly like a real sign). Wired to
+  `GetManaYieldState`/`BuyManaYieldUpgrade` (the latter takes `"one"` or
+  `"max"` - Max buys as many levels in a row as currently affordable).
 
 ## Manual steps required before everything works
 

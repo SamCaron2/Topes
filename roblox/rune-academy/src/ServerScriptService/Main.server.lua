@@ -178,8 +178,11 @@ getManaYieldStateFunction.OnServerInvoke = function(player)
 	return ManaHandler.getYieldUpgradeState(player)
 end
 
-buyManaYieldUpgradeFunction.OnServerInvoke = function(player)
-	local success, err, newState = ManaHandler.buyYieldUpgrade(player)
+buyManaYieldUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = ManaHandler.buyYieldUpgrade(player, mode)
 	if success then
 		manaUpdatedEvent:FireClient(player, newState.mana)
 	end

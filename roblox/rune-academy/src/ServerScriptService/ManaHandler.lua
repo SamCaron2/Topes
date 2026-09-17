@@ -48,7 +48,10 @@ function ManaHandler.getYieldUpgradeState(player: Player)
 	}
 end
 
-function ManaHandler.buyYieldUpgrade(player: Player)
+-- mode "one" (default) buys a single level; "max" buys as many levels in a
+-- row as the player can currently afford (at least one, or it fails same as
+-- "one" would).
+function ManaHandler.buyYieldUpgrade(player: Player, mode: string?)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
@@ -65,7 +68,16 @@ function ManaHandler.buyYieldUpgrade(player: Player)
 	end
 
 	data.mana -= cost
-	data.manaYieldLevel = level + 1
+	level += 1
+
+	if mode == "max" then
+		while level < MAX_YIELD_LEVEL and data.mana >= costForLevel(level) do
+			data.mana -= costForLevel(level)
+			level += 1
+		end
+	end
+
+	data.manaYieldLevel = level
 
 	return true, nil, ManaHandler.getYieldUpgradeState(player)
 end
