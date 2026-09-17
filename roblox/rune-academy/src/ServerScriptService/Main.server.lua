@@ -33,6 +33,7 @@ local collectNodeEvent = newRemoteEvent("CollectNode") -- args: zoneKey, currenc
 local buyUpgradeFunction = newRemoteFunction("BuyUpgrade") -- args: zoneKey, currencyKey, slotId, mode ("one"|"max")
 local selfPrestigeFunction = newRemoteFunction("SelfPrestige") -- args: zoneKey, currencyKey
 local chainResetFunction = newRemoteFunction("ChainReset") -- args: zoneKey, currencyKey
+local sellCurrencyFunction = newRemoteFunction("SellCurrency") -- args: zoneKey, currencyKey
 local buyFloorTileFunction = newRemoteFunction("BuyFloorTile") -- args: zoneKey, tileKey
 local pullRuneFunction = newRemoteFunction("PullRune")
 local ascendFunction = newRemoteFunction("Ascend")
@@ -70,6 +71,13 @@ chainResetFunction.OnServerInvoke = function(player, zoneKey, currencyKey)
 	return ResourceEngine.chainReset(player, zoneKey, currencyKey)
 end
 
+sellCurrencyFunction.OnServerInvoke = function(player, zoneKey, currencyKey)
+	if type(zoneKey) ~= "string" or type(currencyKey) ~= "string" then
+		return false, "Invalid request"
+	end
+	return ResourceEngine.sellCurrency(player, zoneKey, currencyKey)
+end
+
 buyFloorTileFunction.OnServerInvoke = function(player, zoneKey, tileKey)
 	if type(zoneKey) ~= "string" or type(tileKey) ~= "string" then
 		return false, "Invalid request"
@@ -104,7 +112,7 @@ getProfileFunction.OnServerInvoke = function(player)
 	end
 
 	return {
-		gold = data.zones.Academy.currencies.Gold.amount or 0,
+		coins = data.zones.Academy.currencies.Coins.amount or 0,
 		gems = data.gems or 0,
 		playtimeSeconds = data.playtimeSeconds or 0,
 		robuxSpent = data.robuxSpent or 0,

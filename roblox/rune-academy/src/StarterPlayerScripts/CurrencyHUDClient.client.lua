@@ -6,13 +6,12 @@
 
 local Players = game:GetService("Players")
 
-local ROW_ORDER = { "Mana", "Essence", "Gold", "Scrolls", "Gems" }
+local ROW_ORDER = { "Mana", "Coins", "Scrolls", "Gems" }
 
 -- Small colored square stands in for a real icon until actual art exists.
 local ROW_COLORS = {
 	Mana = Color3.fromRGB(150, 100, 240),
-	Essence = Color3.fromRGB(90, 200, 200),
-	Gold = Color3.fromRGB(230, 190, 60),
+	Coins = Color3.fromRGB(230, 190, 60),
 	Scrolls = Color3.fromRGB(220, 160, 90),
 	Gems = Color3.fromRGB(90, 220, 230),
 }

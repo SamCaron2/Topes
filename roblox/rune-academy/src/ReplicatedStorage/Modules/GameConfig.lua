@@ -4,37 +4,31 @@ local GameConfig = {}
 
 -- ============================================================================
 -- ZONES & CURRENCIES
--- 16 currencies total, grouped into zones that unlock progressively via
--- Ascension count. Every currency runs on the same generic engine
--- (ResourceEngine.lua) through three independent, stackable layers:
+-- Grouped into zones that unlock progressively via Ascension count. Every
+-- currency runs on the same generic engine (ResourceEngine.lua) - see that
+-- file's header for the full breakdown of every layer a currency can use
+-- (collect/upgrades incl. tickInterval+sellRate kinds and cross-currency
+-- costCurrency, selfPrestige, chainReset, sellInto). Quick summary:
 --
---   1. upgrades       - 3 resettable production-multiplier slots per
---                        currency (the "More X / More X II / Faster X"
---                        buttons). Reset by that currency's own chainReset.
---   2. selfPrestige    - an ordered list of {cost, multiplier} tiers, each
---                        spendable once in order. Buying one resets this
---                        currency's amount + upgrade levels but permanently
---                        multiplies its base rate going forward - the
---                        "Prestige 1: 10k Shells -> resets Shells, starts
---                        at x5" mechanic. Optional; omit for currencies
---                        that don't have it.
---   3. chainReset      - converts the currency into the NEXT one in its
---                        zone's chain once `requirement` is reached.
---                        Grants floor(amount / requirement) of the next
---                        currency and permanently bumps that next
---                        currency's base rate by intoStartMultiplier,
---                        stacking every time you reset into it (so the
---                        more you've cycled Tier 1, the faster Tier 2
---                        starts out). Omit on a chain's top currency.
+--   collectMode: "click" (tap a node), "stand" (stand on a part while it
+--   ticks), or "chainOnly" (never collected directly - only gained via a
+--   previous currency's chainReset or sellInto, like Coins, or
+--   Copper/Tin/Steel/Mithril above tier 1).
 --
--- collectMode: "click" (tap a node), "stand" (stand on a part while it
--- ticks), or "chainOnly" (never collected directly - only gained via a
--- previous currency's chainReset, like Essence/Gold/Iron/Sand above tier 1).
+--   upgrades - N resettable slots per currency, each optionally costing a
+--   DIFFERENT currency than the one it upgrades (costCurrency).
 --
--- Every currency's effective production rate is:
---   baseRate * (upgrade slot multipliers) * selfPrestige multiplier
---   * chainReset intoStartMultiplier bonus * floor tile multipliers
---   * global Stats (Power for click, Focus for stand/tick - see Stats below)
+--   selfPrestige - an ordered list of {cost, multiplier} tiers, each
+--   spendable once in order. Buying one resets this currency's amount +
+--   upgrade levels but permanently multiplies its base rate going forward
+--   - the "Prestige 1: 10k Shells -> resets Shells, starts at x5"
+--   mechanic. Optional; omit for currencies that don't have it.
+--
+--   chainReset - converts the currency into the NEXT one in its zone's
+--   chain once a THRESHOLD is reached, resetting this currency's
+--   upgrades. sellInto is the alternative for currencies you cash out of
+--   continuously instead (see ResourceEngine.sellCurrency) - Mana uses
+--   sellInto, not chainReset.
 --
 -- All numbers below are a reasonable FIRST PASS aimed at the "~2 weeks of
 -- casual F2P play to fully complete" target, not final balance - see
@@ -96,46 +90,67 @@ GameConfig.Zones = {
 			{
 				key = "Mana",
 				displayName = "Mana",
-				collectMode = "click",
-				baseRate = 1,
-				upgrades = standardUpgrades("Mana", 10),
-				selfPrestigeTiers = {
-					{ cost = 10000, multiplier = 5 },
-					{ cost = 100000, multiplier = 4 },
-					{ cost = 1000000, multiplier = 3 },
+				collectMode = "stand",
+				baseRate = 1, -- Mana granted per tick, before the MoreManaPerTick upgrade
+				upgrades = {
+					-- 9 purchases: 1.0s -> 0.1s in clean 0.1s steps (10 distinct
+					-- speeds total, including the free starting one). A duration
+					-- upgrade, not a multiplier - see kind = "tickInterval" in
+					-- ResourceEngine.getCollectDebounceSeconds.
+					{
+						id = "FasterMana",
+						displayName = "Scrap Respawn",
+						kind = "tickInterval",
+						maxLevel = 9,
+						tickIntervalBase = 1.0,
+						tickIntervalStep = 0.1,
+						baseCost = 25,
+						costGrowth = 1.8,
+						costCurrency = "Coins", -- bought with what Mana converts INTO, not Mana itself
+					},
+					{
+						id = "MoreManaPerTick",
+						displayName = "More Mana",
+						kind = "yield", -- default; explicit here since its sibling slots aren't
+						maxLevel = 10,
+						baseCost = 10,
+						costGrowth = 1.8,
+						multiplierPerLevel = 1.3,
+						costCurrency = "Coins",
+					},
+					{
+						id = "MoreCoins",
+						displayName = "More Coins",
+						kind = "sellRate", -- boosts sellInto's rate below, not Mana's own production
+						maxLevel = 10,
+						baseCost = 50,
+						costGrowth = 1.8,
+						multiplierPerLevel = 1.3,
+						costCurrency = "Coins",
+					},
 				},
-				chainReset = { requirement = 5000000, into = "Essence", intoStartMultiplier = 1.05, grantsScrolls = 1 },
+				-- Convert Mana -> Coins at any time, any amount - not a
+				-- threshold-gated chainReset (see ResourceEngine.sellCurrency).
+				sellInto = {
+					into = "Coins",
+					baseRate = 10, -- Coins per unit Mana before the MoreCoins upgrade
+					rateSlotId = "MoreCoins",
+					grantsScrolls = 1, -- a Scroll per Convert action, so Runes are reachable through play
+				},
 			},
 			{
-				key = "Essence",
-				displayName = "Essence",
-				collectMode = "chainOnly",
+				key = "Coins",
+				displayName = "Coins",
+				collectMode = "chainOnly", -- never collected directly; only gained by selling Mana
 				baseRate = 1,
-				upgrades = standardUpgrades("Essence", 50),
-				selfPrestigeTiers = {
-					{ cost = 50000, multiplier = 5 },
-					{ cost = 500000, multiplier = 4 },
-				},
-				chainReset = { requirement = 1e7, into = "Gold", intoStartMultiplier = 1.05 },
-			},
-			{
-				key = "Gold",
-				displayName = "Gold",
-				collectMode = "chainOnly",
-				baseRate = 1,
-				upgrades = standardUpgrades("Gold", 200),
-				selfPrestigeTiers = {
-					{ cost = 500000, multiplier = 5 },
-				},
-				chainReset = nil, -- top of the Academy chain; spent on Ascension instead (see AscensionTiers)
-				friendBoost = true, -- +10%/friend in server (GameConfig.FriendBoost), applied when Essence chain-resets into Gold
+				upgrades = {}, -- nothing spends Coins to boost Coins yet - add here when that's designed
+				friendBoost = true, -- +10%/friend in server (GameConfig.FriendBoost), applied when Mana sells into Coins
 			},
 		},
 		floorTiles = {
 			boostTile("ManaVein1", "Mana Vein I", "Mana", "Mana", 500000),
-			expandTile("ExpandAcademy1", "Expand Map", "Gold", 1e6),
+			expandTile("ExpandAcademy1", "Expand Map", "Coins", 1e6),
 			boostTile("ManaVein2", "Mana Vein II", "Mana", "Mana", 5000000, { requiresTile = "ExpandAcademy1" }),
-			boostTile("EssenceWell1", "Essence Well I", "Essence", "Essence", 1000000, { requiresTile = "ExpandAcademy1" }),
 		},
 	},
 	{
@@ -328,38 +343,39 @@ GameConfig.RuneRanks = {
 
 GameConfig.ScrollCostPerPull = 1
 
--- Ascension tiers. requirement is measured in Academy Gold at time of
--- ascending (Gold is the top of the Academy chain - our equivalent of the
--- reference game's "Cash used for rebirths"). Reaching a tier also unlocks
--- the next Zone (see Zones' unlockRequirement = { type = "ascensionCount" }),
+-- Ascension tiers. requirement is measured in Academy Coins at time of
+-- ascending (Coins is the persistent, always-usable currency - our
+-- equivalent of the reference game's "Cash used for rebirths"). Reaching
+-- a tier also unlocks the next Zone (see Zones' unlockRequirement =
+-- { type = "ascensionCount" }),
 -- which is what paces zone-by-zone progress toward the ~2 week completion
 -- target instead of everything being available at once.
 GameConfig.AscensionTiers = {
 	{
 		name = "Ascension I",
 		requirementZone = "Academy",
-		requirementCurrency = "Gold",
+		requirementCurrency = "Coins",
 		requirement = 1e7,
 		rewards = { statMultiplierAll = 2, unlocksRuneRankIndex = 2 },
 	},
 	{
 		name = "Ascension II",
 		requirementZone = "Academy",
-		requirementCurrency = "Gold",
+		requirementCurrency = "Coins",
 		requirement = 1e9,
 		rewards = { autoCollect = true, hasteBonus = 5, unlocksRuneRankIndex = 4 },
 	},
 	{
 		name = "Ascension III",
 		requirementZone = "Academy",
-		requirementCurrency = "Gold",
+		requirementCurrency = "Coins",
 		requirement = 1e12,
 		rewards = { statMultiplierAll = 2, unlocksRuneRankIndex = 6 },
 	},
 	{
 		name = "Ascension IV",
 		requirementZone = "Academy",
-		requirementCurrency = "Gold",
+		requirementCurrency = "Coins",
 		requirement = 1e15,
 		rewards = { statMultiplierAll = 2 },
 	},
@@ -368,7 +384,7 @@ GameConfig.AscensionTiers = {
 GameConfig.CollectionTickSeconds = 1
 GameConfig.AutoCollectYieldFraction = 0.5 -- Familiars collect at half a manual collect's rate, per Familiar
 
--- Friend Boost: currencies with friendBoost = true (see Zones' Gold entry)
+-- Friend Boost: currencies with friendBoost = true (see Zones' Coins entry)
 -- get multiplied by 1 + (perFriend * friends currently in this server),
 -- capped at maxFriends. Tracked live by FriendBoostHandler.lua - never
 -- persisted, since it should reflect who's online with you right now.
@@ -387,7 +403,7 @@ GameConfig.FriendBoost = {
 --   statMultiplierAll: number, multiplies EVERY current stat (repeatable, stacks per purchase)
 --   statMultiplier   : { StatName = number }, multiplies named stats (gamepass, applied once)
 --   statAdd          : { StatName = number }, adds flat amount to named stats (gamepass, applied once)
---   instantAscend    : true, forces the next Ascension tier regardless of Gold requirement
+--   instantAscend    : true, forces the next Ascension tier regardless of Coins requirement
 --   autoCollect      : true, flags AutoCollectPass owned (read by the future Familiar auto-collect loop)
 -- ============================================================================
 

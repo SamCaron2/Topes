@@ -1,7 +1,8 @@
 -- Builds a BillboardGui "board" on every UpgradeKiosk part WorldBuilder
 -- creates (one per currency). This is the 3D-world equivalent of the old
--- screen-corner Mana panel - upgrade cards, self-prestige, and chain-reset,
--- generalized to work for any currency instead of hardcoded to one.
+-- screen-corner Mana panel - upgrade cards, self-prestige, chain-reset,
+-- and Convert (sellInto), generalized to work for any currency instead of
+-- hardcoded to one.
 --
 -- BillboardGui.Size's Scale component is measured in studs (not
 -- screen-relative like a ScreenGui), so this genuinely appears as a
@@ -22,6 +23,7 @@ local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local buyUpgradeFunction = remotes:WaitForChild("BuyUpgrade")
 local chainResetFunction = remotes:WaitForChild("ChainReset")
+local sellCurrencyFunction = remotes:WaitForChild("SellCurrency")
 local selfPrestigeFunction = remotes:WaitForChild("SelfPrestige")
 local getCurrencyStateFunction = remotes:WaitForChild("GetCurrencyState")
 
@@ -43,8 +45,34 @@ local function findCurrency(zone, currencyKey: string)
 	return nil
 end
 
+local function findUpgradeSlot(currency, slotId: string)
+	for _, slot in currency.upgrades do
+		if slot.id == slotId then
+			return slot
+		end
+	end
+	return nil
+end
+
 local function upgradeCost(slot, level: number): number
 	return slot.baseCost * (slot.costGrowth ^ level)
+end
+
+-- What a slot's card should say about its EFFECT (separate from cost/level,
+-- which every kind shows the same way) - differs by kind since a
+-- "tickInterval" slot's number is a duration, a "sellRate" slot's number
+-- feeds a conversion rate elsewhere, and "yield" (the default) multiplies
+-- this currency's own production, same as before.
+local function describeEffect(currency, slot, level: number): string
+	if slot.kind == "tickInterval" then
+		local interval = slot.tickIntervalBase - (level * slot.tickIntervalStep)
+		return ("%.1fs / collect"):format(interval)
+	elseif slot.kind == "sellRate" then
+		local rate = currency.sellInto.baseRate * (slot.multiplierPerLevel ^ level)
+		return ("x%s %s"):format(NumberFormat.format(rate), currency.sellInto.into)
+	else
+		return ("x%s %s"):format(NumberFormat.format(slot.multiplierPerLevel ^ level), currency.displayName)
+	end
 end
 
 local function buildKioskGui(part: BasePart, zoneKey: string, currencyKey: string)
@@ -104,6 +132,10 @@ local function buildKioskGui(part: BasePart, zoneKey: string, currencyKey: strin
 	local slotRows = {}
 
 	for index, slot in currency.upgrades do
+		local costCurrencyKey = slot.costCurrency or currencyKey
+		local costCurrency = findCurrency(zone, costCurrencyKey)
+		local costCurrencyName = costCurrency and costCurrency.displayName or costCurrencyKey
+
 		local card = Instance.new("Frame")
 		card.LayoutOrder = 2 + index
 		card.Size = UDim2.new(1, 0, 0, 50)
@@ -133,34 +165,45 @@ local function buildKioskGui(part: BasePart, zoneKey: string, currencyKey: strin
 		levelLabel.Text = "0/" .. slot.maxLevel
 		levelLabel.Parent = card
 
+		local effectLabel = Instance.new("TextLabel")
+		effectLabel.Position = UDim2.new(0, 8, 0, 22)
+		effectLabel.Size = UDim2.new(1, -16, 0, 14)
+		effectLabel.BackgroundTransparency = 1
+		effectLabel.Font = Enum.Font.Gotham
+		effectLabel.TextSize = 11
+		effectLabel.TextColor3 = Color3.fromRGB(200, 220, 255)
+		effectLabel.TextXAlignment = Enum.TextXAlignment.Left
+		effectLabel.Text = describeEffect(currency, slot, 0)
+		effectLabel.Parent = card
+
 		local costLabel = Instance.new("TextLabel")
-		costLabel.Position = UDim2.new(0, 8, 0, 24)
-		costLabel.Size = UDim2.new(0.5, -8, 0, 16)
+		costLabel.Position = UDim2.new(0, 8, 0, 34)
+		costLabel.Size = UDim2.new(0.5, -8, 0, 14)
 		costLabel.BackgroundTransparency = 1
 		costLabel.Font = Enum.Font.Gotham
-		costLabel.TextSize = 12
+		costLabel.TextSize = 11
 		costLabel.TextColor3 = Color3.fromRGB(180, 220, 180)
 		costLabel.TextXAlignment = Enum.TextXAlignment.Left
-		costLabel.Text = "Cost: ..."
+		costLabel.Text = ("Cost: %s %s"):format(NumberFormat.format(upgradeCost(slot, 0)), costCurrencyName)
 		costLabel.Parent = card
 
 		local buyButton = Instance.new("TextButton")
-		buyButton.Position = UDim2.new(0.55, 0, 0, 22)
-		buyButton.Size = UDim2.new(0.2, -4, 0, 20)
+		buyButton.Position = UDim2.new(0.55, 0, 0, 32)
+		buyButton.Size = UDim2.new(0.2, -4, 0, 16)
 		buyButton.BackgroundColor3 = Color3.fromRGB(80, 170, 90)
 		buyButton.Font = Enum.Font.GothamBold
-		buyButton.TextSize = 12
+		buyButton.TextSize = 11
 		buyButton.TextColor3 = Color3.new(1, 1, 1)
 		buyButton.Text = "Buy"
 		buyButton.Parent = card
 		Instance.new("UICorner", buyButton).CornerRadius = UDim.new(0, 6)
 
 		local maxButton = Instance.new("TextButton")
-		maxButton.Position = UDim2.new(0.77, 0, 0, 22)
-		maxButton.Size = UDim2.new(0.23, 0, 0, 20)
+		maxButton.Position = UDim2.new(0.77, 0, 0, 32)
+		maxButton.Size = UDim2.new(0.23, 0, 0, 16)
 		maxButton.BackgroundColor3 = Color3.fromRGB(190, 170, 60)
 		maxButton.Font = Enum.Font.GothamBold
-		maxButton.TextSize = 12
+		maxButton.TextSize = 11
 		maxButton.TextColor3 = Color3.new(1, 1, 1)
 		maxButton.Text = "Max"
 		maxButton.Parent = card
@@ -173,7 +216,7 @@ local function buildKioskGui(part: BasePart, zoneKey: string, currencyKey: strin
 			buyUpgradeFunction:InvokeServer(zoneKey, currencyKey, slot.id, "max")
 		end)
 
-		slotRows[slot.id] = { costLabel = costLabel, levelLabel = levelLabel }
+		slotRows[slot.id] = { costLabel = costLabel, levelLabel = levelLabel, effectLabel = effectLabel, costCurrencyName = costCurrencyName }
 	end
 
 	local prestigeButton
@@ -212,6 +255,41 @@ local function buildKioskGui(part: BasePart, zoneKey: string, currencyKey: strin
 		end)
 	end
 
+	-- "Convert" section: sell ANY amount of this currency into sellInto.into
+	-- at any time (no threshold) - a different button from chain-reset above
+	-- since it's a genuinely different mechanic (see ResourceEngine.sellCurrency).
+	local convertRateLabel, convertButton
+	if currency.sellInto then
+		convertRateLabel = Instance.new("TextLabel")
+		convertRateLabel.LayoutOrder = 12
+		convertRateLabel.Size = UDim2.new(1, 0, 0, 16)
+		convertRateLabel.BackgroundTransparency = 1
+		convertRateLabel.Font = Enum.Font.Gotham
+		convertRateLabel.TextSize = 12
+		convertRateLabel.TextColor3 = Color3.fromRGB(220, 220, 150)
+		convertRateLabel.Text = ("1 %s = %s %s"):format(
+			currency.displayName,
+			NumberFormat.format(currency.sellInto.baseRate),
+			currency.sellInto.into
+		)
+		convertRateLabel.Parent = mainFrame
+
+		convertButton = Instance.new("TextButton")
+		convertButton.LayoutOrder = 13
+		convertButton.Size = UDim2.new(1, 0, 0, 30)
+		convertButton.BackgroundColor3 = Color3.fromRGB(190, 160, 60)
+		convertButton.Font = Enum.Font.GothamBold
+		convertButton.TextSize = 14
+		convertButton.TextColor3 = Color3.new(1, 1, 1)
+		convertButton.Text = ("Convert %s"):format(currency.displayName)
+		convertButton.Parent = mainFrame
+		Instance.new("UICorner", convertButton).CornerRadius = UDim.new(0, 6)
+
+		convertButton.MouseButton1Click:Connect(function()
+			sellCurrencyFunction:InvokeServer(zoneKey, currencyKey)
+		end)
+	end
+
 	local function refresh()
 		local state = getCurrencyStateFunction:InvokeServer(zoneKey, currencyKey)
 		if not state then
@@ -224,14 +302,24 @@ local function buildKioskGui(part: BasePart, zoneKey: string, currencyKey: strin
 			row.levelLabel.Text = level .. "/" .. slot.maxLevel
 			if level >= slot.maxLevel then
 				row.costLabel.Text = "MAXED"
+				row.effectLabel.Text = describeEffect(currency, slot, level)
 			else
-				row.costLabel.Text = "Cost: " .. NumberFormat.format(upgradeCost(slot, level))
+				row.effectLabel.Text = describeEffect(currency, slot, level)
+				row.costLabel.Text = ("Cost: %s %s"):format(NumberFormat.format(upgradeCost(slot, level)), row.costCurrencyName)
 			end
 		end
 
 		if prestigeButton then
 			local tier = currency.selfPrestigeTiers[state.selfPrestigeTier + 1]
 			prestigeButton.Text = tier and ("Prestige (" .. NumberFormat.format(tier.cost) .. ")") or "Prestige (MAXED)"
+		end
+
+		if convertRateLabel then
+			local rateSlot = currency.sellInto.rateSlotId and findUpgradeSlot(currency, currency.sellInto.rateSlotId)
+			local rateLevel = rateSlot and (state.upgradeLevels[rateSlot.id] or 0) or 0
+			local rateMultiplier = rateSlot and (rateSlot.multiplierPerLevel ^ rateLevel) or 1
+			local rate = currency.sellInto.baseRate * rateMultiplier
+			convertRateLabel.Text = ("1 %s = %s %s"):format(currency.displayName, NumberFormat.format(rate), currency.sellInto.into)
 		end
 	end
 
@@ -242,9 +330,9 @@ local function buildKioskGui(part: BasePart, zoneKey: string, currencyKey: strin
 		end
 	end)
 
-	-- Only currencies with a leaderstat (Mana/Essence/Gold right now) show a
-	-- live amount here; others stay at "0" until they're reachable and get
-	-- their own leaderstat added, same as everywhere else in the UI.
+	-- Only currencies with a leaderstat (Mana/Coins right now) show a live
+	-- amount here; others stay at "0" until they're reachable and get their
+	-- own leaderstat added, same as everywhere else in the UI.
 	local leaderstats = player:WaitForChild("leaderstats")
 	local stat = leaderstats:FindFirstChild(currencyKey)
 	if stat then

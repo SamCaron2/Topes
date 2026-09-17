@@ -3,11 +3,26 @@
 -- keep it that way; if a new mechanic needs code here, it needs a config
 -- field here too, not a one-off branch for a specific currency's key.
 --
--- Four layers per currency, all server-authoritative:
---   1. collect        - manual (click/stand) production, Power-scaled
---   2. upgrades        - 3 resettable multiplier slots
+-- Layers per currency, all server-authoritative (a currency uses whichever
+-- of these its config declares - none are required):
+--   1. collect        - click/stand production, Power-scaled. An upgrade
+--                        slot with kind = "tickInterval" controls how often
+--                        this can fire (a real duration, not a multiplier);
+--                        kind = "yield" (the default) instead multiplies
+--                        the amount granted per collect.
+--   2. upgrades        - N resettable slots per currency (see kinds above,
+--                        plus "sellRate" which boosts sellInto's rate
+--                        instead of this currency's own production).
+--                        Each slot's cost is normally in the currency's own
+--                        amount, but can be a DIFFERENT currency via
+--                        costCurrency (e.g. Mana's upgrades cost Coins).
 --   3. selfPrestige     - ordered {cost, multiplier} tiers, resets amount+upgrades, permanent multiplier
---   4. chainReset       - converts into the next currency once a threshold is hit, permanent bonus to that currency
+--   4. chainReset       - converts into the next currency once a THRESHOLD is hit, resets this currency's upgrades, permanent bonus to that next currency
+--   5. sellInto         - converts into another currency at an upgradeable
+--                        rate, ANY amount ANY time (no threshold, no
+--                        upgrade reset) - a different mechanic from
+--                        chainReset, for currencies you cash out of
+--                        continuously rather than accumulate-then-reset.
 -- Floor tiles are a separate, never-reset permanent multiplier per currency.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,8 +33,8 @@ local FriendBoostHandler = require(script.Parent.FriendBoostHandler)
 local ResourceEngine = {}
 
 local MAX_COLLECT_DISTANCE = 12
-local COLLECT_DEBOUNCE_SECONDS = 0.2
-local lastCollectAt = {} -- [player] = os.clock()
+local COLLECT_DEBOUNCE_SECONDS = 0.2 -- fallback for currencies with no tickInterval-kind upgrade slot
+local lastCollectAt = {} -- [player] = { [currencyKey] = os.clock() } - per-currency, since tick interval varies by currency now
 
 -- ============================================================================
 -- Config lookups
@@ -85,13 +100,32 @@ end
 -- Rate math
 -- ============================================================================
 
+-- Only "yield" slots (the default) contribute to production - "tickInterval"
+-- and "sellRate" slots affect other things (see getCollectDebounceSeconds
+-- and sellCurrency) and are deliberately excluded here.
 local function upgradeMultiplier(currency, state)
 	local multiplier = 1
 	for _, slot in currency.upgrades do
-		local level = state.upgradeLevels[slot.id] or 0
-		multiplier *= slot.multiplierPerLevel ^ level
+		if (slot.kind or "yield") == "yield" then
+			local level = state.upgradeLevels[slot.id] or 0
+			multiplier *= slot.multiplierPerLevel ^ level
+		end
 	end
 	return multiplier
+end
+
+-- A "tickInterval" slot reduces how often collect() can grant this currency
+-- by a flat step per level (not multiplicative, since it's a real duration)
+-- - e.g. 1.0s at level 0 down to 0.1s at max level. Currencies without one
+-- just use the flat COLLECT_DEBOUNCE_SECONDS anti-spam floor.
+local function getCollectDebounceSeconds(currency, state): number
+	for _, slot in currency.upgrades do
+		if slot.kind == "tickInterval" then
+			local level = state.upgradeLevels[slot.id] or 0
+			return slot.tickIntervalBase - (level * slot.tickIntervalStep)
+		end
+	end
+	return COLLECT_DEBOUNCE_SECONDS
 end
 
 local function selfPrestigeMultiplier(currency, state)
@@ -170,11 +204,14 @@ function ResourceEngine.collect(player: Player, zoneKey: string, currencyKey: st
 		return false
 	end
 
+	local state = getCurrencyState(data, zoneKey, currencyKey)
+
 	local now = os.clock()
-	if lastCollectAt[player] and now - lastCollectAt[player] < COLLECT_DEBOUNCE_SECONDS then
+	local requiredInterval = getCollectDebounceSeconds(currency, state)
+	local playerDebounce = lastCollectAt[player]
+	if playerDebounce and playerDebounce[currencyKey] and now - playerDebounce[currencyKey] < requiredInterval then
 		return false
 	end
-	lastCollectAt[player] = now
 
 	local character = player.Character
 	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
@@ -186,7 +223,10 @@ function ResourceEngine.collect(player: Player, zoneKey: string, currencyKey: st
 		return false
 	end
 
-	local state = getCurrencyState(data, zoneKey, currencyKey)
+	playerDebounce = playerDebounce or {}
+	playerDebounce[currencyKey] = now
+	lastCollectAt[player] = playerDebounce
+
 	local gained = ResourceEngine.getEffectiveRate(data, zoneKey, currencyKey, "manual") * friendMultiplier(player, currency)
 	state.amount += gained
 
@@ -220,16 +260,17 @@ function ResourceEngine.buyUpgrade(player: Player, zoneKey: string, currencyKey:
 	end
 
 	local state = getCurrencyState(data, zoneKey, currencyKey)
+	local costState = getCurrencyState(data, zoneKey, slot.costCurrency or currencyKey)
 	local level = state.upgradeLevels[slotId] or 0
 	local spent = 0
 	local levelsBought = 0
 
 	while level < slot.maxLevel do
 		local cost = upgradeCost(slot, level)
-		if state.amount < cost then
+		if costState.amount < cost then
 			break
 		end
-		state.amount -= cost
+		costState.amount -= cost
 		spent += cost
 		level += 1
 		levelsBought += 1
@@ -318,6 +359,54 @@ function ResourceEngine.chainReset(player: Player, zoneKey: string, currencyKey:
 	end
 
 	return true, grantedAmount, intoKey
+end
+
+-- ============================================================================
+-- Sell (convert into another currency at an upgradeable rate, ANY amount,
+-- ANY time - no threshold. Deliberately a separate mechanic from
+-- chainReset: chainReset requires hitting a threshold and resets the
+-- source currency's upgrades on cash-in; sellInto converts whatever you're
+-- currently holding and never resets upgrades, since those are meant to be
+-- a permanent collection investment, not something cashing out punishes.
+-- ============================================================================
+
+function ResourceEngine.sellCurrency(player: Player, zoneKey: string, currencyKey: string)
+	local data = PlayerData.get(player)
+	local zone = ResourceEngine.findZone(zoneKey)
+	local currency = zone and ResourceEngine.findCurrency(zone, currencyKey)
+	if not data or not zone or not currency or not currency.sellInto then
+		return false, "Not available"
+	end
+	if not ResourceEngine.isZoneUnlocked(data, zone) then
+		return false, "Zone locked"
+	end
+
+	local state = getCurrencyState(data, zoneKey, currencyKey)
+	if state.amount <= 0 then
+		return false, "Nothing to sell"
+	end
+
+	local sellInto = currency.sellInto
+	local rateSlot = sellInto.rateSlotId and findUpgradeSlot(currency, sellInto.rateSlotId)
+	local rateLevel = rateSlot and (state.upgradeLevels[rateSlot.id] or 0) or 0
+	local rateMultiplier = rateSlot and (rateSlot.multiplierPerLevel ^ rateLevel) or 1
+	local rate = sellInto.baseRate * rateMultiplier
+
+	local sold = state.amount
+	local intoKey = sellInto.into
+	local intoCurrency = ResourceEngine.findCurrency(zone, intoKey)
+	local gained = sold * rate * friendMultiplier(player, intoCurrency)
+
+	state.amount = 0
+
+	local intoState = getCurrencyState(data, zoneKey, intoKey)
+	intoState.amount += gained
+
+	if sellInto.grantsScrolls then
+		data.scrolls = (data.scrolls or 0) + sellInto.grantsScrolls
+	end
+
+	return true, gained, intoKey
 end
 
 -- ============================================================================

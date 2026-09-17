@@ -9,7 +9,13 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local COLLECT_FIRE_INTERVAL = 0.25
+-- Must be faster than the fastest possible server tick interval (Mana's
+-- FasterMana upgrade reaches 0.1s at max level) or this client-side cap
+-- would silently override that upgrade and cap collection below what
+-- players paid for. The server's own dynamic debounce (see
+-- ResourceEngine.getCollectDebounceSeconds) is the real limiter - this
+-- just needs to ask often enough to never be the bottleneck.
+local COLLECT_FIRE_INTERVAL = 0.05
 
 local player = Players.LocalPlayer
 local collectNodeEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CollectNode")

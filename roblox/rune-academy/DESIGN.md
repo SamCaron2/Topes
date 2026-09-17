@@ -14,9 +14,9 @@ permanently boost your stats, and periodically **Ascend** to reset your
 progress for a permanent multiplier and access to new content. Compete on
 leaderboards, chase rare rune pulls, redeem community codes for boosts.
 
-## 2. Zones & the 16-currency system
+## 2. Zones & the multi-currency system
 
-16 currencies total, split across 5 zones plus the global premium currency
+15 currencies total right now (this count will keep shifting as zones get redesigned one at a time), split across 5 zones plus the global premium currency
 (Gems). Every currency runs on the same generic engine
 (`ResourceEngine.lua`) rather than being hand-built per currency — adding,
 renaming, or rebalancing one is a `GameConfig.Zones` edit, never new code.
@@ -62,11 +62,11 @@ config) — matches the reference game's "Expand Map: Cost 1e635 Cash"
 tiles gating further tiles behind a big spend, rather than every tile
 being available from the start.
 
-**The 16 currencies, by zone:**
+**The currencies so far, by zone:**
 
 | Zone | Currencies | Unlocks at |
 |---|---|---|
-| Rune Academy (start) | Mana → Essence → Gold | Always open |
+| Rune Academy (start) | Mana → Coins | Always open |
 | Familiar Grounds | Whispers | Always open (side-grind, no chain reset) |
 | The Foundry | Copper → Tin → Steel → Mithril | Ascension I |
 | Tidal Grotto | Pearls → Coral → Driftglass → Abyssal Salt | Ascension II |
@@ -75,7 +75,7 @@ being available from the start.
 
 Zones gating on Ascension count is what paces the whole game — you can't
 rush to Starfall Peak on day one, you have to actually build up the
-Academy chain enough to Ascend three times first. **Gold** (top of the
+Academy chain enough to Ascend three times first. **Coins** (the persistent, always-usable currency in the
 Academy chain) is our equivalent of the reference game's "Cash used for
 rebirths" — it's what `AscensionTiers` requirements are measured in.
 **Celestium** (top of Starfall Peak, no further chain reset) is the final
@@ -99,7 +99,7 @@ No, Dc...) via a shared `NumberFormat` module — required once numbers exceed
 ### Pacing target: ~2 weeks casual F2P to 100%
 
 The numbers currently in `GameConfig.Zones` are a first-pass scaffold, not
-tuned balance — getting 16 currencies × 3 upgrade slots × self-prestige
+tuned balance — getting 15 currencies × 3 upgrade slots × self-prestige
 tiers × chain thresholds to actually sum to "~2 weeks of casual play, a
 little less with spending" needs simulation or real playtest data, not
 guesswork. The method once there's something playable:
@@ -136,7 +136,7 @@ every other zone.
 
 ### Friend Boost
 
-+10% Gold for every one of your Roblox friends currently in the same
++10% Coins for every one of your Roblox friends currently in the same
 server (capped at 20 friends, `GameConfig.FriendBoost`), tracked live and
 never persisted — it reflects who's actually online with you right now,
 not a history. This is a virality lever: it gives players a concrete,
@@ -144,7 +144,7 @@ immediate reason to invite friends into the *same* server rather than
 just recommending the game generally, and it stacks with everything else
 (Stats, Runes, Ascension), so a full server of friends is a real,
 visible boost. Any currency can opt into this by setting
-`friendBoost = true` on it in `GameConfig.Zones` — Gold is the only one
+`friendBoost = true` on it in `GameConfig.Zones` — Coins is the only one
 flagged right now.
 
 ## 4. Walkable upgrade tree
@@ -158,7 +158,7 @@ with "Expand Map & Unlock Strength" nodes). Each tile shows:
 - Cost in the relevant resource
 - `MAXED` state once capped for the current Ascension tier
 
-Walking further out unlocks new tiles ("Expand Academy" tiles cost Gold and
+Walking further out unlocks new tiles ("Expand Academy" tiles cost Coins and
 extend the path, gating late-game stats behind exploration + spend).
 
 ## 5. UI architecture: 3D-in-world boards, not screen overlays
@@ -167,7 +167,7 @@ Deliberate split, matching how the reference game actually structures its
 UI (confirmed against its own screenshots, not assumed):
 
 - **Persistent on-screen UI is minimal.** Just a small stat list
-  (Mana/Essence/Gold/Scrolls/Gems, top-right) and a column of menu icons
+  (Mana/Coins/Scrolls/Gems, top-right) and a column of menu icons
   (Shop/Runes/Profile/Settings, left side). Nothing else lives glued to
   the screen permanently.
 - **Per-currency upgrade panels are physical objects in the world**, not
@@ -209,7 +209,7 @@ they stay as traditional popups.
   per rank, the live feed) for checking progress without traveling back
   to the altar — it doesn't pull for you.
 - Currency: **Scrolls** (reskin of "Steak") — earned as a byproduct of
-  hitting Mana/Essence milestones, or bought with Gems.
+  hitting Mana Convert actions, or bought with Gems.
 - Pulling opens a rune chest animation, landing on a rarity tier with
   published odds (transparency matters for Roblox ToS + trust):
 
@@ -239,12 +239,12 @@ they stay as traditional popups.
 
 Multi-tier prestige, each tier permanent once reached:
 
-- **Ascension I** — Requires X Gold. Grants: x2 all previous stats,
+- **Ascension I** — Requires X Coins. Grants: x2 all previous stats,
   +Familiar collection range, unlocks the Novice+ rune pool.
-- **Ascension II** — Requires higher Gold + Ascension I. Grants: passive
+- **Ascension II** — Requires higher Coins + Ascension I. Grants: passive
   auto-collect (Familiars work without you present), +Haste baseline,
   unlocks a second upgrade tree.
-- **Ascension III** — unlocks Tidal Grotto, escalating Gold requirement,
+- **Ascension III** — unlocks Tidal Grotto, escalating Coins requirement,
   new rune tiers, flat stat multipliers.
 - **Ascension IV+** — further zones and content as they're designed;
   Starfall Peak's unlock (Ascension III) is currently the last zone gate,
@@ -263,7 +263,7 @@ Four boards, each with a **Global** and **F2P** (free-to-play, i.e.
 Robux-spent filtered to ~0) toggle, refreshed periodically via
 `DataStoreService` + `OrderedDataStore`:
 
-- Total Gold
+- Total Coins
 - Total Runes Opened
 - Playtime
 - Robux Spent
@@ -309,7 +309,7 @@ distinct from the one-time gamepass `statMultiplier`:
 | Power Surge (S/M/L) | Instantly multiplies **every current stat** by 1.25x/1.6x/2.5x, stacks with every purchase | 99 / 299 / 999 Robux |
 | Gem Pack (S/M/L) | Direct Gems, spent on extra Rune pulls | 99 / 399 / 999 Robux |
 | Scroll Bundle | 10 Rune pulls worth of Scrolls | 249 Robux |
-| Instant Ascend | Skips the current tier's Gold requirement and forces the next Ascension immediately | 199 Robux |
+| Instant Ascend | Skips the current tier's Coins requirement and forces the next Ascension immediately | 199 Robux |
 
 Because Power Surge multiplies *current* stats rather than adding a flat
 bonus, it compounds with everything else a player has (Rune pulls,
@@ -335,7 +335,7 @@ Studio and pasting their IDs into `GameConfig.lua` (they're all placeholder
 **"Main" profile screen** (not yet built as a UI, but the server side is —
 `GetProfile` RemoteFunction returns everything it needs): account name +
 avatar picture (drawn client-side from the `Player` instance / Roblox's
-thumbnail API, not stored by us), current Gold + Gems totals, playtime, and
+thumbnail API, not stored by us), current Coins + Gems totals, playtime, and
 Robux spent. Same numbers driving the leaderboards, just scoped to you.
 
 **Titles** — one equipped at a time, shown as a colored label floating

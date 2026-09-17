@@ -126,15 +126,10 @@ function PlayerData.load(player: Player)
 	mana.Value = data.zones.Academy.currencies.Mana.amount or 0
 	mana.Parent = leaderstats
 
-	local essence = Instance.new("NumberValue")
-	essence.Name = "Essence"
-	essence.Value = data.zones.Academy.currencies.Essence.amount or 0
-	essence.Parent = leaderstats
-
-	local gold = Instance.new("NumberValue")
-	gold.Name = "Gold"
-	gold.Value = data.zones.Academy.currencies.Gold.amount or 0
-	gold.Parent = leaderstats
+	local coins = Instance.new("NumberValue")
+	coins.Name = "Coins"
+	coins.Value = data.zones.Academy.currencies.Coins.amount or 0
+	coins.Parent = leaderstats
 
 	local ascensions = Instance.new("IntValue")
 	ascensions.Name = "Ascensions"
@@ -209,7 +204,7 @@ task.spawn(function()
 end)
 
 -- leaderstats NumberValues only reflect data at the moment they're created
--- otherwise - this is what keeps Mana/Gold visible on the Leaderboard live
+-- otherwise - this is what keeps Mana/Coins visible on the Leaderboard live
 -- as a player actually collects, instead of only updating on rejoin.
 task.spawn(function()
 	while true do
@@ -218,8 +213,7 @@ task.spawn(function()
 			local leaderstats = player:FindFirstChild("leaderstats")
 			if leaderstats then
 				leaderstats.Mana.Value = data.zones.Academy.currencies.Mana.amount
-				leaderstats.Essence.Value = data.zones.Academy.currencies.Essence.amount
-				leaderstats.Gold.Value = data.zones.Academy.currencies.Gold.amount
+				leaderstats.Coins.Value = data.zones.Academy.currencies.Coins.amount
 				leaderstats.Ascensions.Value = data.ascensionCount
 				leaderstats.Scrolls.Value = data.scrolls
 				leaderstats.Gems.Value = data.gems

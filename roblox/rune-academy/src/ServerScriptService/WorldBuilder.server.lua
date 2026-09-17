@@ -176,8 +176,17 @@ for zoneIndex, zone in GameConfig.Zones do
 
 	local kioskIndex = 0
 	for _, currency in zone.currencies do
-		local position = Vector3.new(zoneOriginX + kioskIndex * KIOSK_SPACING_STUDS, 5, KIOSK_ROW_Z_OFFSET)
-		buildKiosk(zoneFolder, zone.key, currency, position)
-		kioskIndex += 1
+		-- Skip currencies with nothing interactive to show yet (e.g. Coins,
+		-- which has no upgrades/sellInto/chainReset/selfPrestige of its own
+		-- right now) - an empty board is worse than no board.
+		local hasContent = #currency.upgrades > 0
+			or currency.chainReset ~= nil
+			or currency.sellInto ~= nil
+			or currency.selfPrestigeTiers ~= nil
+		if hasContent then
+			local position = Vector3.new(zoneOriginX + kioskIndex * KIOSK_SPACING_STUDS, 5, KIOSK_ROW_Z_OFFSET)
+			buildKiosk(zoneFolder, zone.key, currency, position)
+			kioskIndex += 1
+		end
 	end
 end

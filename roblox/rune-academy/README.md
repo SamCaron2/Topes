@@ -1,7 +1,7 @@
 # Rune Academy
 
 Incremental/idle Roblox game. See `DESIGN.md` for the full system design
-(16-currency zone system, stats, Runes, Ascension, leaderboards,
+(multi-currency zone system, stats, Runes, Ascension, leaderboards,
 monetization plan).
 
 ## Setup (do this on your gaming PC Monday)
@@ -26,7 +26,7 @@ monetization plan).
 
 ## What's already scaffolded
 
-- `GameConfig.lua` — every tunable number lives here: the 16-currency
+- `GameConfig.lua` — every tunable number lives here: the multi-currency
   `Zones` config (upgrades, self-prestige tiers, chain resets, floor
   tiles), stat definitions, Rune rarity odds + boosts, Ascension tiers.
   Change balance here, not in the handler scripts.
@@ -37,8 +37,20 @@ monetization plan).
   automatically — no separate PlayerData change needed).
 - `ResourceEngine.lua` — the generic engine every currency runs on:
   server-authoritative collect (click/stand, distance + debounce checked),
-  buy upgrade (one/max), self-prestige, chain reset, and floor tile
-  purchases. All 16 currencies go through this one module.
+  buy upgrade (one/max), self-prestige, chain reset, sell (see below), and
+  floor tile purchases. All currencies go through this one module. An
+  upgrade slot's `kind` changes what its levels do: `"yield"` (default)
+  multiplies that currency's own production; `"tickInterval"` instead
+  controls how often `collect()` can fire (a real duration, e.g. Mana's
+  1.0s → 0.1s Scrap Respawn upgrade), read via
+  `getCollectDebounceSeconds`; `"sellRate"` boosts a `sellInto` conversion
+  rate instead of production. A slot's `costCurrency` (optional, defaults
+  to the currency it's on) lets it be bought with a DIFFERENT currency —
+  e.g. all of Mana's upgrades cost Coins, matching the reference game.
+  `sellInto` is a separate mechanic from `chainReset`: it converts ANY
+  amount of a currency into another at an upgradeable rate, at ANY time
+  (no threshold, no upgrade reset) — Mana → Coins uses this, not a
+  chain reset, since you can cash out partial Mana whenever you want.
 - `RuneHandler.lua` — server-authoritative gacha pull, Fortune-weighted odds.
 - `ResetHandler.lua` — Ascension only (per-currency resets live in
   ResourceEngine now).
@@ -58,7 +70,7 @@ monetization plan).
 - `FriendBoostHandler.lua` — tracks how many of a player's Roblox friends
   are in the same server (live, never saved); `ResourceEngine` applies
   `GameConfig.FriendBoost` on top of any currency flagged
-  `friendBoost = true` (currently just Gold).
+  `friendBoost = true` (currently just Coins).
 - `WorldBuilder.server.lua` — generates every resource node, floor tile,
   upgrade kiosk, and the Rune Altar in the world directly from
   `GameConfig.Zones` on server start (plain grid layout, one zone per
@@ -82,7 +94,7 @@ monetization plan).
   menu button), with two floating boards: the rank ladder + your total
   pulls, and your current stat boosts with the latest pull result.
 - `CurrencyHUDClient.client.lua` — the only persistent on-screen UI: a
-  small stat list (Mana/Essence/Gold/Scrolls/Gems) in the top-right
+  small stat list (Mana/Coins/Scrolls/Gems) in the top-right
   corner, matching the reference game's minimal always-visible column.
 - `SideMenuClient.client.lua` — the left-side icon column (Shop, Runes,
   Profile, Settings). Clicking an icon opens a shared popup panel built
@@ -139,7 +151,7 @@ is a leftover duplicate (both would grant Mana, doubling your rate).
   though `MaxDistance` limits how many actually render/matter at a time).
   Fine for solo testing; worth batching into one call if this becomes a
   real bottleneck with many players.
-- OrderedDataStore-backed leaderboards (Gold / Runes Opened / Playtime /
+- OrderedDataStore-backed leaderboards (Coins / Runes Opened / Playtime /
   Robux Spent, Global + F2P split).
 - Community codes module + redemption remote.
 - Familiar auto-collect loop (currently just a stat number + an
