@@ -121,15 +121,9 @@ function PlayerData.load(player: Player)
 	leaderstats.Name = "leaderstats"
 	leaderstats.Parent = player
 
-	local mana = Instance.new("NumberValue")
-	mana.Name = "Mana"
-	mana.Value = data.zones.Academy.currencies.Mana.amount or 0
-	mana.Parent = leaderstats
-
-	local coins = Instance.new("NumberValue")
-	coins.Name = "Coins"
-	coins.Value = data.zones.Academy.currencies.Coins.amount or 0
-	coins.Parent = leaderstats
+	-- No per-currency leaderstats yet - GameConfig.Zones is empty pending
+	-- the new vision. Add one NumberValue per currency worth showing here
+	-- once there's something to show, same pattern as before.
 
 	local ascensions = Instance.new("IntValue")
 	ascensions.Name = "Ascensions"
@@ -204,16 +198,15 @@ task.spawn(function()
 end)
 
 -- leaderstats NumberValues only reflect data at the moment they're created
--- otherwise - this is what keeps Mana/Coins visible on the Leaderboard live
--- as a player actually collects, instead of only updating on rejoin.
+-- otherwise - this is what keeps them live on the Leaderboard as a player
+-- actually plays, instead of only updating on rejoin. Add a currency's
+-- Value assignment here once it has a leaderstat again (see load() above).
 task.spawn(function()
 	while true do
 		task.wait(0.5)
 		for player, data in sessions do
 			local leaderstats = player:FindFirstChild("leaderstats")
 			if leaderstats then
-				leaderstats.Mana.Value = data.zones.Academy.currencies.Mana.amount
-				leaderstats.Coins.Value = data.zones.Academy.currencies.Coins.amount
 				leaderstats.Ascensions.Value = data.ascensionCount
 				leaderstats.Scrolls.Value = data.scrolls
 				leaderstats.Gems.Value = data.gems

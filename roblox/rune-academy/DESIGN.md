@@ -1,5 +1,15 @@
 # Rune Academy — Design Doc
 
+> **Historical, pending rewrite.** The Mana/currency-chain economy and the
+> 3D-kiosk UI described below were fully scrapped on request. The world is
+> back to just a baseplate, `GameConfig.Zones`/`AscensionTiers` are empty,
+> and no client UI exists. Everything after this note describes the OLD
+> design — kept as reference for mechanics that may return, not as a
+> description of the current game. See README.md's reset note for what
+> actually survived (Runes, Titles, Power Store, the generic
+> ResourceEngine backend). A new vision is being defined from scratch, one
+> piece at a time.
+
 Working title. Incremental/idle game, reskinned from the "Resource Incremental"
 loop (mana chain → gacha runes → ascension prestige → leaderboards) into a
 wizard academy theme. Everything below is our own numbers/names/art — only
