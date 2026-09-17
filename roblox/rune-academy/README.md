@@ -103,10 +103,11 @@ design notes.
 - `ManaYieldKioskClient.client.lua` — the first 3D upgrade card, standing
   just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`, sized
   bigger than one upgrade needs so more slots can go on the same board
-  later). Its BillboardGui (studs-sized, shrinks with distance, offset in
-  front of the card's face via `StudsOffsetWorldSpace` so it doesn't
-  visually clip through the card's real geometry as the camera moves)
-  shows the current "Mana Per Pickup" level, current yield, and a Buy
+  later). Its UI is a `SurfaceGui` painted onto the card's face (not a
+  `BillboardGui` - a Billboard always turns to face the camera, so it
+  visibly slides around as you walk past; a SurfaceGui is flat against
+  the physical face, unreadable from behind, exactly like a real sign).
+  Shows the current "Mana Per Pickup" level, current yield, and a Buy
   button for the next level, wired to
   `GetManaYieldState`/`BuyManaYieldUpgrade`.
 

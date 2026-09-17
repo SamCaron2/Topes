@@ -1,6 +1,9 @@
--- Builds the "Mana Per Pickup" upgrade card's BillboardGui: level, current
--- yield, next level's cost, and a Buy button. Sized in studs (not screen
--- scale) so it reads as a physical sign that shrinks with distance.
+-- Builds the "Mana Per Pickup" upgrade card's UI: level, current yield, next
+-- level's cost, and a Buy button - painted directly onto the card's face
+-- with a SurfaceGui, not a BillboardGui. A BillboardGui always turns to face
+-- the camera, which is what made it look like it was "sliding around" as the
+-- card orbited past it; a SurfaceGui is flat against one physical face, so
+-- it reads correctly from the front and isn't visible at all from behind.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -11,30 +14,23 @@ local buyManaYieldUpgradeFunction = remotes:WaitForChild("BuyManaYieldUpgrade")
 
 local kiosk = Workspace:WaitForChild("Kiosks"):WaitForChild("ManaYieldKiosk")
 
--- StudsOffsetWorldSpace (not the rotation-relative StudsOffset) pushes the
--- flat, always-camera-facing panel out in front of the card's actual face
--- rather than leaving it coincident with the card's center - without that
--- gap, the panel and the card's real geometry visibly slide against each
--- other as the camera orbits, since one has depth and the other doesn't.
-local billboard = Instance.new("BillboardGui")
-billboard.Name = "ManaYieldBoard"
-billboard.Size = UDim2.new(9, 0, 12, 0) -- Scale component = studs on a BillboardGui
-billboard.StudsOffsetWorldSpace = Vector3.new(-(kiosk.Size.X / 2 + 0.6), 0, 0)
-billboard.MaxDistance = 60
--- Without this, the panel is depth-tested against real 3D geometry, so the
--- card's own body (or anything else between it and the camera) cuts into
--- different parts of the flat panel as the camera orbits - looks like the
--- panel is "moving" when it's actually the card occluding it inconsistently.
-billboard.AlwaysOnTop = true
-billboard.Adornee = kiosk
-billboard.Parent = kiosk
+-- The card isn't rotated (its local axes match world axes), and it sits east
+-- of the platform, so the face pointing back at the player is the -X face -
+-- "Left" in Roblox's NormalId naming.
+local surfaceGui = Instance.new("SurfaceGui")
+surfaceGui.Name = "ManaYieldBoard"
+surfaceGui.Face = Enum.NormalId.Left
+surfaceGui.Adornee = kiosk
+surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+surfaceGui.PixelsPerStud = 36
+surfaceGui.Parent = kiosk
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(1, 0, 1, 0)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 frame.BackgroundTransparency = 0.1
 frame.BorderSizePixel = 0
-frame.Parent = billboard
+frame.Parent = surfaceGui
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0.08, 0)
