@@ -119,6 +119,9 @@ kiosksFolder = Instance.new("Folder")
 kiosksFolder.Name = "Kiosks"
 kiosksFolder.Parent = Workspace
 
+-- Sized bigger than one upgrade needs so more slots can be added to the same
+-- board later without rebuilding it. Rotated 90 degrees so its wide face
+-- (not its thin edge) points back at the platform, toward the player.
 local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
 	local card = Instance.new("Part")
 	card.Name = name
@@ -126,8 +129,8 @@ local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
 	card.CanCollide = true
 	card.Material = Enum.Material.SmoothPlastic
 	card.Color = Color3.fromRGB(45, 45, 60)
-	card.Size = Vector3.new(6, 8, 1)
-	card.CFrame = CFrame.new(centerX + offsetX, groundY + 4, centerZ + offsetZ)
+	card.Size = Vector3.new(1, 14, 10) -- thin along X (the approach direction), wide along Z
+	card.CFrame = CFrame.new(centerX + offsetX, groundY + 7, centerZ + offsetZ)
 	card.Parent = kiosksFolder
 	return card
 end

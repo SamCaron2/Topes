@@ -101,10 +101,14 @@ design notes.
   `CenterX`/`CenterZ`/`Size`/`GroundY`). `RING_RADIUS` is the one number
   to bump later for a "bigger collection ring" upgrade.
 - `ManaYieldKioskClient.client.lua` — the first 3D upgrade card, standing
-  just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`). Its
-  BillboardGui (studs-sized, shrinks with distance) shows the current
-  "Mana Per Pickup" level, current yield, and a Buy button for the next
-  level, wired to `GetManaYieldState`/`BuyManaYieldUpgrade`.
+  just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`, sized
+  bigger than one upgrade needs so more slots can go on the same board
+  later). Its BillboardGui (studs-sized, shrinks with distance, offset in
+  front of the card's face via `StudsOffsetWorldSpace` so it doesn't
+  visually clip through the card's real geometry as the camera moves)
+  shows the current "Mana Per Pickup" level, current yield, and a Buy
+  button for the next level, wired to
+  `GetManaYieldState`/`BuyManaYieldUpgrade`.
 
 ## Manual steps required before everything works
 

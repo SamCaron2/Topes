@@ -11,9 +11,15 @@ local buyManaYieldUpgradeFunction = remotes:WaitForChild("BuyManaYieldUpgrade")
 
 local kiosk = Workspace:WaitForChild("Kiosks"):WaitForChild("ManaYieldKiosk")
 
+-- StudsOffsetWorldSpace (not the rotation-relative StudsOffset) pushes the
+-- flat, always-camera-facing panel out in front of the card's actual face
+-- rather than leaving it coincident with the card's center - without that
+-- gap, the panel and the card's real geometry visibly slide against each
+-- other as the camera orbits, since one has depth and the other doesn't.
 local billboard = Instance.new("BillboardGui")
 billboard.Name = "ManaYieldBoard"
-billboard.Size = UDim2.new(6, 0, 5, 0) -- Scale component = studs on a BillboardGui
+billboard.Size = UDim2.new(9, 0, 12, 0) -- Scale component = studs on a BillboardGui
+billboard.StudsOffsetWorldSpace = Vector3.new(-(kiosk.Size.X / 2 + 0.6), 0, 0)
 billboard.MaxDistance = 60
 billboard.AlwaysOnTop = false
 billboard.Adornee = kiosk
