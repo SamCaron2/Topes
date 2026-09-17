@@ -3,6 +3,7 @@
 -- should never let a RemoteEvent write directly into PlayerData.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 local PlayerData = require(script.Parent.PlayerData)
 local ResourceEngine = require(script.Parent.ResourceEngine)
@@ -43,6 +44,7 @@ local getProfileFunction = newRemoteFunction("GetProfile")
 local equipTitleFunction = newRemoteFunction("EquipTitle")
 local getCurrencyStateFunction = newRemoteFunction("GetCurrencyState") -- args: zoneKey, currencyKey
 local getFloorTilesFunction = newRemoteFunction("GetFloorTiles") -- args: zoneKey
+local manaUpdatedEvent = newRemoteEvent("ManaUpdated") -- server -> client, fired on join and every pickup
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -112,7 +114,7 @@ getProfileFunction.OnServerInvoke = function(player)
 	end
 
 	return {
-		coins = data.zones.Academy.currencies.Coins.amount or 0,
+		mana = data.mana or 0,
 		gems = data.gems or 0,
 		playtimeSeconds = data.playtimeSeconds or 0,
 		robuxSpent = data.robuxSpent or 0,
@@ -172,3 +174,12 @@ end
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered
 -- before any player join events fire from this point on.
 local _ = PlayerData
+
+-- Sends the Mana HUD its starting value on join (every pickup after that
+-- comes from WorldBuilder's ManaNode Touched handler firing this same event).
+Players.PlayerAdded:Connect(function(player)
+	local data = PlayerData.waitForLoad(player)
+	if data then
+		manaUpdatedEvent:FireClient(player, data.mana or 0)
+	end
+end)

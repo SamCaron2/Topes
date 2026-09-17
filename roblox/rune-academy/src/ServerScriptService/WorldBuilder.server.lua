@@ -3,10 +3,19 @@
 -- at a time as the new vision gets specified.
 
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local ManaHandler = require(script.Parent.ManaHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
 local BORDER_HEIGHT = 0.2
+local MANA_NODE_SIZE = Vector3.new(2, 2, 2)
+local MANA_NODE_MARGIN = 3 -- keep nodes off the border line
+local MANA_RESPAWN_DELAY = 2
+
+local manaUpdatedEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ManaUpdated")
 
 local function findGroundAnchor()
 	local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
@@ -47,3 +56,49 @@ makeBorderPart("BorderNorth", MANA_ZONE_SIZE, BORDER_THICKNESS, 0, -half + BORDE
 makeBorderPart("BorderSouth", MANA_ZONE_SIZE, BORDER_THICKNESS, 0, half - BORDER_THICKNESS / 2)
 makeBorderPart("BorderEast", BORDER_THICKNESS, MANA_ZONE_SIZE, half - BORDER_THICKNESS / 2, 0)
 makeBorderPart("BorderWest", BORDER_THICKNESS, MANA_ZONE_SIZE, -half + BORDER_THICKNESS / 2, 0)
+
+-- A single Mana cube at a time: touch it for +1 Mana, it respawns at a new
+-- random spot inside the zone a couple seconds later.
+local function randomPointInZone()
+	local innerHalf = MANA_ZONE_SIZE / 2 - MANA_NODE_MARGIN
+	local offsetX = (math.random() * 2 - 1) * innerHalf
+	local offsetZ = (math.random() * 2 - 1) * innerHalf
+	return centerX + offsetX, centerZ + offsetZ
+end
+
+local function spawnManaNode()
+	local x, z = randomPointInZone()
+
+	local node = Instance.new("Part")
+	node.Name = "ManaNode"
+	node.Anchored = true
+	node.CanCollide = false
+	node.Material = Enum.Material.Neon
+	node.Color = Color3.fromRGB(150, 80, 255)
+	node.Size = MANA_NODE_SIZE
+	node.CFrame = CFrame.new(x, groundY + MANA_NODE_SIZE.Y / 2, z)
+	node.Parent = manaZone
+
+	local claimed = false
+	node.Touched:Connect(function(hit)
+		if claimed then
+			return
+		end
+		local character = hit.Parent
+		local player = character and Players:GetPlayerFromCharacter(character)
+		if not player then
+			return
+		end
+		claimed = true
+
+		local newAmount = ManaHandler.collect(player)
+		if newAmount then
+			manaUpdatedEvent:FireClient(player, newAmount)
+		end
+
+		node:Destroy()
+		task.delay(MANA_RESPAWN_DELAY, spawnManaNode)
+	end)
+end
+
+spawnManaNode()

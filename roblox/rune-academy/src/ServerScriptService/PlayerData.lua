@@ -61,6 +61,7 @@ local function defaultData()
 
 	return {
 		zones = defaultZoneState(),
+		mana = 0, -- collected from ManaNodes on the ground; not a Zone/ResourceEngine currency yet
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,

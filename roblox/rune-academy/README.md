@@ -80,17 +80,20 @@ design notes.
   `friendBoost = true`, once a currency has that flag again.
 
 - `WorldBuilder.server.lua` — generates world content on server start.
-  Currently just the 60x60 Mana collection platform: a hollow square
-  outline (4 thin Neon parts, non-collide) sitting flush on the ground,
-  centered on `SpawnLocation`. Grows one piece at a time as the new
-  vision gets specified — rerunning it (every server start) rebuilds the
-  `ManaZone` folder from scratch, so editing this file and reconnecting
-  Rojo is how you iterate on world layout.
-
-There's currently no `StarterPlayerScripts` client code at all — no HUD,
-no menu, no title display. `src/StarterPlayerScripts/` is empty. Every
-client script that drove the old 3D-kiosk UI was deleted in the reset and
-gets rebuilt from scratch against whatever the new vision needs.
+  Currently the 60x60 Mana collection platform (a hollow square outline,
+  4 thin Neon parts, non-collide, centered on `SpawnLocation`) plus a
+  single Mana cube inside it: touch it for +1 Mana, it respawns at a new
+  random spot inside the zone ~2 seconds later. Grows one piece at a time
+  as the new vision gets specified — rerunning it (every server start)
+  rebuilds the `ManaZone` folder from scratch, so editing this file and
+  reconnecting Rojo is how you iterate on world layout.
+- `ManaHandler.lua` — server-authoritative Mana collection (+1 per pickup,
+  written straight to `PlayerData`'s new `mana` field). Deliberately kept
+  separate from `ResourceEngine`/`GameConfig.Zones` for now — a fresh,
+  much simpler mechanic until the new vision calls for upgrades on it.
+- `ManaHUDClient.client.lua` — the only client UI right now: a plain
+  "Mana: <amount>" text label, top-left of the screen, updated live off
+  the `ManaUpdated` RemoteEvent. No icon yet.
 
 ## Manual steps required before everything works
 
