@@ -168,10 +168,14 @@ UI (confirmed against its own screenshots, not assumed):
   currency's kiosk to interact with it; walk away and it's just part of
   the scenery, exactly like the reference game's "Diamond Upgrades" /
   "Sand Upgrades" boards.
-- **Deeper menus (Shop, Runes, eventually Profile/Settings/Leaderboards)
-  are popups**, opened by clicking their icon in the left-side column,
-  not tied to a physical location — matches the reference game's Prestige
-  screen behaving the same way.
+- **Runes work the same way, but interactive rather than a board you just
+  read.** Standing on the physical Rune Altar continuously pulls Runes,
+  the platform itself being the "interact" action instead of a button —
+  matches the reference game's own stand-on-a-platform pull mechanic.
+- **Deeper menus (Shop, Runes collection log, eventually
+  Profile/Settings/Leaderboards) are popups**, opened by clicking their
+  icon in the left-side column, not tied to a physical location — matches
+  the reference game's Prestige screen behaving the same way.
 
 Why split it this way rather than putting everything in 2D menus (simpler
 to build) or everything as 3D kiosks (more immersive but impractical for
@@ -185,6 +189,15 @@ they stay as traditional popups.
 
 ## 6. Runes (gacha pull system)
 
+- **Physical altar, not a menu button.** One global `RuneAltar` platform —
+  stand on it and it continuously pulls a Rune once per second for as
+  long as you have Scrolls, matching the reference game's stand-on-a-
+  platform mechanic rather than a click-to-pull menu. Two boards float
+  above it: the rank ladder with odds + your total pulls, and your
+  current stat boosts with the latest pull's result. The left-side
+  Runes menu icon is a separate collection/activity log (counts owned
+  per rank, the live feed) for checking progress without traveling back
+  to the altar — it doesn't pull for you.
 - Currency: **Scrolls** (reskin of "Steak") — earned as a byproduct of
   hitting Mana/Essence milestones, or bought with Gems.
 - Pulling opens a rune chest animation, landing on a rarity tier with

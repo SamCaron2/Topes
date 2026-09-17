@@ -109,6 +109,10 @@ getProfileFunction.OnServerInvoke = function(player)
 		robuxSpent = data.robuxSpent or 0,
 		unlockedTitles = data.unlockedTitles,
 		equippedTitle = data.equippedTitle,
+		stats = data.stats, -- for the Rune Altar's "Your Boosts" board
+		scrolls = data.scrolls,
+		runesOpened = data.runesOpened,
+		runesOwned = data.runesOwned,
 	}
 end
 

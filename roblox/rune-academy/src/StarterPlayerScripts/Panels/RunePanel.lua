@@ -1,6 +1,8 @@
--- Builds the Rune pull panel's content: Pull button, Scrolls count, result,
--- and a live server-wide pull feed. Owns no toggle button/ScreenGui -
--- SideMenuClient parents this and controls visibility.
+-- The Runes menu icon opens this: a collection summary (how many of each
+-- rank you own) plus the live server-wide pull feed. Actually pulling
+-- Runes happens by standing on the physical RuneAltar in the world
+-- (RuneAltarClient.client.lua) - this panel is for checking your progress
+-- and activity from anywhere, not a duplicate pull button.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 
 local MAX_FEED_ENTRIES = 8
+local PROFILE_REFRESH_INTERVAL = 2
 
 local RANK_COLORS = {
 	Apprentice = Color3.fromRGB(200, 200, 200),
@@ -30,8 +33,8 @@ local RunePanel = {}
 function RunePanel.build(parent: Instance): Frame
 	local player = Players.LocalPlayer
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
-	local pullRuneFunction = remotes:WaitForChild("PullRune")
 	local runePulledEvent = remotes:WaitForChild("RunePulledBroadcast")
+	local getProfileFunction = remotes:WaitForChild("GetProfile")
 
 	local container = Instance.new("Frame")
 	container.Size = UDim2.new(1, 0, 1, 0)
@@ -50,40 +53,44 @@ function RunePanel.build(parent: Instance): Frame
 	padding.PaddingRight = UDim.new(0, 10)
 	padding.Parent = container
 
-	local scrollsLabel = Instance.new("TextLabel")
-	scrollsLabel.LayoutOrder = 1
-	scrollsLabel.Size = UDim2.new(1, 0, 0, 18)
-	scrollsLabel.BackgroundTransparency = 1
-	scrollsLabel.Font = Enum.Font.Gotham
-	scrollsLabel.TextSize = 14
-	scrollsLabel.TextColor3 = Color3.fromRGB(220, 200, 150)
-	scrollsLabel.TextXAlignment = Enum.TextXAlignment.Left
-	scrollsLabel.Text = "Scrolls: 0"
-	scrollsLabel.Parent = container
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.LayoutOrder = 1
+	titleLabel.Size = UDim2.new(1, 0, 0, 20)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 16
+	titleLabel.TextColor3 = Color3.new(1, 1, 1)
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = "Your Rune Collection"
+	titleLabel.Parent = container
 
-	local pullButton = Instance.new("TextButton")
-	pullButton.LayoutOrder = 2
-	pullButton.Size = UDim2.new(1, 0, 0, 34)
-	pullButton.BackgroundColor3 = Color3.fromRGB(190, 130, 50)
-	pullButton.Font = Enum.Font.GothamBold
-	pullButton.TextSize = 15
-	pullButton.TextColor3 = Color3.new(1, 1, 1)
-	pullButton.Text = ("Pull Rune (%d Scroll)"):format(GameConfig.ScrollCostPerPull)
-	pullButton.Parent = container
-	Instance.new("UICorner", pullButton).CornerRadius = UDim.new(0, 8)
+	local collectionFrame = Instance.new("Frame")
+	collectionFrame.LayoutOrder = 2
+	collectionFrame.Size = UDim2.new(1, 0, 0, 150)
+	collectionFrame.BackgroundTransparency = 1
+	collectionFrame.Parent = container
 
-	local resultLabel = Instance.new("TextLabel")
-	resultLabel.LayoutOrder = 3
-	resultLabel.Size = UDim2.new(1, 0, 0, 22)
-	resultLabel.BackgroundTransparency = 1
-	resultLabel.Font = Enum.Font.GothamBold
-	resultLabel.TextSize = 15
-	resultLabel.TextColor3 = Color3.new(1, 1, 1)
-	resultLabel.Text = ""
-	resultLabel.Parent = container
+	local collectionLayout = Instance.new("UIListLayout")
+	collectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	collectionLayout.Parent = collectionFrame
+
+	local rankLabels = {}
+	for index, rank in GameConfig.RuneRanks do
+		local rankLabel = Instance.new("TextLabel")
+		rankLabel.LayoutOrder = index
+		rankLabel.Size = UDim2.new(1, 0, 0, 16)
+		rankLabel.BackgroundTransparency = 1
+		rankLabel.Font = Enum.Font.GothamBold
+		rankLabel.TextSize = 13
+		rankLabel.TextXAlignment = Enum.TextXAlignment.Left
+		rankLabel.TextColor3 = colorForRank(rank.name)
+		rankLabel.Text = rank.name .. ": 0"
+		rankLabel.Parent = collectionFrame
+		rankLabels[rank.name] = rankLabel
+	end
 
 	local feedTitle = Instance.new("TextLabel")
-	feedTitle.LayoutOrder = 4
+	feedTitle.LayoutOrder = 3
 	feedTitle.Size = UDim2.new(1, 0, 0, 16)
 	feedTitle.BackgroundTransparency = 1
 	feedTitle.Font = Enum.Font.GothamBold
@@ -94,8 +101,8 @@ function RunePanel.build(parent: Instance): Frame
 	feedTitle.Parent = container
 
 	local feedFrame = Instance.new("Frame")
-	feedFrame.LayoutOrder = 5
-	feedFrame.Size = UDim2.new(1, 0, 0, 160)
+	feedFrame.LayoutOrder = 4
+	feedFrame.Size = UDim2.new(1, 0, 0, 130)
 	feedFrame.BackgroundTransparency = 1
 	feedFrame.Parent = container
 
@@ -133,28 +140,24 @@ function RunePanel.build(parent: Instance): Frame
 		end
 	end
 
-	pullButton.MouseButton1Click:Connect(function()
-		local rank, err = pullRuneFunction:InvokeServer()
-		if rank then
-			resultLabel.Text = "You got: " .. rank.name
-			resultLabel.TextColor3 = colorForRank(rank.name)
-		else
-			resultLabel.Text = tostring(err)
-			resultLabel.TextColor3 = Color3.fromRGB(255, 110, 110)
-		end
-	end)
-
 	runePulledEvent.OnClientEvent:Connect(addFeedEntry)
 
-	local leaderstats = player:WaitForChild("leaderstats")
-	local scrollsStat = leaderstats:WaitForChild("Scrolls")
-
-	local function updateScrolls()
-		scrollsLabel.Text = "Scrolls: " .. scrollsStat.Value
+	local function refreshCollection()
+		local profile = getProfileFunction:InvokeServer()
+		if not profile or not profile.runesOwned then
+			return
+		end
+		for rankName, label in rankLabels do
+			label.Text = rankName .. ": " .. (profile.runesOwned[rankName] or 0)
+		end
 	end
 
-	scrollsStat.Changed:Connect(updateScrolls)
-	updateScrolls()
+	task.spawn(function()
+		while container.Parent do
+			refreshCollection()
+			task.wait(PROFILE_REFRESH_INTERVAL)
+		end
+	end)
 
 	return container
 end

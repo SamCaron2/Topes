@@ -116,9 +116,31 @@ local function buildKiosk(parent: Instance, zoneKey: string, currency, position:
 	return part
 end
 
+-- One global stand-on altar (Runes aren't zone-specific) - standing on it
+-- continuously pulls Runes for as long as Scrolls last, matching the
+-- reference game's platform-based pull mechanic rather than a menu button.
+local function buildRuneAltar(parent: Instance, position: Vector3)
+	local part = Instance.new("Part")
+	part.Name = "RuneAltar"
+	part.Shape = Enum.PartType.Cylinder
+	part.Orientation = Vector3.new(0, 0, 90) -- lay the cylinder flat so its round face is the standable top
+	part.Size = Vector3.new(2, 10, 10)
+	part.Position = position
+	part.Anchored = true
+	part.Color = Color3.fromRGB(80, 60, 140)
+	part.Material = Enum.Material.Neon
+	part.Parent = parent
+
+	CollectionService:AddTag(part, "RuneAltar")
+
+	return part
+end
+
 local worldFolder = Instance.new("Folder")
 worldFolder.Name = "GeneratedWorld"
 worldFolder.Parent = Workspace
+
+buildRuneAltar(worldFolder, Vector3.new(-15, 1, 0))
 
 for zoneIndex, zone in GameConfig.Zones do
 	local zoneFolder = Instance.new("Folder")

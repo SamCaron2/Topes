@@ -60,10 +60,10 @@ monetization plan).
   `GameConfig.FriendBoost` on top of any currency flagged
   `friendBoost = true` (currently just Gold).
 - `WorldBuilder.server.lua` — generates every resource node, floor tile,
-  and upgrade kiosk in the world directly from `GameConfig.Zones` on
-  server start (plain grid layout, one zone per column). Nothing about
-  adding a currency or floor tile needs manual Studio building anymore —
-  it's a config change.
+  upgrade kiosk, and the Rune Altar in the world directly from
+  `GameConfig.Zones` on server start (plain grid layout, one zone per
+  column). Nothing about adding a currency or floor tile needs manual
+  Studio building anymore — it's a config change.
 - `FloorTileClient.client.lua` — walking onto a `FloorTile`-tagged part
   (WorldBuilder-generated) asks the server to buy it.
 - `UpgradeKioskClient.client.lua` — builds the actual **3D-world upgrade
@@ -72,6 +72,11 @@ monetization plan).
   physical sign rather than a screen overlay. Shows upgrade cards
   (Buy/Max), a self-prestige button where configured, and a chain-reset
   button where configured — generic across every currency, not just Mana.
+- `RuneAltarClient.client.lua` — standing on the `RuneAltar` part
+  continuously pulls Runes once per second for as long as Scrolls last
+  (matches the reference game's stand-on-a-platform pull mechanic, not a
+  menu button), with two floating boards: the rank ladder + your total
+  pulls, and your current stat boosts with the latest pull result.
 - `CurrencyHUDClient.client.lua` — the only persistent on-screen UI: a
   small stat list (Mana/Essence/Gold/Scrolls/Gems) in the top-right
   corner, matching the reference game's minimal always-visible column.
@@ -79,11 +84,13 @@ monetization plan).
   Profile, Settings). Clicking an icon opens a shared popup panel built
   from a module in `Panels/` (`Profile`/`Settings` are stub "Coming soon"
   panels for now).
-- `Panels/StorePanel.lua`, `Panels/RunePanel.lua` — the actual content for
-  the Shop and Runes popups (module scripts `SideMenuClient` builds into
-  its shared panel frame). Store buying currently no-ops for every entry
-  until real ids replace the `id = 0` placeholders (see Manual Steps below)
-  — that's expected.
+- `Panels/StorePanel.lua` — the Shop popup's content (module script
+  `SideMenuClient` builds into its shared panel frame). Buying currently
+  no-ops for every entry until real ids replace the `id = 0` placeholders
+  (see Manual Steps below) — that's expected.
+- `Panels/RunePanel.lua` — the Runes popup's content: your collection
+  (count per rank owned) and the live server-wide pull feed. Not a pull
+  button — that's the physical altar's job now.
 
 ## Manual steps required before everything works
 
