@@ -40,6 +40,7 @@ local runePulledEvent = newRemoteEvent("RunePulledBroadcast") -- feeds the live-
 local requestPurchaseEvent = newRemoteEvent("RequestPurchase")
 local getProfileFunction = newRemoteFunction("GetProfile")
 local equipTitleFunction = newRemoteFunction("EquipTitle")
+local getCurrencyStateFunction = newRemoteFunction("GetCurrencyState") -- args: zoneKey, currencyKey
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -116,6 +117,27 @@ equipTitleFunction.OnServerInvoke = function(player, key)
 		return false, "Invalid title key"
 	end
 	return TitleHandler.equipTitle(player, key)
+end
+
+-- Read-only snapshot of one currency's state for the UI to render upgrade
+-- levels/costs against. The live amount itself comes from the leaderstat
+-- PlayerData already syncs - this is just what leaderstats doesn't cover.
+getCurrencyStateFunction.OnServerInvoke = function(player, zoneKey, currencyKey)
+	if type(zoneKey) ~= "string" or type(currencyKey) ~= "string" then
+		return nil
+	end
+
+	local data = PlayerData.get(player)
+	local zoneState = data and data.zones[zoneKey]
+	local state = zoneState and zoneState.currencies[currencyKey]
+	if not state then
+		return nil
+	end
+
+	return {
+		upgradeLevels = state.upgradeLevels,
+		selfPrestigeTier = state.selfPrestigeTier,
+	}
 end
 
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered

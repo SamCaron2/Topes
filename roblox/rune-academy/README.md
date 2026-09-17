@@ -60,6 +60,11 @@ monetization plan).
   are in the same server (live, never saved); `ResourceEngine` applies
   `GameConfig.FriendBoost` on top of any currency flagged
   `friendBoost = true` (currently just Gold).
+- `ManaPanelClient.client.lua` — the first real UI: upgrade cards (Buy/Max)
+  and a chain-reset button, hardcoded to Academy Mana for now. Amount comes
+  from the live leaderstat; levels/costs come from the `GetCurrencyState`
+  remote. Worth generalizing into a per-currency panel once this shape is
+  proven out, rather than copy-pasting one script per currency.
 
 ## Manual steps required before everything works
 
