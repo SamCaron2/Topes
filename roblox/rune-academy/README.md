@@ -81,9 +81,10 @@ design notes.
 
 - `WorldBuilder.server.lua` — generates world content on server start.
   Currently the 60x60 Mana collection platform (a hollow square outline,
-  4 thin Neon parts, non-collide, centered on `SpawnLocation`) plus a
-  single Mana cube inside it: touch it for +1 Mana, it respawns at a new
-  random spot inside the zone ~2 seconds later. Grows one piece at a time
+  4 thin Neon parts, non-collide, centered on `SpawnLocation`) plus 3
+  Mana cubes spawned inside it at a time (`MANA_NODE_COUNT`): touch one
+  for Mana, a replacement respawns at a new random spot ~2 seconds
+  later so the total stays at 3. Grows one piece at a time
   as the new vision gets specified — rerunning it (every server start)
   rebuilds the `ManaZone` folder from scratch, so editing this file and
   reconnecting Rojo is how you iterate on world layout.
@@ -115,6 +116,8 @@ design notes.
   face, unreadable from behind, exactly like a real sign). Wired to
   `GetManaYieldState`/`BuyManaYieldUpgrade` (the latter takes `"one"` or
   `"max"` - Max buys as many levels in a row as currently affordable).
+  Buy/Max turn green/yellow when affordable and red when they aren't,
+  tracked live off the same `ManaUpdated` event the HUD counter uses.
 
 ## Manual steps required before everything works
 

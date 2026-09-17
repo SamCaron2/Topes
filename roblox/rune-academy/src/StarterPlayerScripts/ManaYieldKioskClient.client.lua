@@ -13,8 +13,14 @@ local Workspace = game:GetService("Workspace")
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getManaYieldStateFunction = remotes:WaitForChild("GetManaYieldState")
 local buyManaYieldUpgradeFunction = remotes:WaitForChild("BuyManaYieldUpgrade")
+local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 
 local kiosk = Workspace:WaitForChild("Kiosks"):WaitForChild("ManaYieldKiosk")
+
+local COLOR_CAN_BUY = Color3.fromRGB(70, 190, 60)
+local COLOR_CANT_AFFORD = Color3.fromRGB(200, 55, 55)
+local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
+local COLOR_MAXED_OUT = Color3.fromRGB(90, 90, 90)
 
 -- The card isn't rotated (its local axes match world axes), and it sits east
 -- of the platform, so the face pointing back at the player is the -X face -
@@ -35,8 +41,8 @@ background.Parent = surfaceGui
 
 -- Title banner across the top, matching the reference's "<Currency> Upgrades" pill.
 local titleBanner = Instance.new("Frame")
-titleBanner.Size = UDim2.new(0.9, 0, 0.16, 0)
-titleBanner.Position = UDim2.new(0.05, 0, 0.03, 0)
+titleBanner.Size = UDim2.new(0.94, 0, 0.17, 0)
+titleBanner.Position = UDim2.new(0.03, 0, 0.03, 0)
 titleBanner.BackgroundColor3 = Color3.fromRGB(35, 70, 110)
 titleBanner.BackgroundTransparency = 0.15
 titleBanner.BorderSizePixel = 0
@@ -57,17 +63,16 @@ titleText.Text = "Mana Upgrades"
 titleText.Parent = titleBanner
 
 -- One column, left-aligned, with empty space to the right for more later.
-local COLUMN_WIDTH = 0.24
 local column = Instance.new("Frame")
-column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.76, 0)
-column.Position = UDim2.new(0.03, 0, 0.22, 0)
+column.Size = UDim2.new(0.3, 0, 0.75, 0)
+column.Position = UDim2.new(0.03, 0, 0.23, 0)
 column.BackgroundTransparency = 1
 column.Parent = background
 
 -- Fake icon for now - a plain circle standing in for a real Mana icon later.
 local iconFrame = Instance.new("Frame")
-iconFrame.Size = UDim2.new(0.55, 0, 0.32, 0)
-iconFrame.Position = UDim2.new(0.225, 0, 0, 0)
+iconFrame.Size = UDim2.new(0.6, 0, 0.3, 0)
+iconFrame.Position = UDim2.new(0.2, 0, 0, 0)
 iconFrame.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
 iconFrame.BorderSizePixel = 0
 iconFrame.Parent = column
@@ -82,7 +87,7 @@ iconCorner.Parent = iconFrame
 
 local nameLabel = Instance.new("TextLabel")
 nameLabel.Size = UDim2.new(1, 0, 0.13, 0)
-nameLabel.Position = UDim2.new(0, 0, 0.34, 0)
+nameLabel.Position = UDim2.new(0, 0, 0.32, 0)
 nameLabel.BackgroundTransparency = 1
 nameLabel.Font = Enum.Font.GothamBold
 nameLabel.TextScaled = true
@@ -92,8 +97,8 @@ nameLabel.Text = "More Mana"
 nameLabel.Parent = column
 
 local levelLabel = Instance.new("TextLabel")
-levelLabel.Size = UDim2.new(1, 0, 0.1, 0)
-levelLabel.Position = UDim2.new(0, 0, 0.48, 0)
+levelLabel.Size = UDim2.new(1, 0, 0.11, 0)
+levelLabel.Position = UDim2.new(0, 0, 0.46, 0)
 levelLabel.BackgroundTransparency = 1
 levelLabel.Font = Enum.Font.GothamBold
 levelLabel.TextScaled = true
@@ -103,8 +108,8 @@ levelLabel.Text = "(-/-)"
 levelLabel.Parent = column
 
 local yieldLabel = Instance.new("TextLabel")
-yieldLabel.Size = UDim2.new(1, 0, 0.1, 0)
-yieldLabel.Position = UDim2.new(0, 0, 0.59, 0)
+yieldLabel.Size = UDim2.new(1, 0, 0.11, 0)
+yieldLabel.Position = UDim2.new(0, 0, 0.58, 0)
 yieldLabel.BackgroundTransparency = 1
 yieldLabel.Font = Enum.Font.GothamBold
 yieldLabel.TextScaled = true
@@ -124,10 +129,11 @@ costLabel.TextStrokeTransparency = 0.6
 costLabel.Text = "Cost: -"
 costLabel.Parent = column
 
+-- Bigger buttons spanning the bottom of the column.
 local buyButton = Instance.new("TextButton")
-buyButton.Size = UDim2.new(0.47, 0, 0.16, 0)
-buyButton.Position = UDim2.new(0, 0, 0.83, 0)
-buyButton.BackgroundColor3 = Color3.fromRGB(70, 190, 60)
+buyButton.Size = UDim2.new(0.48, 0, 0.22, 0)
+buyButton.Position = UDim2.new(0, 0, 0.78, 0)
+buyButton.BackgroundColor3 = COLOR_CAN_BUY
 buyButton.Font = Enum.Font.GothamBold
 buyButton.TextScaled = true
 buyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -139,9 +145,9 @@ buyCorner.CornerRadius = UDim.new(0.3, 0)
 buyCorner.Parent = buyButton
 
 local maxButton = Instance.new("TextButton")
-maxButton.Size = UDim2.new(0.47, 0, 0.16, 0)
-maxButton.Position = UDim2.new(0.53, 0, 0.83, 0)
-maxButton.BackgroundColor3 = Color3.fromRGB(240, 210, 40)
+maxButton.Size = UDim2.new(0.48, 0, 0.22, 0)
+maxButton.Position = UDim2.new(0.52, 0, 0.78, 0)
+maxButton.BackgroundColor3 = COLOR_MAX_ACTIVE
 maxButton.Font = Enum.Font.GothamBold
 maxButton.TextScaled = true
 maxButton.TextColor3 = Color3.fromRGB(60, 50, 0)
@@ -152,31 +158,52 @@ local maxCorner = Instance.new("UICorner")
 maxCorner.CornerRadius = UDim.new(0.3, 0)
 maxCorner.Parent = maxButton
 
+local currentMana = 0
+local nextLevelCost = nil -- nil once maxed
+
+local function updateButtonColors()
+	if nextLevelCost == nil then
+		buyButton.Active = false
+		maxButton.Active = false
+		buyButton.BackgroundColor3 = COLOR_MAXED_OUT
+		maxButton.BackgroundColor3 = COLOR_MAXED_OUT
+		return
+	end
+
+	local canAfford = currentMana >= nextLevelCost
+	buyButton.Active = canAfford
+	maxButton.Active = canAfford
+	buyButton.BackgroundColor3 = canAfford and COLOR_CAN_BUY or COLOR_CANT_AFFORD
+	maxButton.BackgroundColor3 = canAfford and COLOR_MAX_ACTIVE or COLOR_CANT_AFFORD
+end
+
 local function render(state)
 	if not state then
 		return
 	end
+
+	currentMana = state.mana
+	nextLevelCost = state.nextLevelCost
 
 	levelLabel.Text = ("(%d/%d)"):format(state.level, state.maxLevel)
 
 	if state.nextLevelCost then
 		yieldLabel.Text = ("+%d > +%d"):format(state.amountPerPickup, state.amountPerPickup + 1)
 		costLabel.Text = ("Cost: %d Mana"):format(state.nextLevelCost)
-		buyButton.Active = true
-		maxButton.Active = true
-		buyButton.BackgroundColor3 = Color3.fromRGB(70, 190, 60)
-		maxButton.BackgroundColor3 = Color3.fromRGB(240, 210, 40)
 	else
 		yieldLabel.Text = ("+%d (MAX)"):format(state.amountPerPickup)
 		costLabel.Text = "Cost: -"
-		buyButton.Active = false
-		maxButton.Active = false
-		buyButton.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-		maxButton.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
 	end
+
+	updateButtonColors()
 end
 
 render(getManaYieldStateFunction:InvokeServer())
+
+manaUpdatedEvent.OnClientEvent:Connect(function(amount)
+	currentMana = amount
+	updateButtonColors()
+end)
 
 buyButton.MouseButton1Click:Connect(function()
 	local success, _, newState = buyManaYieldUpgradeFunction:InvokeServer("one")

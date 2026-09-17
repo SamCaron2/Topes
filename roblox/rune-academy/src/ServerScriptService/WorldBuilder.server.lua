@@ -63,8 +63,12 @@ makeBorderPart("BorderSouth", MANA_ZONE_SIZE, BORDER_THICKNESS, 0, half - BORDER
 makeBorderPart("BorderEast", BORDER_THICKNESS, MANA_ZONE_SIZE, half - BORDER_THICKNESS / 2, 0)
 makeBorderPart("BorderWest", BORDER_THICKNESS, MANA_ZONE_SIZE, -half + BORDER_THICKNESS / 2, 0)
 
--- A single Mana cube at a time: touch it for +1 Mana, it respawns at a new
--- random spot inside the zone a couple seconds later.
+-- Several Mana cubes spawned at once: touch one for Mana, a replacement
+-- spawns elsewhere a couple seconds later so the total stays at MANA_NODE_COUNT.
+-- More nodes at once is itself a future upgrade - MANA_NODE_COUNT is the one
+-- knob to raise for that later.
+local MANA_NODE_COUNT = 3
+
 local function randomPointInZone()
 	local innerHalf = MANA_ZONE_SIZE / 2 - MANA_NODE_MARGIN
 	local offsetX = (math.random() * 2 - 1) * innerHalf
@@ -107,7 +111,9 @@ local function spawnManaNode()
 	end)
 end
 
-spawnManaNode()
+for _ = 1, MANA_NODE_COUNT do
+	spawnManaNode()
+end
 
 -- Upgrade cards live outside the platform, a few studs past the border.
 -- ManaYieldKioskClient finds this part by name and builds its SurfaceGui UI.
