@@ -136,6 +136,11 @@ function PlayerData.load(player: Player)
 	ascensions.Value = data.ascensionCount
 	ascensions.Parent = leaderstats
 
+	local scrolls = Instance.new("IntValue")
+	scrolls.Name = "Scrolls"
+	scrolls.Value = data.scrolls or 0
+	scrolls.Parent = leaderstats
+
 	return data
 end
 
@@ -205,6 +210,7 @@ task.spawn(function()
 				leaderstats.Mana.Value = data.zones.Academy.currencies.Mana.amount
 				leaderstats.Gold.Value = data.zones.Academy.currencies.Gold.amount
 				leaderstats.Ascensions.Value = data.ascensionCount
+				leaderstats.Scrolls.Value = data.scrolls
 			end
 		end
 	end

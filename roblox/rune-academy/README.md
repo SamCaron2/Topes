@@ -18,12 +18,11 @@ monetization plan).
    ```
 5. In Studio, open the Rojo plugin panel and click **Connect**. Everything
    in `src/` will sync into the place.
-6. Build in Studio as normal (terrain, each zone's area, node parts tagged
-   `ResourceNode` via CollectionService with `ZoneKey`/`CurrencyKey`
-   attributes set to match `GameConfig.Zones`, UI) — code changes you make
-   in your editor sync live; UI/building changes you make in Studio should
-   be done in parts of the tree Rojo doesn't own (or synced back manually,
-   since this is a code-first Rojo setup, not two-way).
+6. You shouldn't need to manually build resource nodes or floor tiles at
+   all — `WorldBuilder.server.lua` generates them automatically from
+   `GameConfig.Zones` every time the server starts (including every Play
+   session in Studio). Any terrain/art/decoration you want beyond that is
+   normal Studio building, done in parts of the tree Rojo doesn't own.
 
 ## What's already scaffolded
 
@@ -60,11 +59,23 @@ monetization plan).
   are in the same server (live, never saved); `ResourceEngine` applies
   `GameConfig.FriendBoost` on top of any currency flagged
   `friendBoost = true` (currently just Gold).
-- `ManaPanelClient.client.lua` — the first real UI: upgrade cards (Buy/Max)
-  and a chain-reset button, hardcoded to Academy Mana for now. Amount comes
-  from the live leaderstat; levels/costs come from the `GetCurrencyState`
-  remote. Worth generalizing into a per-currency panel once this shape is
-  proven out, rather than copy-pasting one script per currency.
+- `ManaPanelClient.client.lua` — upgrade cards (Buy/Max) and a chain-reset
+  button, hardcoded to Academy Mana for now. Amount comes from the live
+  leaderstat; levels/costs come from the `GetCurrencyState` remote. Worth
+  generalizing into a per-currency panel once this shape is proven out,
+  rather than copy-pasting one script per currency.
+- `WorldBuilder.server.lua` — generates every resource node and floor tile
+  in the world directly from `GameConfig.Zones` on server start (plain
+  grid layout, one zone per column). Nothing about adding a currency or
+  floor tile needs manual Studio building anymore — it's a config change.
+- `FloorTileClient.client.lua` — walking onto a `FloorTile`-tagged part
+  (WorldBuilder-generated) asks the server to buy it.
+- `RunePanelClient.client.lua` — Pull Rune button, your Scrolls count, and
+  a live feed of every rune pull across the server (color-coded by rank).
+- `StoreClient.client.lua` — a toggleable Power Store panel listing every
+  `GameConfig.DevProducts`/`GamePasses` entry with a Buy button. Buying
+  currently no-ops for all of them until real ids replace the `id = 0`
+  placeholders (see Manual Steps below) — that's expected.
 
 ## Manual steps required before everything works
 
@@ -85,16 +96,20 @@ monetization plan).
    - `OwnerUserIds` / `AdminUserIds` / `TesterUserIds` (all empty): add your
      own UserId to `OwnerUserIds` so you get the Owner title on join.
 
+## One-time cleanup if you manually placed a test crystal earlier
+
+If you built a `ManaCrystal1` part by hand in Workspace before
+`WorldBuilder.server.lua` existed, delete it — WorldBuilder now generates
+its own `Node_Mana` automatically on every Play session, so the manual one
+is a leftover duplicate (both would grant Mana, doubling your rate).
+
 ## Not yet built (next steps)
 
-- Actual UI (per-currency upgrade panel with Buy/Max buttons, self-prestige
-  + chain-reset buttons, rune pull screen, floor tile tree, leaderboards,
-  codes input, a Store menu that fires `RequestPurchase`, a "Main" profile
-  screen that calls `GetProfile`, a title-picker that calls `EquipTitle`)
-  — this is all backend/logic scaffolding right now, no GUI.
-- The actual 3D zones: 5 areas, each with its resource node parts (tagged
-  `ResourceNode` with `ZoneKey`/`CurrencyKey` attributes) and a walkable
-  floor tile layout.
+- Remaining UI (self-prestige button, leaderboards, codes input, a "Main"
+  profile screen that calls `GetProfile`, a title-picker that calls
+  `EquipTitle`).
+- Real level design/terrain/art — `WorldBuilder` currently lays out a
+  plain grid of colored balls and blocks per zone, purely functional.
 - OrderedDataStore-backed leaderboards (Gold / Runes Opened / Playtime /
   Robux Spent, Global + F2P split).
 - Community codes module + redemption remote.

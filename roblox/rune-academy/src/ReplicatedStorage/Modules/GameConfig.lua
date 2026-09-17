@@ -67,7 +67,7 @@ GameConfig.Zones = {
 					{ cost = 100000, multiplier = 4 },
 					{ cost = 1000000, multiplier = 3 },
 				},
-				chainReset = { requirement = 5000000, into = "Essence", intoStartMultiplier = 1.05 },
+				chainReset = { requirement = 5000000, into = "Essence", intoStartMultiplier = 1.05, grantsScrolls = 1 },
 			},
 			{
 				key = "Essence",

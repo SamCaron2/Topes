@@ -312,6 +312,10 @@ function ResourceEngine.chainReset(player: Player, zoneKey: string, currencyKey:
 	intoState.amount += grantedAmount
 	intoState.chainBonusMultiplier = (intoState.chainBonusMultiplier or 1) * currency.chainReset.intoStartMultiplier
 
+	if currency.chainReset.grantsScrolls then
+		data.scrolls = (data.scrolls or 0) + currency.chainReset.grantsScrolls
+	end
+
 	return true, grantedAmount, intoKey
 end
 
