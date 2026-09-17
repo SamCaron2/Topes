@@ -91,9 +91,14 @@ design notes.
   written straight to `PlayerData`'s new `mana` field). Deliberately kept
   separate from `ResourceEngine`/`GameConfig.Zones` for now — a fresh,
   much simpler mechanic until the new vision calls for upgrades on it.
-- `ManaHUDClient.client.lua` — the only client UI right now: a plain
-  "Mana: <amount>" text label, top-left of the screen, updated live off
-  the `ManaUpdated` RemoteEvent. No icon yet.
+- `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
+  middle-left of the screen, updated live off the `ManaUpdated`
+  RemoteEvent. No icon yet.
+- `ManaRingClient.client.lua` — a small dashed ring under the player's
+  feet, visible only while standing inside the `ManaZone` platform
+  bounds (read off attributes `WorldBuilder` sets on that folder:
+  `CenterX`/`CenterZ`/`Size`/`GroundY`). `RING_RADIUS` is the one number
+  to bump later for a "bigger collection ring" upgrade.
 
 ## Manual steps required before everything works
 

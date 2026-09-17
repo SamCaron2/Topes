@@ -34,6 +34,12 @@ end
 
 local manaZone = Instance.new("Folder")
 manaZone.Name = "ManaZone"
+-- Read by ManaRingClient so the feet-ring can tell whether a player is
+-- standing inside the platform without duplicating these numbers client-side.
+manaZone:SetAttribute("CenterX", centerX)
+manaZone:SetAttribute("CenterZ", centerZ)
+manaZone:SetAttribute("Size", MANA_ZONE_SIZE)
+manaZone:SetAttribute("GroundY", groundY)
 manaZone.Parent = Workspace
 
 -- A hollow square outline (4 thin parts) rather than a filled platform, sitting
