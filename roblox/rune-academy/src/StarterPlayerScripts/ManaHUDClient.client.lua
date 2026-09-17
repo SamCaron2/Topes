@@ -12,12 +12,11 @@ screenGui.Name = "ManaHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Middle-left of the screen: vertically centered, offset in from the left
--- edge (not flush against it) so it clears the Roblox top bar/menu icons.
+-- Middle-left of the screen: vertically centered, flush against the left edge.
 local label = Instance.new("TextLabel")
 label.Name = "ManaCounter"
 label.AnchorPoint = Vector2.new(0, 0.5)
-label.Position = UDim2.new(0, 220, 0.5, 0)
+label.Position = UDim2.new(0, 10, 0.5, 0)
 label.Size = UDim2.new(0, 220, 0, 50)
 label.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 label.BackgroundTransparency = 0.35
