@@ -1,21 +1,73 @@
--- Server-authoritative Mana collection: a player touches a ManaNode part on
--- the ground and gets +1 Mana. Kept separate from ResourceEngine since this
--- is a fresh, much simpler mechanic for the new vision - no upgrades/zones
--- wired to it yet.
+-- Server-authoritative Mana collection and its one upgrade so far: a player
+-- touches a ManaNode part on the ground and gets Mana equal to their current
+-- "Mana Per Pickup" level (starts at 1, buyable up to 20, +1 per level).
+-- Kept separate from ResourceEngine since this is a fresh, much simpler
+-- mechanic for the new vision - no Zones wired to it yet.
 
 local PlayerData = require(script.Parent.PlayerData)
 
-local MANA_PER_PICKUP = 1
+local MAX_YIELD_LEVEL = 20
+
+-- Cost (in Mana) to go from `level` to `level + 1`. Placeholder linear curve -
+-- easy to retune once real playtesting numbers exist.
+local function costForLevel(level: number): number
+	return level * 10
+end
 
 local ManaHandler = {}
+
+-- How much Mana one pickup grants right now.
+local function getYieldAmount(data): number
+	return data.manaYieldLevel or 1
+end
 
 function ManaHandler.collect(player: Player): number?
 	local data = PlayerData.get(player)
 	if not data then
 		return nil
 	end
-	data.mana = (data.mana or 0) + MANA_PER_PICKUP
+	data.mana = (data.mana or 0) + getYieldAmount(data)
 	return data.mana
+end
+
+-- Read-only snapshot for the kiosk UI: current level, current yield, and the
+-- Mana cost to buy the next level (nil once maxed).
+function ManaHandler.getYieldUpgradeState(player: Player)
+	local data = PlayerData.get(player)
+	if not data then
+		return nil
+	end
+
+	local level = data.manaYieldLevel or 1
+	return {
+		level = level,
+		maxLevel = MAX_YIELD_LEVEL,
+		amountPerPickup = getYieldAmount(data),
+		nextLevelCost = level < MAX_YIELD_LEVEL and costForLevel(level) or nil,
+		mana = data.mana or 0,
+	}
+end
+
+function ManaHandler.buyYieldUpgrade(player: Player)
+	local data = PlayerData.get(player)
+	if not data then
+		return false, "Not loaded"
+	end
+
+	local level = data.manaYieldLevel or 1
+	if level >= MAX_YIELD_LEVEL then
+		return false, "Already at max level"
+	end
+
+	local cost = costForLevel(level)
+	if (data.mana or 0) < cost then
+		return false, "Not enough Mana"
+	end
+
+	data.mana -= cost
+	data.manaYieldLevel = level + 1
+
+	return true, nil, ManaHandler.getYieldUpgradeState(player)
 end
 
 return ManaHandler

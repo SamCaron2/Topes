@@ -87,10 +87,11 @@ design notes.
   as the new vision gets specified — rerunning it (every server start)
   rebuilds the `ManaZone` folder from scratch, so editing this file and
   reconnecting Rojo is how you iterate on world layout.
-- `ManaHandler.lua` — server-authoritative Mana collection (+1 per pickup,
-  written straight to `PlayerData`'s new `mana` field). Deliberately kept
-  separate from `ResourceEngine`/`GameConfig.Zones` for now — a fresh,
-  much simpler mechanic until the new vision calls for upgrades on it.
+- `ManaHandler.lua` — server-authoritative Mana collection and its one
+  upgrade so far: "Mana Per Pickup" (level 1-20, +1 Mana per pickup per
+  level, level costs `level * 10` Mana — a placeholder linear curve).
+  Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones` for
+  now — a fresh, much simpler mechanic until the new vision needs more.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
@@ -99,6 +100,11 @@ design notes.
   bounds (read off attributes `WorldBuilder` sets on that folder:
   `CenterX`/`CenterZ`/`Size`/`GroundY`). `RING_RADIUS` is the one number
   to bump later for a "bigger collection ring" upgrade.
+- `ManaYieldKioskClient.client.lua` — the first 3D upgrade card, standing
+  just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`). Its
+  BillboardGui (studs-sized, shrinks with distance) shows the current
+  "Mana Per Pickup" level, current yield, and a Buy button for the next
+  level, wired to `GetManaYieldState`/`BuyManaYieldUpgrade`.
 
 ## Manual steps required before everything works
 

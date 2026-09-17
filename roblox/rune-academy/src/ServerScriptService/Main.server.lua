@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local PlayerData = require(script.Parent.PlayerData)
+local ManaHandler = require(script.Parent.ManaHandler)
 local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
@@ -44,7 +45,9 @@ local getProfileFunction = newRemoteFunction("GetProfile")
 local equipTitleFunction = newRemoteFunction("EquipTitle")
 local getCurrencyStateFunction = newRemoteFunction("GetCurrencyState") -- args: zoneKey, currencyKey
 local getFloorTilesFunction = newRemoteFunction("GetFloorTiles") -- args: zoneKey
-local manaUpdatedEvent = newRemoteEvent("ManaUpdated") -- server -> client, fired on join and every pickup
+local manaUpdatedEvent = newRemoteEvent("ManaUpdated") -- server -> client, fired on join and every pickup/purchase
+local getManaYieldStateFunction = newRemoteFunction("GetManaYieldState")
+local buyManaYieldUpgradeFunction = newRemoteFunction("BuyManaYieldUpgrade")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -169,6 +172,18 @@ getFloorTilesFunction.OnServerInvoke = function(player, zoneKey)
 	end
 
 	return zoneState.floorTiles
+end
+
+getManaYieldStateFunction.OnServerInvoke = function(player)
+	return ManaHandler.getYieldUpgradeState(player)
+end
+
+buyManaYieldUpgradeFunction.OnServerInvoke = function(player)
+	local success, err, newState = ManaHandler.buyYieldUpgrade(player)
+	if success then
+		manaUpdatedEvent:FireClient(player, newState.mana)
+	end
+	return success, err, newState
 end
 
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered

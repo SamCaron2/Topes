@@ -108,3 +108,28 @@ local function spawnManaNode()
 end
 
 spawnManaNode()
+
+-- Upgrade cards live outside the platform, a few studs past the border.
+-- ManaYieldKioskClient finds this part by name and builds its BillboardGui UI.
+local kiosksFolder = Workspace:FindFirstChild("Kiosks")
+if kiosksFolder then
+	kiosksFolder:Destroy()
+end
+kiosksFolder = Instance.new("Folder")
+kiosksFolder.Name = "Kiosks"
+kiosksFolder.Parent = Workspace
+
+local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
+	local card = Instance.new("Part")
+	card.Name = name
+	card.Anchored = true
+	card.CanCollide = true
+	card.Material = Enum.Material.SmoothPlastic
+	card.Color = Color3.fromRGB(45, 45, 60)
+	card.Size = Vector3.new(6, 8, 1)
+	card.CFrame = CFrame.new(centerX + offsetX, groundY + 4, centerZ + offsetZ)
+	card.Parent = kiosksFolder
+	return card
+end
+
+makeKioskCard("ManaYieldKiosk", half + 6, 0)
