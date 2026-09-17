@@ -50,6 +50,43 @@ local function standardUpgrades(prefix, baseCost)
 	}
 end
 
+-- Floor tiles are LEVELED (walk onto the same tile repeatedly to level it
+-- up, like the reference game's "More Cash (5/5) -> x100k Cash" tiles),
+-- not a single one-time purchase. Two kinds:
+--   "boost"  - multiplies targetCurrency's production per level, up to maxLevel.
+--   "expand" - a one-time (maxLevel 1) map-unlock gate; other tiles can
+--              require one via `requiresTile` (that expand tile's key),
+--              and stay unbuyable until it's fully purchased. Matches the
+--              reference game's "Expand Map" tiles gating further tiles.
+local function boostTile(key, displayName, costCurrency, targetCurrency, baseCost, opts)
+	opts = opts or {}
+	return {
+		key = key,
+		displayName = displayName,
+		type = "boost",
+		costCurrency = costCurrency,
+		targetCurrency = targetCurrency,
+		maxLevel = opts.maxLevel or 5,
+		baseCost = baseCost,
+		costGrowth = opts.costGrowth or 2,
+		multiplierPerLevel = opts.multiplierPerLevel or 1.5,
+		requiresTile = opts.requiresTile,
+	}
+end
+
+local function expandTile(key, displayName, costCurrency, baseCost, requiresTile)
+	return {
+		key = key,
+		displayName = displayName,
+		type = "expand",
+		costCurrency = costCurrency,
+		maxLevel = 1,
+		baseCost = baseCost,
+		costGrowth = 1,
+		requiresTile = requiresTile,
+	}
+end
+
 GameConfig.Zones = {
 	{
 		key = "Academy",
@@ -95,9 +132,10 @@ GameConfig.Zones = {
 			},
 		},
 		floorTiles = {
-			{ key = "ManaVein1", displayName = "Mana Vein I", costCurrency = "Mana", cost = 500000, targetCurrency = "Mana", multiplier = 1.5 },
-			{ key = "ManaVein2", displayName = "Mana Vein II", costCurrency = "Mana", cost = 5000000, targetCurrency = "Mana", multiplier = 1.5 },
-			{ key = "EssenceWell1", displayName = "Essence Well I", costCurrency = "Essence", cost = 1000000, targetCurrency = "Essence", multiplier = 1.5 },
+			boostTile("ManaVein1", "Mana Vein I", "Mana", "Mana", 500000),
+			expandTile("ExpandAcademy1", "Expand Map", "Gold", 1e6),
+			boostTile("ManaVein2", "Mana Vein II", "Mana", "Mana", 5000000, { requiresTile = "ExpandAcademy1" }),
+			boostTile("EssenceWell1", "Essence Well I", "Essence", "Essence", 1000000, { requiresTile = "ExpandAcademy1" }),
 		},
 	},
 	{
@@ -119,7 +157,9 @@ GameConfig.Zones = {
 			},
 		},
 		floorTiles = {
-			{ key = "WhisperEcho1", displayName = "Echoing Whisper I", costCurrency = "Whispers", cost = 750000, targetCurrency = "Whispers", multiplier = 1.5 },
+			boostTile("WhisperEcho1", "Echoing Whisper I", "Whispers", "Whispers", 750000),
+			expandTile("ExpandFamiliarGrounds1", "Expand Map", "Whispers", 5000000),
+			boostTile("WhisperEcho2", "Echoing Whisper II", "Whispers", "Whispers", 5000000, { requiresTile = "ExpandFamiliarGrounds1" }),
 		},
 	},
 	{
@@ -165,8 +205,9 @@ GameConfig.Zones = {
 			},
 		},
 		floorTiles = {
-			{ key = "CopperSeam1", displayName = "Copper Seam I", costCurrency = "Copper", cost = 2000000, targetCurrency = "Copper", multiplier = 1.5 },
-			{ key = "TinSeam1", displayName = "Tin Seam I", costCurrency = "Tin", cost = 5e7, targetCurrency = "Tin", multiplier = 1.5 },
+			boostTile("CopperSeam1", "Copper Seam I", "Copper", "Copper", 2000000),
+			expandTile("ExpandFoundry1", "Expand Map", "Tin", 2e8),
+			boostTile("TinSeam1", "Tin Seam I", "Tin", "Tin", 5e7, { requiresTile = "ExpandFoundry1" }),
 		},
 	},
 	{
@@ -212,8 +253,9 @@ GameConfig.Zones = {
 			},
 		},
 		floorTiles = {
-			{ key = "PearlBed1", displayName = "Pearl Bed I", costCurrency = "Pearls", cost = 2000000, targetCurrency = "Pearls", multiplier = 1.5 },
-			{ key = "CoralReef1", displayName = "Coral Reef I", costCurrency = "Coral", cost = 5e7, targetCurrency = "Coral", multiplier = 1.5 },
+			boostTile("PearlBed1", "Pearl Bed I", "Pearls", "Pearls", 2000000),
+			expandTile("ExpandTidalGrotto1", "Expand Map", "Coral", 2e8),
+			boostTile("CoralReef1", "Coral Reef I", "Coral", "Coral", 5e7, { requiresTile = "ExpandTidalGrotto1" }),
 		},
 	},
 	{
@@ -250,7 +292,8 @@ GameConfig.Zones = {
 			},
 		},
 		floorTiles = {
-			{ key = "StardustField1", displayName = "Stardust Field I", costCurrency = "Stardust", cost = 2e8, targetCurrency = "Stardust", multiplier = 1.5 },
+			boostTile("StardustField1", "Stardust Field I", "Stardust", "Stardust", 2e8),
+			expandTile("ExpandStarfallPeak1", "Expand Map", "CometShards", 2e10),
 		},
 	},
 }

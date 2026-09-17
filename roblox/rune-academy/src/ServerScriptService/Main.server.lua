@@ -41,6 +41,7 @@ local requestPurchaseEvent = newRemoteEvent("RequestPurchase")
 local getProfileFunction = newRemoteFunction("GetProfile")
 local equipTitleFunction = newRemoteFunction("EquipTitle")
 local getCurrencyStateFunction = newRemoteFunction("GetCurrencyState") -- args: zoneKey, currencyKey
+local getFloorTilesFunction = newRemoteFunction("GetFloorTiles") -- args: zoneKey
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -142,6 +143,22 @@ getCurrencyStateFunction.OnServerInvoke = function(player, zoneKey, currencyKey)
 		upgradeLevels = state.upgradeLevels,
 		selfPrestigeTier = state.selfPrestigeTier,
 	}
+end
+
+-- Read-only snapshot of a zone's floor tile levels, for the tiles' floating
+-- labels to render level/cost/locked state against.
+getFloorTilesFunction.OnServerInvoke = function(player, zoneKey)
+	if type(zoneKey) ~= "string" then
+		return nil
+	end
+
+	local data = PlayerData.get(player)
+	local zoneState = data and data.zones[zoneKey]
+	if not zoneState then
+		return nil
+	end
+
+	return zoneState.floorTiles
 end
 
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered

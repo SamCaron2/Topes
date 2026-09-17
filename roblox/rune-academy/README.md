@@ -65,7 +65,11 @@ monetization plan).
   column). Nothing about adding a currency or floor tile needs manual
   Studio building anymore — it's a config change.
 - `FloorTileClient.client.lua` — walking onto a `FloorTile`-tagged part
-  (WorldBuilder-generated) asks the server to buy it.
+  (WorldBuilder-generated) buys/levels it up (tiles are leveled, up to
+  `maxLevel`, cost scaling like upgrade cards) or, for an "Expand Map"
+  tile, unlocks whatever other tiles have it as their `requiresTile`.
+  Renders live level/cost/locked state on each tile's label, polling once
+  per zone rather than per tile.
 - `UpgradeKioskClient.client.lua` — builds the actual **3D-world upgrade
   boards**: a `BillboardGui` mounted on each `UpgradeKiosk` part
   WorldBuilder creates (one per currency), sized in studs so it reads as a

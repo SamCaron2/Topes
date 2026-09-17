@@ -34,14 +34,19 @@ local function colorForCurrency(currencyKey: string): Color3
 	return CURRENCY_COLORS[currencyKey] or Color3.fromRGB(200, 200, 200)
 end
 
+-- Named consistently (InfoBoard/InfoLabel) so client scripts that need to
+-- update this text live later (FloorTileClient does, for level/cost/locked
+-- state) can find it without guessing structure.
 local function addLabel(part: BasePart, text: string, yOffset: number, textSize: number)
 	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "InfoBoard"
 	billboard.Size = UDim2.new(0, 140, 0, 36)
 	billboard.StudsOffset = Vector3.new(0, yOffset, 0)
 	billboard.AlwaysOnTop = true
 	billboard.Parent = part
 
 	local label = Instance.new("TextLabel")
+	label.Name = "InfoLabel"
 	label.Size = UDim2.new(1, 0, 1, 0)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.GothamBold
@@ -74,6 +79,10 @@ local function buildNode(parent: Instance, zoneKey: string, currency, position: 
 	return part
 end
 
+-- Boost tiles are green, Expand Map tiles are orange, matching the
+-- reference game's visual distinction between the two tile kinds. Initial
+-- label text is a placeholder - FloorTileClient overwrites it immediately
+-- with live level/cost/locked state.
 local function buildFloorTile(parent: Instance, zoneKey: string, tile, position: Vector3)
 	local part = Instance.new("Part")
 	part.Name = "Tile_" .. tile.key
@@ -81,7 +90,7 @@ local function buildFloorTile(parent: Instance, zoneKey: string, tile, position:
 	part.Size = Vector3.new(6, 1, 6)
 	part.Position = position
 	part.Anchored = true
-	part.Color = Color3.fromRGB(90, 200, 110)
+	part.Color = if tile.type == "expand" then Color3.fromRGB(210, 120, 60) else Color3.fromRGB(90, 200, 110)
 	part.Material = Enum.Material.Neon
 	part.Parent = parent
 
@@ -89,7 +98,7 @@ local function buildFloorTile(parent: Instance, zoneKey: string, tile, position:
 	part:SetAttribute("TileKey", tile.key)
 	CollectionService:AddTag(part, "FloorTile")
 
-	addLabel(part, ("%s\nx%.2f %s"):format(tile.displayName, tile.multiplier, tile.targetCurrency), 3, 13)
+	addLabel(part, tile.displayName, 3, 13)
 
 	return part
 end

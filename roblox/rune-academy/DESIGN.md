@@ -47,10 +47,20 @@ pacing below).
    into it — so a chain you've cycled through many times starts you off
    faster the next time you reach it.
 
-**Floor tiles** are a fifth, separate layer: a walkable, permanent
-production-multiplier tree per zone (e.g. "500k Bronze → x1.5 Bronze
-production"). Never reset by anything — the permanent investment layer,
-same category as Runes and Ascension count.
+**Floor tiles** are a fifth, separate layer: a walkable, permanent,
+**leveled** production-multiplier tree per zone (e.g. "More Mana (3/5) →
+x1.5 Mana production per level, up to 5 levels"). Walk onto the same tile
+repeatedly to level it up — same "3 clicks, cost scales up" shape as the
+upgrade cards, just triggered by touch instead of a Buy/Max button. Never
+reset by anything — the permanent investment layer, same category as
+Runes and Ascension count.
+
+One tile type is special: **Expand Map** tiles are a one-time (not
+leveled) gate costing a currency (often the zone's top-tier one) that
+other tiles can require before they're buyable at all (`requiresTile` in
+config) — matches the reference game's "Expand Map: Cost 1e635 Cash"
+tiles gating further tiles behind a big spend, rather than every tile
+being available from the start.
 
 **The 16 currencies, by zone:**
 

@@ -111,8 +111,9 @@ end
 local function floorTileMultiplier(zone, currencyKey: string, zoneState)
 	local multiplier = 1
 	for _, tile in zone.floorTiles do
-		if tile.targetCurrency == currencyKey and zoneState.floorTiles[tile.key] then
-			multiplier *= tile.multiplier
+		if tile.type == "boost" and tile.targetCurrency == currencyKey then
+			local level = zoneState.floorTiles[tile.key] or 0
+			multiplier *= tile.multiplierPerLevel ^ level
 		end
 	end
 	return multiplier
@@ -335,19 +336,29 @@ function ResourceEngine.buyFloorTile(player: Player, zoneKey: string, tileKey: s
 	end
 
 	local zoneState = data.zones[zoneKey]
-	if zoneState.floorTiles[tileKey] then
-		return false, "Already purchased"
+	local level = zoneState.floorTiles[tileKey] or 0
+	if level >= tile.maxLevel then
+		return false, "Maxed"
 	end
 
+	if tile.requiresTile then
+		local requiredTile = findFloorTile(zone, tile.requiresTile)
+		local requiredLevel = zoneState.floorTiles[tile.requiresTile] or 0
+		if not requiredTile or requiredLevel < requiredTile.maxLevel then
+			return false, "Locked"
+		end
+	end
+
+	local cost = tile.baseCost * (tile.costGrowth ^ level)
 	local costState = getCurrencyState(data, zoneKey, tile.costCurrency)
-	if costState.amount < tile.cost then
+	if costState.amount < cost then
 		return false, "Requirement not met"
 	end
 
-	costState.amount -= tile.cost
-	zoneState.floorTiles[tileKey] = true
+	costState.amount -= cost
+	zoneState.floorTiles[tileKey] = level + 1
 
-	return true
+	return true, level + 1
 end
 
 return ResourceEngine
