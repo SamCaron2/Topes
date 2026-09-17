@@ -80,7 +80,7 @@ design notes.
   `friendBoost = true`, once a currency has that flag again.
 
 - `WorldBuilder.server.lua` — generates world content on server start.
-  Currently just the 20x20 Mana collection platform: a hollow square
+  Currently just the 60x60 Mana collection platform: a hollow square
   outline (4 thin Neon parts, non-collide) sitting flush on the ground,
   centered on `SpawnLocation`. Grows one piece at a time as the new
   vision gets specified — rerunning it (every server start) rebuilds the

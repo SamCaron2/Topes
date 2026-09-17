@@ -4,7 +4,7 @@
 
 local Workspace = game:GetService("Workspace")
 
-local MANA_ZONE_SIZE = 20 -- studs, square
+local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
 local BORDER_HEIGHT = 0.2
 
