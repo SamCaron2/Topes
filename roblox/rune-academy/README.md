@@ -79,12 +79,18 @@ design notes.
   `GameConfig.FriendBoost` on top of any currency flagged
   `friendBoost = true`, once a currency has that flag again.
 
+- `WorldBuilder.server.lua` — generates world content on server start.
+  Currently just the 20x20 Mana collection platform: a hollow square
+  outline (4 thin Neon parts, non-collide) sitting flush on the ground,
+  centered on `SpawnLocation`. Grows one piece at a time as the new
+  vision gets specified — rerunning it (every server start) rebuilds the
+  `ManaZone` folder from scratch, so editing this file and reconnecting
+  Rojo is how you iterate on world layout.
+
 There's currently no `StarterPlayerScripts` client code at all — no HUD,
-no menu, no title display, nothing world-generating. `src/StarterPlayerScripts/`
-is empty. The world-generation script (`WorldBuilder.server.lua`) and every
-client script that drove the old 3D-kiosk UI were deleted in the reset;
-Studio now just shows the baseplate. All of that gets rebuilt from scratch
-against whatever the new vision needs.
+no menu, no title display. `src/StarterPlayerScripts/` is empty. Every
+client script that drove the old 3D-kiosk UI was deleted in the reset and
+gets rebuilt from scratch against whatever the new vision needs.
 
 ## Manual steps required before everything works
 
