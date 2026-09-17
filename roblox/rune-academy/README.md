@@ -59,23 +59,31 @@ monetization plan).
   are in the same server (live, never saved); `ResourceEngine` applies
   `GameConfig.FriendBoost` on top of any currency flagged
   `friendBoost = true` (currently just Gold).
-- `ManaPanelClient.client.lua` — upgrade cards (Buy/Max) and a chain-reset
-  button, hardcoded to Academy Mana for now. Amount comes from the live
-  leaderstat; levels/costs come from the `GetCurrencyState` remote. Worth
-  generalizing into a per-currency panel once this shape is proven out,
-  rather than copy-pasting one script per currency.
-- `WorldBuilder.server.lua` — generates every resource node and floor tile
-  in the world directly from `GameConfig.Zones` on server start (plain
-  grid layout, one zone per column). Nothing about adding a currency or
-  floor tile needs manual Studio building anymore — it's a config change.
+- `WorldBuilder.server.lua` — generates every resource node, floor tile,
+  and upgrade kiosk in the world directly from `GameConfig.Zones` on
+  server start (plain grid layout, one zone per column). Nothing about
+  adding a currency or floor tile needs manual Studio building anymore —
+  it's a config change.
 - `FloorTileClient.client.lua` — walking onto a `FloorTile`-tagged part
   (WorldBuilder-generated) asks the server to buy it.
-- `RunePanelClient.client.lua` — Pull Rune button, your Scrolls count, and
-  a live feed of every rune pull across the server (color-coded by rank).
-- `StoreClient.client.lua` — a toggleable Power Store panel listing every
-  `GameConfig.DevProducts`/`GamePasses` entry with a Buy button. Buying
-  currently no-ops for all of them until real ids replace the `id = 0`
-  placeholders (see Manual Steps below) — that's expected.
+- `UpgradeKioskClient.client.lua` — builds the actual **3D-world upgrade
+  boards**: a `BillboardGui` mounted on each `UpgradeKiosk` part
+  WorldBuilder creates (one per currency), sized in studs so it reads as a
+  physical sign rather than a screen overlay. Shows upgrade cards
+  (Buy/Max), a self-prestige button where configured, and a chain-reset
+  button where configured — generic across every currency, not just Mana.
+- `CurrencyHUDClient.client.lua` — the only persistent on-screen UI: a
+  small stat list (Mana/Essence/Gold/Scrolls/Gems) in the top-right
+  corner, matching the reference game's minimal always-visible column.
+- `SideMenuClient.client.lua` — the left-side icon column (Shop, Runes,
+  Profile, Settings). Clicking an icon opens a shared popup panel built
+  from a module in `Panels/` (`Profile`/`Settings` are stub "Coming soon"
+  panels for now).
+- `Panels/StorePanel.lua`, `Panels/RunePanel.lua` — the actual content for
+  the Shop and Runes popups (module scripts `SideMenuClient` builds into
+  its shared panel frame). Store buying currently no-ops for every entry
+  until real ids replace the `id = 0` placeholders (see Manual Steps below)
+  — that's expected.
 
 ## Manual steps required before everything works
 
@@ -105,11 +113,21 @@ is a leftover duplicate (both would grant Mana, doubling your rate).
 
 ## Not yet built (next steps)
 
-- Remaining UI (self-prestige button, leaderboards, codes input, a "Main"
-  profile screen that calls `GetProfile`, a title-picker that calls
-  `EquipTitle`).
+- Real Profile and Settings panels (currently "Coming soon" stubs in the
+  side menu) — Profile should call `GetProfile` and a title-picker calling
+  `EquipTitle`; Settings is undecided scope.
+- Leaderboards and a codes-redemption input — still no UI or 3D placement
+  decided for either.
 - Real level design/terrain/art — `WorldBuilder` currently lays out a
-  plain grid of colored balls and blocks per zone, purely functional.
+  plain grid of colored balls, blocks, and kiosk boards per zone, purely
+  functional. Making the kiosks/nodes/tiles actually look like a wizard
+  academy (custom meshes, particle effects, terrain, lighting) is real,
+  separate work from here.
+- The kiosk boards' `GetCurrencyState` refresh polls the server once per
+  second per open kiosk (~16 RPCs/sec with every kiosk visible at once,
+  though `MaxDistance` limits how many actually render/matter at a time).
+  Fine for solo testing; worth batching into one call if this becomes a
+  real bottleneck with many players.
 - OrderedDataStore-backed leaderboards (Gold / Runes Opened / Playtime /
   Robux Spent, Global + F2P split).
 - Community codes module + redemption remote.

@@ -19,6 +19,8 @@ local ZONE_SPACING_STUDS = 300 -- how far apart each zone's grid sits, along X
 local NODE_SPACING_STUDS = 10
 local TILE_SPACING_STUDS = 8
 local TILE_ROW_Z_OFFSET = 20
+local KIOSK_SPACING_STUDS = 10
+local KIOSK_ROW_Z_OFFSET = -15
 
 local CURRENCY_COLORS = {
 	Mana = Color3.fromRGB(150, 100, 240),
@@ -92,6 +94,28 @@ local function buildFloorTile(parent: Instance, zoneKey: string, tile, position:
 	return part
 end
 
+-- The physical stand an UpgradeKioskClient.client.lua BillboardGui gets
+-- mounted onto - one per currency, regardless of collectMode, matching the
+-- reference game having a board for every currency (Diamond Upgrades, Sand
+-- Upgrades) not just the ones you click/stand on directly.
+local function buildKiosk(parent: Instance, zoneKey: string, currency, position: Vector3)
+	local part = Instance.new("Part")
+	part.Name = "Kiosk_" .. currency.key
+	part.Shape = Enum.PartType.Block
+	part.Size = Vector3.new(6, 8, 1)
+	part.Position = position
+	part.Anchored = true
+	part.Color = Color3.fromRGB(40, 34, 60)
+	part.Material = Enum.Material.SmoothPlastic
+	part.Parent = parent
+
+	part:SetAttribute("ZoneKey", zoneKey)
+	part:SetAttribute("CurrencyKey", currency.key)
+	CollectionService:AddTag(part, "UpgradeKiosk")
+
+	return part
+end
+
 local worldFolder = Instance.new("Folder")
 worldFolder.Name = "GeneratedWorld"
 worldFolder.Parent = Workspace
@@ -117,5 +141,12 @@ for zoneIndex, zone in GameConfig.Zones do
 		local position = Vector3.new(zoneOriginX + tileIndex * TILE_SPACING_STUDS, 0.5, TILE_ROW_Z_OFFSET)
 		buildFloorTile(zoneFolder, zone.key, tile, position)
 		tileIndex += 1
+	end
+
+	local kioskIndex = 0
+	for _, currency in zone.currencies do
+		local position = Vector3.new(zoneOriginX + kioskIndex * KIOSK_SPACING_STUDS, 5, KIOSK_ROW_Z_OFFSET)
+		buildKiosk(zoneFolder, zone.key, currency, position)
+		kioskIndex += 1
 	end
 end

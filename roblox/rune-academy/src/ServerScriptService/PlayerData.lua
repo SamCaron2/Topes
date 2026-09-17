@@ -126,6 +126,11 @@ function PlayerData.load(player: Player)
 	mana.Value = data.zones.Academy.currencies.Mana.amount or 0
 	mana.Parent = leaderstats
 
+	local essence = Instance.new("NumberValue")
+	essence.Name = "Essence"
+	essence.Value = data.zones.Academy.currencies.Essence.amount or 0
+	essence.Parent = leaderstats
+
 	local gold = Instance.new("NumberValue")
 	gold.Name = "Gold"
 	gold.Value = data.zones.Academy.currencies.Gold.amount or 0
@@ -140,6 +145,11 @@ function PlayerData.load(player: Player)
 	scrolls.Name = "Scrolls"
 	scrolls.Value = data.scrolls or 0
 	scrolls.Parent = leaderstats
+
+	local gems = Instance.new("NumberValue")
+	gems.Name = "Gems"
+	gems.Value = data.gems or 0
+	gems.Parent = leaderstats
 
 	return data
 end
@@ -208,9 +218,11 @@ task.spawn(function()
 			local leaderstats = player:FindFirstChild("leaderstats")
 			if leaderstats then
 				leaderstats.Mana.Value = data.zones.Academy.currencies.Mana.amount
+				leaderstats.Essence.Value = data.zones.Academy.currencies.Essence.amount
 				leaderstats.Gold.Value = data.zones.Academy.currencies.Gold.amount
 				leaderstats.Ascensions.Value = data.ascensionCount
 				leaderstats.Scrolls.Value = data.scrolls
+				leaderstats.Gems.Value = data.gems
 			end
 		end
 	end

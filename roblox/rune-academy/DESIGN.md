@@ -151,7 +151,39 @@ with "Expand Map & Unlock Strength" nodes). Each tile shows:
 Walking further out unlocks new tiles ("Expand Academy" tiles cost Gold and
 extend the path, gating late-game stats behind exploration + spend).
 
-## 5. Runes (gacha pull system)
+## 5. UI architecture: 3D-in-world boards, not screen overlays
+
+Deliberate split, matching how the reference game actually structures its
+UI (confirmed against its own screenshots, not assumed):
+
+- **Persistent on-screen UI is minimal.** Just a small stat list
+  (Mana/Essence/Gold/Scrolls/Gems, top-right) and a column of menu icons
+  (Shop/Runes/Profile/Settings, left side). Nothing else lives glued to
+  the screen permanently.
+- **Per-currency upgrade panels are physical objects in the world**, not
+  screen-anchored overlays. Every currency gets an `UpgradeKiosk` — a
+  standing board `BillboardGui`, sized in studs so it reads as a real
+  sign that shrinks with distance — showing that currency's upgrade
+  cards, self-prestige button, and chain-reset button. Walk up to a
+  currency's kiosk to interact with it; walk away and it's just part of
+  the scenery, exactly like the reference game's "Diamond Upgrades" /
+  "Sand Upgrades" boards.
+- **Deeper menus (Shop, Runes, eventually Profile/Settings/Leaderboards)
+  are popups**, opened by clicking their icon in the left-side column,
+  not tied to a physical location — matches the reference game's Prestige
+  screen behaving the same way.
+
+Why split it this way rather than putting everything in 2D menus (simpler
+to build) or everything as 3D kiosks (more immersive but impractical for
+things with no natural physical location, like the Store): each currency
+naturally has a place in the world already (its collection node), so its
+upgrade board belongs there too — walking between zones and each zone's
+board reinforces "this is a place," not just a stat to manage from a menu.
+Things without a natural location (buying Robux products, checking your
+own profile) don't gain anything from forcing a 3D location on them, so
+they stay as traditional popups.
+
+## 6. Runes (gacha pull system)
 
 - Currency: **Scrolls** (reskin of "Steak") — earned as a byproduct of
   hitting Mana/Essence milestones, or bought with Gems.
@@ -176,10 +208,11 @@ extend the path, gating late-game stats behind exploration + spend).
   Clone" combo runes).
 - Fortune stat shifts the odds table toward rarer tiers — gives Fortune
   investment a clear payoff.
-- Live feed (bottom-right of screen) ticks server-wide rune pulls in
-  real time — pure social proof / FOMO, no gameplay effect.
+- Live feed (inside the Runes menu, opened via the left-side icon column)
+  ticks server-wide rune pulls in real time — pure social proof / FOMO,
+  no gameplay effect.
 
-## 6. Ascension (prestige)
+## 7. Ascension (prestige)
 
 Multi-tier prestige, each tier permanent once reached:
 
@@ -201,7 +234,7 @@ progress" layers that keep players from feeling like ascension is a
 punishment (see section 2's four-layer breakdown for why those specific
 things survive a reset).
 
-## 7. Leaderboards
+## 8. Leaderboards
 
 Four boards, each with a **Global** and **F2P** (free-to-play, i.e.
 Robux-spent filtered to ~0) toggle, refreshed periodically via
@@ -217,7 +250,7 @@ Roblox monetization lever (whale recognition). F2P split lets grindy
 players compete without feeling priced out, which keeps retention up for
 the players who'll never spend but do bring friends/engagement.
 
-## 8. Community codes
+## 9. Community codes
 
 A text-entry field under Settings. Redeeming a valid code (checked against
 a `ModuleScript` allowlist updated via game update, not live-edited) grants
@@ -225,7 +258,7 @@ one-time or timed effects: bonus Scrolls, a temporary 2x Mana multiplier,
 a free Rune pull. Standard marketing lever — codes get posted on the game's
 Discord/social to drive spikes in DAU around updates.
 
-## 9. Monetization plan — the Power Store
+## 10. Monetization plan — the Power Store
 
 The stated goal for this project is Robux spend, not just engagement, so the
 store isn't cosmetic-first — it's a direct, uncapped power lever. Two kinds
@@ -274,7 +307,7 @@ the one manual step left: creating the real GamePass/Dev Product assets in
 Studio and pasting their IDs into `GameConfig.lua` (they're all placeholder
 `id = 0` right now).
 
-## 10. Profile & Titles
+## 11. Profile & Titles
 
 **"Main" profile screen** (not yet built as a UI, but the server side is —
 `GetProfile` RemoteFunction returns everything it needs): account name +
@@ -328,7 +361,7 @@ Three things need real values before these work as intended (see README):
 Fan), and the UserId allowlists (for Tester/Admin/Owner) — all placeholder
 `nil`/`0`/`{}` right now.
 
-## 11. Tech plan
+## 12. Tech plan
 
 - **Rojo**-based project (`default.project.json`) so this folder stays the
   source of truth and syncs into Roblox Studio — install the Rojo plugin
@@ -339,7 +372,7 @@ Fan), and the UserId allowlists (for Tester/Admin/Owner) — all placeholder
   autosave, retry-on-fail) — start simple, harden before launch.
 - `NumberFormat` module shared client/server for suffix notation.
 
-## 12. Open questions for you
+## 13. Open questions for you
 
 - Final game name (placeholder: "Rune Academy")
 - Visual style: low-poly fantasy (matches source game's blocky look) vs.
