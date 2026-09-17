@@ -72,9 +72,13 @@ column.BackgroundTransparency = 1
 column.Parent = background
 
 -- Fake icon for now - a plain circle standing in for a real Mana icon later.
+-- Anchored at its own center (not the default top-left) so the
+-- UIAspectRatioConstraint below - which shrinks it to a square - shrinks
+-- toward the middle instead of pulling it visibly left of the text below it.
 local iconFrame = Instance.new("Frame")
+iconFrame.AnchorPoint = Vector2.new(0.5, 0)
 iconFrame.Size = UDim2.new(0.55, 0, 0.22, 0)
-iconFrame.Position = UDim2.new(0.225, 0, 0, 0)
+iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
 iconFrame.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
 iconFrame.BorderSizePixel = 0
 iconFrame.Parent = column
