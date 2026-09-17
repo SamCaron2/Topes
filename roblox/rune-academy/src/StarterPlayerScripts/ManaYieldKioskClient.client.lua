@@ -21,7 +21,11 @@ billboard.Name = "ManaYieldBoard"
 billboard.Size = UDim2.new(9, 0, 12, 0) -- Scale component = studs on a BillboardGui
 billboard.StudsOffsetWorldSpace = Vector3.new(-(kiosk.Size.X / 2 + 0.6), 0, 0)
 billboard.MaxDistance = 60
-billboard.AlwaysOnTop = false
+-- Without this, the panel is depth-tested against real 3D geometry, so the
+-- card's own body (or anything else between it and the camera) cuts into
+-- different parts of the flat panel as the camera orbits - looks like the
+-- panel is "moving" when it's actually the card occluding it inconsistently.
+billboard.AlwaysOnTop = true
 billboard.Adornee = kiosk
 billboard.Parent = kiosk
 
