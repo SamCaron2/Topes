@@ -7,7 +7,27 @@ local Players = game:GetService("Players")
 
 local GameConfig = require(game.ReplicatedStorage.Modules.GameConfig)
 
-local SAVE_STORE = DataStoreService:GetDataStore("RuneAcademy_PlayerData_v1")
+-- GetDataStore() itself throws (not just Get/SetAsync) when API access isn't
+-- available - an unpublished Studio place, or a published one with "Enable
+-- Studio Access to API Services" left off under Game Settings > Security.
+-- Without this pcall that throw happens at module-load time, outside any
+-- function we control, and takes down every script that requires PlayerData
+-- with it. Falling back to nil here means Studio testing works out of the
+-- box with no persistence, instead of refusing to run at all.
+local SAVE_STORE
+do
+	local success, result = pcall(function()
+		return DataStoreService:GetDataStore("RuneAcademy_PlayerData_v1")
+	end)
+	if success then
+		SAVE_STORE = result
+	else
+		warn(
+			"RuneAcademy: DataStores unavailable (enable 'Studio Access to API Services' under Game Settings > Security, and publish the place, to test saving). Progress will not persist between Play sessions until then."
+		)
+	end
+end
+
 local AUTOSAVE_INTERVAL = 120
 
 local PlayerData = {}
@@ -83,11 +103,15 @@ function PlayerData.waitForLoad(player: Player)
 end
 
 function PlayerData.load(player: Player)
-	local success, result = pcall(function()
-		return SAVE_STORE:GetAsync("Player_" .. player.UserId)
-	end)
-
-	local data = (success and result) or defaultData()
+	local data
+	if SAVE_STORE then
+		local success, result = pcall(function()
+			return SAVE_STORE:GetAsync("Player_" .. player.UserId)
+		end)
+		data = (success and result) or defaultData()
+	else
+		data = defaultData()
+	end
 	if not data.firstJoinedAt then
 		data.firstJoinedAt = os.time()
 	end
@@ -116,7 +140,7 @@ end
 -- automatic ProcessReceipt retry can grant it again later instead of losing it.
 function PlayerData.save(player: Player): boolean
 	local data = sessions[player]
-	if not data then
+	if not data or not SAVE_STORE then
 		return false
 	end
 
