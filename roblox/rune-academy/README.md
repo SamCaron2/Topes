@@ -187,10 +187,11 @@ design notes.
   the board's face (not a `BillboardGui` - a Billboard always turns to
   face the camera, so it visibly slides around as you walk past; a
   SurfaceGui is flat against the physical face, unreadable from behind,
-  exactly like a real sign). Buy/Max turn green/yellow when affordable,
-  red when they aren't, and gray with "Maxed" text once a column hits
-  its max level - tracked live off the same `ManaUpdated` event the HUD
-  counter uses.
+  exactly like a real sign). Buy/Max turn green/yellow when affordable
+  and red when they aren't, tracked live off the same `ManaUpdated`
+  event the HUD counter uses. Once a column hits its max level, Max is
+  hidden and Buy expands to a single full-width gray "Maxed" button
+  instead of showing two redundant maxed-out buttons.
 
 ## Manual steps required before everything works
 

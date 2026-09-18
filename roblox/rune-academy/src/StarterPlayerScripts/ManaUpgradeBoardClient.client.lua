@@ -191,20 +191,29 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	maxPadding.PaddingRight = UDim.new(0.15, 0)
 	maxPadding.Parent = maxButton
 
+	local BUY_SIZE = buyButton.Size
+	local BUY_POSITION = buyButton.Position
+	local MAXED_SIZE = UDim2.new(1, 0, 0.16, 0)
+	local MAXED_POSITION = UDim2.new(0, 0, 0.82, 0)
+
 	local currentMana = 0
 	local nextLevelCost = nil -- nil once maxed
 
 	local function updateButtonColors()
 		if nextLevelCost == nil then
+			-- One full-width "Maxed" button instead of two redundant ones.
+			maxButton.Visible = false
+			buyButton.Size = MAXED_SIZE
+			buyButton.Position = MAXED_POSITION
 			buyButton.Active = false
-			maxButton.Active = false
 			buyButton.Text = "Maxed"
-			maxButton.Text = "Maxed"
 			buyButton.BackgroundColor3 = COLOR_MAXED_OUT
-			maxButton.BackgroundColor3 = COLOR_MAXED_OUT
 			return
 		end
 
+		maxButton.Visible = true
+		buyButton.Size = BUY_SIZE
+		buyButton.Position = BUY_POSITION
 		buyButton.Text = "Buy"
 		maxButton.Text = "Max"
 
