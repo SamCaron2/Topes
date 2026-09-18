@@ -84,11 +84,14 @@ design notes.
   built-in Grass material, no image asset needed) 60 studs up, and lifts
   `SpawnLocation` onto its surface — everything else (platform, Mana
   nodes, kiosk board) is positioned relative to `SpawnLocation`, so it
-  all rides up with it. Walk off the edge and you fall into the void;
-  `Workspace.FallenPartsDestroyHeight` (30 studs below the island)
-  destroys your character once you've fallen that far, and Roblox
-  respawns you at `SpawnLocation` automatically, same as any other
-  death. Future unlockable areas are meant to be more islands like this
+  all rides up with it. Walk off the edge and you fall into the void; a
+  poll every 0.5s (`FALL_CHECK_INTERVAL`) kills any player who's fallen
+  30 studs below the island surface, and Roblox respawns them at
+  `SpawnLocation` automatically, same as any other death. This is a
+  manual poll rather than the simpler `Workspace.FallenPartsDestroyHeight`
+  because writing that property from a normal server Script is blocked
+  ("lacking capability Plugin") - Roblox restricts it to Studio/plugin
+  contexts. Future unlockable areas are meant to be more islands like this
   one, gated behind a Mana threshold or similar — not built yet.
   Contains the 60x60 Mana collection platform (a hollow square outline,
   4 thin Neon parts, non-collide) plus Mana cubes spawned inside it:
@@ -199,10 +202,10 @@ by hand in Workspace — they're just leftover geometry, nothing references
 them.
 
 The original `Baseplate` from Studio's blank template is still down at
-its original spot (around y=0), well below where `FallenPartsDestroyHeight`
-now destroys a falling character — so it's harmless but also never
-actually reachable anymore. It's left in place rather than auto-deleted
-since it's Studio-authored content, not something `WorldBuilder` created;
+its original spot (around y=0), well below where the fall check now
+kills a falling character — so it's harmless but also never actually
+reachable anymore. It's left in place rather than auto-deleted since
+it's Studio-authored content, not something `WorldBuilder` created;
 delete it by hand in Workspace if you want it gone for good.
 
 ## Not yet built (next steps)

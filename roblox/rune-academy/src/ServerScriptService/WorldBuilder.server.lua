@@ -52,9 +52,27 @@ end
 -- gating access to them (e.g. behind a Mana threshold) - not built yet.
 
 -- Run off the edge and you fall into the void; once you're this far below
--- the island's surface, Roblox destroys your character and respawns you at
--- SpawnLocation automatically, same as any other death.
-Workspace.FallenPartsDestroyHeight = ISLAND_TOP_Y - FALL_KILL_MARGIN
+-- the island's surface, killing the Humanoid triggers Roblox's normal
+-- death-and-respawn-at-SpawnLocation behavior. This is a manual poll rather
+-- than the simpler Workspace.FallenPartsDestroyHeight because writing that
+-- property from a normal server Script is blocked ("lacking capability
+-- Plugin") - it's restricted to Studio/plugin contexts only.
+local FALL_KILL_Y = ISLAND_TOP_Y - FALL_KILL_MARGIN
+local FALL_CHECK_INTERVAL = 0.5
+
+task.spawn(function()
+	while true do
+		task.wait(FALL_CHECK_INTERVAL)
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			if rootPart and humanoid and humanoid.Health > 0 and rootPart.Position.Y < FALL_KILL_Y then
+				humanoid.Health = 0
+			end
+		end
+	end
+end)
 
 local function findGroundAnchor()
 	if spawnPart then
