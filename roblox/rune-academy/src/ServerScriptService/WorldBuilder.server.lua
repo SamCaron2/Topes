@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 
 local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
+local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -119,13 +120,14 @@ makeBorderPart("BorderSouth", MANA_ZONE_SIZE, BORDER_THICKNESS, 0, half - BORDER
 makeBorderPart("BorderEast", BORDER_THICKNESS, MANA_ZONE_SIZE, half - BORDER_THICKNESS / 2, 0)
 makeBorderPart("BorderWest", BORDER_THICKNESS, MANA_ZONE_SIZE, -half + BORDER_THICKNESS / 2, 0)
 
--- Several Mana cubes spawned at once: touch one for Mana, a replacement
--- spawns elsewhere after a delay set by the COLLECTING player's own "Mana
--- Spawn Speed" level (see ManaSpawnHandler). That same upgrade also raises
--- how many nodes exist in the world at once (3 at level 1, up to 10 at level
--- 10) - TOP_UP_INTERVAL polls for that rising instead of only reacting to
--- pickups, so a purchase (or another player joining with a higher level)
--- adds nodes without needing one to be collected first.
+-- Several Mana cubes spawned at once: get within range of one (see the
+-- collection loop below) for Mana, and a replacement spawns elsewhere after
+-- a delay set by the COLLECTING player's own "Mana Spawn Speed" level (see
+-- ManaSpawnHandler). That same upgrade also raises how many nodes exist in
+-- the world at once (3 at level 1, up to 10 at level 10) - TOP_UP_INTERVAL
+-- polls for that rising instead of only reacting to pickups, so a purchase
+-- (or another player joining with a higher level) adds nodes without
+-- needing one to be collected first.
 local TOP_UP_INTERVAL = 2
 
 local function randomPointInZone()
@@ -147,28 +149,43 @@ local function spawnManaNode()
 	node.Size = MANA_NODE_SIZE
 	node.CFrame = CFrame.new(x, groundY + MANA_NODE_SIZE.Y / 2, z)
 	node.Parent = manaZone
-
-	local claimed = false
-	node.Touched:Connect(function(hit)
-		if claimed then
-			return
-		end
-		local character = hit.Parent
-		local player = character and Players:GetPlayerFromCharacter(character)
-		if not player then
-			return
-		end
-		claimed = true
-
-		local newAmount = ManaHandler.collect(player)
-		if newAmount then
-			manaUpdatedEvent:FireClient(player, newAmount)
-		end
-
-		node:Destroy()
-		task.delay(ManaSpawnHandler.getRespawnSeconds(player), spawnManaNode)
-	end)
 end
+
+local function collectNode(node: BasePart, player: Player)
+	node:Destroy()
+	local newAmount = ManaHandler.collect(player)
+	if newAmount then
+		manaUpdatedEvent:FireClient(player, newAmount)
+	end
+	task.delay(ManaSpawnHandler.getRespawnSeconds(player), spawnManaNode)
+end
+
+-- Collection is range-based, not touch-based: every COLLECT_CHECK_INTERVAL,
+-- any live node within a player's current "Collection Range" upgrade radius
+-- (CollectionRangeHandler) gets collected automatically, matching the ring
+-- ManaRingClient draws around their feet.
+local COLLECT_CHECK_INTERVAL = 0.15
+
+task.spawn(function()
+	while true do
+		task.wait(COLLECT_CHECK_INTERVAL)
+		for _, node in manaZone:GetChildren() do
+			if node.Name == "ManaNode" and node.Parent then
+				for _, player in Players:GetPlayers() do
+					local character = player.Character
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+					if rootPart then
+						local radius = CollectionRangeHandler.getRadius(player)
+						if (rootPart.Position - node.Position).Magnitude <= radius then
+							collectNode(node, player)
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+end)
 
 -- The max across everyone online, so any player's Spawn Speed progress
 -- raises the shared node count for the whole platform, not just for them.

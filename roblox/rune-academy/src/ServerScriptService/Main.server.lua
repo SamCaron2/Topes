@@ -9,6 +9,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
 local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
+local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
@@ -54,6 +55,9 @@ local getManaSpawnStateFunction = newRemoteFunction("GetManaSpawnState")
 local buyManaSpawnUpgradeFunction = newRemoteFunction("BuyManaSpawnUpgrade")
 local getWalkSpeedStateFunction = newRemoteFunction("GetWalkSpeedState")
 local buyWalkSpeedUpgradeFunction = newRemoteFunction("BuyWalkSpeedUpgrade")
+local getCollectionRangeStateFunction = newRemoteFunction("GetCollectionRangeState")
+local buyCollectionRangeUpgradeFunction = newRemoteFunction("BuyCollectionRangeUpgrade")
+local collectionRangeUpdatedEvent = newRemoteEvent("CollectionRangeUpdated") -- server -> client, fired on join and on every purchase
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -225,15 +229,32 @@ buyWalkSpeedUpgradeFunction.OnServerInvoke = function(player, mode)
 	return success, err, newState
 end
 
+getCollectionRangeStateFunction.OnServerInvoke = function(player)
+	return CollectionRangeHandler.getUpgradeState(player)
+end
+
+buyCollectionRangeUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = CollectionRangeHandler.buyUpgrade(player, mode)
+	if success then
+		manaUpdatedEvent:FireClient(player, newState.mana)
+		collectionRangeUpdatedEvent:FireClient(player, newState.radius)
+	end
+	return success, err, newState
+end
+
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered
 -- before any player join events fire from this point on.
 local _ = PlayerData
 
--- Sends the Mana HUD its starting value on join (every pickup after that
--- comes from WorldBuilder's ManaNode Touched handler firing this same event).
+-- Sends the Mana HUD and feet-ring their starting values on join (every
+-- pickup/purchase after that comes from the same two events firing again).
 Players.PlayerAdded:Connect(function(player)
 	local data = PlayerData.waitForLoad(player)
 	if data then
 		manaUpdatedEvent:FireClient(player, data.mana or 0)
+		collectionRangeUpdatedEvent:FireClient(player, CollectionRangeHandler.getRadius(player))
 	end
 end)

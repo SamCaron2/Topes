@@ -94,14 +94,18 @@ design notes.
   contexts. Future unlockable areas are meant to be more islands like this
   one, gated behind a Mana threshold or similar — not built yet.
   Contains the 60x60 Mana collection platform (a hollow square outline,
-  4 thin Neon parts, non-collide) plus Mana cubes spawned inside it:
-  touch one for Mana, a replacement respawns elsewhere after a delay set
-  by the collecting player's own "Mana Spawn Speed" level. That same
-  level also sets how many nodes exist at once (3 at level 1, up to 10
-  at level 10, taking the max across everyone online) — a
-  `TOP_UP_INTERVAL` poll spawns more as needed, not just on pickup, so a
-  purchase (or another player's higher level) adds nodes right away.
-  Grows one piece at a time as the new vision gets specified —
+  4 thin Neon parts, non-collide) plus Mana cubes spawned inside it.
+  Collection is range-based, not touch-based: a `COLLECT_CHECK_INTERVAL`
+  (0.15s) poll collects any live node within a player's current
+  "Collection Range" upgrade radius (`CollectionRangeHandler`) — the
+  same radius `ManaRingClient` draws as a ring around their feet. A
+  replacement node spawns elsewhere after a delay set by the collecting
+  player's own "Mana Spawn Speed" level. That same level also sets how
+  many nodes exist at once (3 at level 1, up to 10 at level 10, taking
+  the max across everyone online) — a `TOP_UP_INTERVAL` poll spawns more
+  as needed, not just on pickup, so a purchase (or another player's
+  higher level) adds nodes right away. Grows one piece at a time as the
+  new vision gets specified —
   rerunning it (every server start) rebuilds the `StartingIsland`,
   `ManaZone`, and `Kiosks` from scratch, so editing this file and
   reconnecting Rojo is how you iterate on world layout.
@@ -134,6 +138,13 @@ design notes.
   purchase alone costs as much as reaching level 20 on "More Mana"
   (`UpgradeCost.costForLevel(19)` = 190 Mana right now), climbing by
   that same amount every level after.
+- `CollectionRangeHandler.lua` — the "Collection Range" upgrade (level
+  1-12, radius linear 3 studs → 18 studs). Also on its own cost curve
+  per direct request — the first purchase costs 50 Mana, climbing
+  linearly to ~495 for the last purchase (about half of "More Mana"'s
+  cost to reach level 100). `getRadius(player)` is read by
+  `WorldBuilder`'s collection loop (see below) and by `ManaRingClient`,
+  so the visible ring always matches the real pickup radius.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
@@ -150,8 +161,10 @@ design notes.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
   feet, visible only while standing inside the `ManaZone` platform
   bounds (read off attributes `WorldBuilder` sets on that folder:
-  `CenterX`/`CenterZ`/`Size`/`GroundY`). `RING_RADIUS` is the one number
-  to bump later for a "bigger collection ring" upgrade.
+  `CenterX`/`CenterZ`/`Size`/`GroundY`). Its radius IS the "Collection
+  Range" upgrade's real pickup radius, kept live via the
+  `CollectionRangeUpdated` event, so the ring always shows exactly how
+  far away a Mana node will still get auto-collected.
 - `ManaUpgradeBoardClient.client.lua` — the 3D upgrade board standing
   just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`, wide
   and mostly empty on purpose so more upgrade columns can go
@@ -160,9 +173,10 @@ design notes.
   below it before the columns start), then a spaced-out column per
   upgrade built through one shared `createUpgradeColumn` helper so every
   upgrade looks and behaves alike — currently "More Mana", "Mana Spawn
-  Speed", and "Walking Speed", each with a placeholder icon, level
-  `(x/max)`, a value preview (`+N > +N`, `Ns > Ns`, or `Nx > Nx`), cost,
-  and Buy/Max buttons (white text,
+  Speed", "Walking Speed", and "Collection Range", each with a
+  placeholder icon, level `(x/max)`, a value preview (`+N > +N`,
+  `Ns > Ns`, `Nx > Nx`, or plain `N > N` studs), cost, and Buy/Max
+  buttons (white text,
   padded so labels don't stretch edge-to-edge, all text with a subtle
   stroke for a slight 3D look). Its UI is a `SurfaceGui` painted onto
   the board's face (not a `BillboardGui` - a Billboard always turns to

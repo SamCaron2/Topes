@@ -1,11 +1,11 @@
 -- Builds the whole Mana upgrades board: a "Mana Upgrades" title banner
 -- across the top, then upgrade columns left-to-right below it - "More Mana",
--- "Mana Spawn Speed", and "Walking Speed" so far, with empty space to the
--- right for more later. Painted directly onto the board's face with a
--- SurfaceGui, not a BillboardGui - a Billboard always turns to face the
--- camera, which made an earlier version look like it was sliding around as
--- you walked past; a SurfaceGui is flat against one physical face,
--- unreadable from behind, exactly like a real sign.
+-- "Mana Spawn Speed", "Walking Speed", and "Collection Range" so far, with
+-- empty space to the right for more later. Painted directly onto the
+-- board's face with a SurfaceGui, not a BillboardGui - a Billboard always
+-- turns to face the camera, which made an earlier version look like it was
+-- sliding around as you walked past; a SurfaceGui is flat against one
+-- physical face, unreadable from behind, exactly like a real sign.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -17,6 +17,8 @@ local getManaSpawnStateFunction = remotes:WaitForChild("GetManaSpawnState")
 local buyManaSpawnUpgradeFunction = remotes:WaitForChild("BuyManaSpawnUpgrade")
 local getWalkSpeedStateFunction = remotes:WaitForChild("GetWalkSpeedState")
 local buyWalkSpeedUpgradeFunction = remotes:WaitForChild("BuyWalkSpeedUpgrade")
+local getCollectionRangeStateFunction = remotes:WaitForChild("GetCollectionRangeState")
+local buyCollectionRangeUpgradeFunction = remotes:WaitForChild("BuyCollectionRangeUpgrade")
 local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("ManaUpgradeBoard")
@@ -264,4 +266,11 @@ createUpgradeColumn(3, "Walking Speed", Color3.fromRGB(255, 200, 60), getWalkSpe
 		return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
 	end
 	return ("%.1fx (MAX)"):format(state.multiplier)
+end)
+
+createUpgradeColumn(4, "Collection Range", Color3.fromRGB(90, 220, 140), getCollectionRangeStateFunction, buyCollectionRangeUpgradeFunction, function(state)
+	if state.nextLevelCost then
+		return ("%.0f > %.0f"):format(state.radius, state.nextRadius)
+	end
+	return ("%.0f (MAX)"):format(state.radius)
 end)
