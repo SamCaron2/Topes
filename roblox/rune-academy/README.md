@@ -124,6 +124,12 @@ design notes.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
+- `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
+  Mana counter's placement: Store/Runes/Profile/Settings, each a
+  colored circle with a placeholder symbol (safe basic Unicode glyphs -
+  `$`/★/☺/⚙ - not emoji, so they render reliably without a real icon
+  asset) and a name label underneath. Not wired to any panel yet - it
+  only needed to exist on screen for now.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
   feet, visible only while standing inside the `ManaZone` platform
   bounds (read off attributes `WorldBuilder` sets on that folder:
