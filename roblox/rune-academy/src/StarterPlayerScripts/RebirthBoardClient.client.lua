@@ -15,8 +15,8 @@ local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("RebirthBoard")
 
-local COLOR_CAN_REBIRTH = Color3.fromRGB(150, 80, 255)
-local COLOR_CANT_REBIRTH = Color3.fromRGB(200, 55, 55)
+local COLOR_CAN_REBIRTH = Color3.fromRGB(200, 40, 40)
+local COLOR_CANT_REBIRTH = Color3.fromRGB(90, 90, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
 
 local surfaceGui = Instance.new("SurfaceGui")
@@ -29,14 +29,14 @@ surfaceGui.Parent = board
 
 local background = Instance.new("Frame")
 background.Size = UDim2.new(1, 0, 1, 0)
-background.BackgroundColor3 = Color3.fromRGB(70, 60, 100)
+background.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
 background.BorderSizePixel = 0
 background.Parent = surfaceGui
 
 local titleBanner = Instance.new("Frame")
 titleBanner.Size = UDim2.new(0.9, 0, 0.15, 0)
 titleBanner.Position = UDim2.new(0.05, 0, 0.03, 0)
-titleBanner.BackgroundColor3 = Color3.fromRGB(45, 30, 70)
+titleBanner.BackgroundColor3 = Color3.fromRGB(90, 15, 15)
 titleBanner.BackgroundTransparency = 0.15
 titleBanner.BorderSizePixel = 0
 titleBanner.Parent = background
@@ -50,7 +50,7 @@ titleText.Size = UDim2.new(1, 0, 1, 0)
 titleText.BackgroundTransparency = 1
 titleText.Font = Enum.Font.GothamBold
 titleText.TextScaled = true
-titleText.TextColor3 = Color3.fromRGB(220, 180, 255)
+titleText.TextColor3 = Color3.fromRGB(255, 210, 90)
 titleText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 titleText.Text = "Rebirths"
 titleText.Parent = titleBanner
@@ -73,7 +73,7 @@ rateLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
 rateLabel.BackgroundTransparency = 1
 rateLabel.Font = Enum.Font.GothamBold
 rateLabel.TextScaled = true
-rateLabel.TextColor3 = Color3.fromRGB(220, 180, 255)
+rateLabel.TextColor3 = Color3.fromRGB(255, 160, 160)
 rateLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 rateLabel.Text = "1,000 Mana = 1 Rebirth"
 rateLabel.Parent = background

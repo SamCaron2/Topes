@@ -255,7 +255,7 @@ local BOARD_GAP = 4 -- studs between separate boards
 makeKioskCard("ManaUpgradeBoard", half + 6, 0, MANA_BOARD_WIDTH)
 
 -- Placed just past the Mana board's edge, on the side that reads as "to the
--- right" of it when facing the boards (increasing GUI-x on that board's
--- SurfaceGui - Face = Left - maps to decreasing world Z).
-local rebirthBoardOffsetZ = -(MANA_BOARD_WIDTH / 2) - BOARD_GAP - (REBIRTH_BOARD_WIDTH / 2)
+-- right" of it when facing the boards. (The opposite sign than the
+-- Left-face SurfaceGui coordinate math suggested - confirmed by testing.)
+local rebirthBoardOffsetZ = (MANA_BOARD_WIDTH / 2) + BOARD_GAP + (REBIRTH_BOARD_WIDTH / 2)
 makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH)

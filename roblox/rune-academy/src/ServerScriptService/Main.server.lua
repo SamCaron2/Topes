@@ -61,6 +61,7 @@ local buyCollectionRangeUpgradeFunction = newRemoteFunction("BuyCollectionRangeU
 local collectionRangeUpdatedEvent = newRemoteEvent("CollectionRangeUpdated") -- server -> client, fired on join and on every purchase
 local getRebirthStateFunction = newRemoteFunction("GetRebirthState")
 local performRebirthFunction = newRemoteFunction("PerformRebirth")
+local rebirthsUpdatedEvent = newRemoteEvent("RebirthsUpdated") -- server -> client, fired on join and on every rebirth
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -256,6 +257,7 @@ performRebirthFunction.OnServerInvoke = function(player)
 	local success, err, newState = RebirthHandler.rebirth(player)
 	if success then
 		manaUpdatedEvent:FireClient(player, newState.mana)
+		rebirthsUpdatedEvent:FireClient(player, newState.rebirths)
 	end
 	return success, err, newState
 end
@@ -264,12 +266,18 @@ end
 -- before any player join events fire from this point on.
 local _ = PlayerData
 
--- Sends the Mana HUD and feet-ring their starting values on join (every
--- pickup/purchase after that comes from the same two events firing again).
+-- Sends the Mana HUD, feet-ring, and Rebirths HUD their starting values on
+-- join (every pickup/purchase/rebirth after that comes from the same
+-- events firing again). Rebirths only fires when the player already has
+-- some - ManaHUDClient keeps that counter hidden until it sees a value
+-- above 0, matching "only show it once Rebirths are unlocked."
 Players.PlayerAdded:Connect(function(player)
 	local data = PlayerData.waitForLoad(player)
 	if data then
 		manaUpdatedEvent:FireClient(player, data.mana or 0)
 		collectionRangeUpdatedEvent:FireClient(player, CollectionRangeHandler.getRadius(player))
+		if (data.rebirths or 0) > 0 then
+			rebirthsUpdatedEvent:FireClient(player, data.rebirths)
+		end
 	end
 end)

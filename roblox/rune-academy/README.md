@@ -160,7 +160,11 @@ design notes.
   on anything is future work, not built yet.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
-  RemoteEvent. No icon yet.
+  RemoteEvent (no icon yet), plus a red "Rebirths: X.X" label right
+  below it. The Rebirths label starts hidden and only appears once the
+  `RebirthsUpdated` event fires with a value above 0 - the server only
+  ever fires it once a player has actually rebirthed, so it stays
+  hidden until Rebirths are unlocked.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
   Mana counter's placement, laid out 2x2: Store/Runes/Profile/Settings,
   each a colored circle with a placeholder symbol (safe basic Unicode
@@ -201,11 +205,12 @@ design notes.
   maxed-out buttons.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
-  edge. Explains the mechanic, shows "Your Rebirths: X.X", a live
-  "Rebirth now for +X.X Rebirths" preview that updates off the same
-  `ManaUpdated` event the HUD uses, and a Rebirth button (purple when
-  you have the required 1,000+ Mana, red otherwise). Same
-  SurfaceGui-on-a-face approach as the Mana board.
+  edge, styled in red instead of the Mana board's blue. Explains the
+  mechanic, shows "Your Rebirths: X.X", a live "Rebirth now for +X.X
+  Rebirths" preview that updates off the same `ManaUpdated` event the
+  HUD uses, and a Rebirth button (bright red when you have the
+  required 1,000+ Mana, gray otherwise). Same SurfaceGui-on-a-face
+  approach as the Mana board.
 
 ## Manual steps required before everything works
 
