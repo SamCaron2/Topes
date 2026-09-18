@@ -1,11 +1,11 @@
 -- Builds the whole Mana upgrades board: a "Mana Upgrades" title banner
--- across the top, then upgrade columns left-to-right below it - "More Mana",
--- "Mana Spawn Speed", "Walking Speed", and "Collection Range" so far, with
--- empty space to the right for more later. Painted directly onto the
--- board's face with a SurfaceGui, not a BillboardGui - a Billboard always
--- turns to face the camera, which made an earlier version look like it was
--- sliding around as you walked past; a SurfaceGui is flat against one
--- physical face, unreadable from behind, exactly like a real sign.
+-- across the top, then 4 upgrade columns left-to-right below it filling the
+-- board edge-to-edge - "More Mana", "Mana Spawn Speed", "Walking Speed",
+-- and "Collection Range". Painted directly onto the board's face with a
+-- SurfaceGui, not a BillboardGui - a Billboard always turns to face the
+-- camera, which made an earlier version look like it was sliding around as
+-- you walked past; a SurfaceGui is flat against one physical face,
+-- unreadable from behind, exactly like a real sign.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -29,7 +29,10 @@ local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
 local COLOR_MAXED_OUT = Color3.fromRGB(90, 90, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4 -- a subtle black outline behind every label, for a slight 3D look
 
-local COLUMN_WIDTH = 0.18
+-- Sized to fill the board edge-to-edge for exactly 4 columns (0.03 margin on
+-- both sides) - there's a separate Rebirths board now for future growth, so
+-- this one no longer needs to reserve empty space of its own.
+local COLUMN_WIDTH = 0.205
 local COLUMN_GAP = 0.04
 local COLUMN_START_X = 0.03
 local COLUMN_TOP_Y = 0.26 -- clear gap below the title banner

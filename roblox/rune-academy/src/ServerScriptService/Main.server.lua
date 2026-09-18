@@ -10,6 +10,7 @@ local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
 local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
+local RebirthHandler = require(script.Parent.RebirthHandler)
 local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
@@ -58,6 +59,8 @@ local buyWalkSpeedUpgradeFunction = newRemoteFunction("BuyWalkSpeedUpgrade")
 local getCollectionRangeStateFunction = newRemoteFunction("GetCollectionRangeState")
 local buyCollectionRangeUpgradeFunction = newRemoteFunction("BuyCollectionRangeUpgrade")
 local collectionRangeUpdatedEvent = newRemoteEvent("CollectionRangeUpdated") -- server -> client, fired on join and on every purchase
+local getRebirthStateFunction = newRemoteFunction("GetRebirthState")
+local performRebirthFunction = newRemoteFunction("PerformRebirth")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -241,6 +244,18 @@ buyCollectionRangeUpgradeFunction.OnServerInvoke = function(player, mode)
 	if success then
 		manaUpdatedEvent:FireClient(player, newState.mana)
 		collectionRangeUpdatedEvent:FireClient(player, newState.radius)
+	end
+	return success, err, newState
+end
+
+getRebirthStateFunction.OnServerInvoke = function(player)
+	return RebirthHandler.getState(player)
+end
+
+performRebirthFunction.OnServerInvoke = function(player)
+	local success, err, newState = RebirthHandler.rebirth(player)
+	if success then
+		manaUpdatedEvent:FireClient(player, newState.mana)
 	end
 	return success, err, newState
 end

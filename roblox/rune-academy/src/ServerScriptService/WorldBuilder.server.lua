@@ -233,21 +233,29 @@ kiosksFolder = Instance.new("Folder")
 kiosksFolder.Name = "Kiosks"
 kiosksFolder.Parent = Workspace
 
--- Wide and mostly empty on purpose: two upgrade columns fill the left side
--- so far, leaving room to add more left-to-right later without resizing the
--- board. Thin along X (the approach direction), wide along Z, so its wide
--- face - not its thin edge - points back at the platform, toward the player.
-local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
+-- Thin along X (the approach direction), wide along Z, so its wide face -
+-- not its thin edge - points back at the platform, toward the player.
+local function makeKioskCard(name: string, offsetX: number, offsetZ: number, width: number)
 	local card = Instance.new("Part")
 	card.Name = name
 	card.Anchored = true
 	card.CanCollide = true
 	card.Material = Enum.Material.SmoothPlastic
 	card.Color = Color3.fromRGB(45, 45, 60)
-	card.Size = Vector3.new(1, 18, 42)
+	card.Size = Vector3.new(1, 18, width)
 	card.CFrame = CFrame.new(centerX + offsetX, groundY + 9, centerZ + offsetZ)
 	card.Parent = kiosksFolder
 	return card
 end
 
-makeKioskCard("ManaUpgradeBoard", half + 6, 0)
+local MANA_BOARD_WIDTH = 42
+local REBIRTH_BOARD_WIDTH = 20
+local BOARD_GAP = 4 -- studs between separate boards
+
+makeKioskCard("ManaUpgradeBoard", half + 6, 0, MANA_BOARD_WIDTH)
+
+-- Placed just past the Mana board's edge, on the side that reads as "to the
+-- right" of it when facing the boards (increasing GUI-x on that board's
+-- SurfaceGui - Face = Left - maps to decreasing world Z).
+local rebirthBoardOffsetZ = -(MANA_BOARD_WIDTH / 2) - BOARD_GAP - (REBIRTH_BOARD_WIDTH / 2)
+makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH)

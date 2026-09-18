@@ -104,11 +104,15 @@ design notes.
   many nodes exist at once (3 at level 1, up to 10 at level 10, taking
   the max across everyone online) — a `TOP_UP_INTERVAL` poll spawns more
   as needed, not just on pickup, so a purchase (or another player's
-  higher level) adds nodes right away. Grows one piece at a time as the
-  new vision gets specified —
-  rerunning it (every server start) rebuilds the `StartingIsland`,
-  `ManaZone`, and `Kiosks` from scratch, so editing this file and
-  reconnecting Rojo is how you iterate on world layout.
+  higher level) adds nodes right away. Also places two separate physical
+  kiosk boards past the platform's edge - `ManaUpgradeBoard` (42 studs
+  wide, the 4-column upgrades board) and `RebirthBoard` (20 studs wide,
+  just past its edge) - each just a bare Part; `ManaUpgradeBoardClient`
+  and `RebirthBoardClient` build their actual UI. Grows one piece at a
+  time as the new vision gets specified — rerunning it (every server
+  start) rebuilds the `StartingIsland`, `ManaZone`, and `Kiosks` from
+  scratch, so editing this file and reconnecting Rojo is how you
+  iterate on world layout.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
   its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
   so the very first purchase (from level 1) always costs 10 Mana no
@@ -146,10 +150,14 @@ design notes.
 - `CollectionRangeHandler.lua` — the "Collection Range" upgrade (level
   1-12, radius linear 3 studs → 18 studs). Also on its own cost curve
   per direct request — the first purchase costs 50 Mana, climbing
-  linearly to ~495 for the last purchase (about half of "More Mana"'s
-  cost to reach level 100). `getRadius(player)` is read by
+  linearly to 495 for the last purchase. `getRadius(player)` is read by
   `WorldBuilder`'s collection loop (see below) and by `ManaRingClient`,
   so the visible ring always matches the real pickup radius.
+- `RebirthHandler.lua` — Rebirths, a second currency: resetting your
+  Mana grants Rebirths at 1,000 Mana = 1 Rebirth, fractional (5,400
+  Mana gives exactly 5.4 Rebirths, not floored). Requires at least 1,000
+  Mana to rebirth at all. Only resets Mana for now - spending Rebirths
+  on anything is future work, not built yet.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
@@ -171,27 +179,33 @@ design notes.
   `CollectionRangeUpdated` event, so the ring always shows exactly how
   far away a Mana node will still get auto-collected.
 - `ManaUpgradeBoardClient.client.lua` — the 3D upgrade board standing
-  just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`, wide
-  and mostly empty on purpose so more upgrade columns can go
-  left-to-right later). Styled like a typical incremental-game upgrades
-  board: a "Mana Upgrades" title banner across the top (with a clear gap
-  below it before the columns start), then a spaced-out column per
-  upgrade built through one shared `createUpgradeColumn` helper so every
-  upgrade looks and behaves alike — currently "More Mana", "Mana Spawn
+  just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`).
+  Styled like a typical incremental-game upgrades board: a "Mana
+  Upgrades" title banner across the top (with a clear gap below it
+  before the columns start), then 4 columns filling the board
+  edge-to-edge, built through one shared `createUpgradeColumn` helper
+  so every upgrade looks and behaves alike — "More Mana", "Mana Spawn
   Speed", "Walking Speed", and "Collection Range", each with a
   placeholder icon, level `(x/max)`, a value preview (`+N > +N`,
   `Ns > Ns`, `Nx > Nx`, or plain `N > N` studs), cost, and Buy/Max
-  buttons (white text,
-  padded so labels don't stretch edge-to-edge, all text with a subtle
-  stroke for a slight 3D look). Its UI is a `SurfaceGui` painted onto
-  the board's face (not a `BillboardGui` - a Billboard always turns to
-  face the camera, so it visibly slides around as you walk past; a
-  SurfaceGui is flat against the physical face, unreadable from behind,
-  exactly like a real sign). Buy/Max turn green/yellow when affordable
-  and red when they aren't, tracked live off the same `ManaUpdated`
-  event the HUD counter uses. Once a column hits its max level, Max is
-  hidden and Buy expands to a single full-width gray "Maxed" button
-  instead of showing two redundant maxed-out buttons.
+  buttons (white text, padded so labels don't stretch edge-to-edge, all
+  text with a subtle stroke for a slight 3D look). Its UI is a
+  `SurfaceGui` painted onto the board's face (not a `BillboardGui` - a
+  Billboard always turns to face the camera, so it visibly slides
+  around as you walk past; a SurfaceGui is flat against the physical
+  face, unreadable from behind, exactly like a real sign). Buy/Max turn
+  green/yellow when affordable and red when they aren't, tracked live
+  off the same `ManaUpdated` event the HUD counter uses. Once a column
+  hits its max level, Max is hidden and Buy expands to a single
+  full-width gray "Maxed" button instead of showing two redundant
+  maxed-out buttons.
+- `RebirthBoardClient.client.lua` — a separate, narrower board
+  (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
+  edge. Explains the mechanic, shows "Your Rebirths: X.X", a live
+  "Rebirth now for +X.X Rebirths" preview that updates off the same
+  `ManaUpdated` event the HUD uses, and a Rebirth button (purple when
+  you have the required 1,000+ Mana, red otherwise). Same
+  SurfaceGui-on-a-face approach as the Mana board.
 
 ## Manual steps required before everything works
 

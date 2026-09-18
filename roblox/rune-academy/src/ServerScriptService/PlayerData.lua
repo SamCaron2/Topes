@@ -66,6 +66,7 @@ local function defaultData()
 		manaSpawnSpeedLevel = 1, -- "Mana Spawn Speed" upgrade level, 1-10, faster ManaNode respawns per level
 		walkSpeedLevel = 1, -- "Walking Speed" upgrade level, 1-10, 1x-3x Humanoid.WalkSpeed
 		collectionRangeLevel = 1, -- "Collection Range" upgrade level, 1-12, grows the auto-collect radius
+		rebirths = 0, -- permanent currency from resetting Mana; fractional (1000 Mana = 1.0 Rebirth exactly)
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,
