@@ -66,7 +66,7 @@ function ManaSpawnHandler.getUpgradeState(player: Player)
 		maxLevel = MAX_SPEED_LEVEL,
 		respawnSeconds = respawnSecondsForLevel(level),
 		nextRespawnSeconds = not maxed and respawnSecondsForLevel(level + 1) or nil,
-		nextLevelCost = not maxed and UpgradeCost.costForLevel(level + 1) or nil,
+		nextLevelCost = not maxed and UpgradeCost.costForLevel(level) or nil,
 		mana = data.mana or 0,
 	}
 end
@@ -82,7 +82,7 @@ function ManaSpawnHandler.buyUpgrade(player: Player, mode: string?)
 		return false, "Already at max level"
 	end
 
-	local cost = UpgradeCost.costForLevel(level + 1)
+	local cost = UpgradeCost.costForLevel(level)
 	if (data.mana or 0) < cost then
 		return false, "Not enough Mana"
 	end
@@ -91,8 +91,8 @@ function ManaSpawnHandler.buyUpgrade(player: Player, mode: string?)
 	level += 1
 
 	if mode == "max" then
-		while level < MAX_SPEED_LEVEL and data.mana >= UpgradeCost.costForLevel(level + 1) do
-			data.mana -= UpgradeCost.costForLevel(level + 1)
+		while level < MAX_SPEED_LEVEL and data.mana >= UpgradeCost.costForLevel(level) do
+			data.mana -= UpgradeCost.costForLevel(level)
 			level += 1
 		end
 	end

@@ -1,27 +1,32 @@
 -- Server-authoritative Mana collection and its one upgrade so far: a player
--- touches a ManaNode part on the ground and gets Mana equal to their current
--- "Mana Per Pickup" level (starts at 1, buyable up to 100, +1 per level).
--- Kept separate from ResourceEngine since this is a fresh, much simpler
--- mechanic for the new vision - no Zones wired to it yet.
+-- touches a ManaNode part on the ground and gets Mana per their current
+-- "Mana Per Pickup" level (1-100). Kept separate from ResourceEngine since
+-- this is a fresh, much simpler mechanic for the new vision - no Zones
+-- wired to it yet.
 
 local PlayerData = require(script.Parent.PlayerData)
 local UpgradeCost = require(script.Parent.UpgradeCost)
 
 local MAX_YIELD_LEVEL = 100
 
-local ManaHandler = {}
-
--- How much Mana one pickup grants right now.
-local function getYieldAmount(data): number
-	return data.manaYieldLevel or 1
+-- Mana Per Pickup's yield curve: mildly convex, not a flat +1/level, so
+-- later levels pay off faster than early ones (per direct request to "mix
+-- it up" rather than a straight line). Level 1 gives exactly 1 (the base,
+-- unupgraded rate); by level 15 it's 50 - close to the ~46 that was asked
+-- for, given as a rough target rather than an exact one. Easy to retune:
+-- adjust the +5 / 6 constants.
+local function amountForLevel(level: number): number
+	return math.floor(level * (level + 5) / 6)
 end
+
+local ManaHandler = {}
 
 function ManaHandler.collect(player: Player): number?
 	local data = PlayerData.get(player)
 	if not data then
 		return nil
 	end
-	data.mana = (data.mana or 0) + getYieldAmount(data)
+	data.mana = (data.mana or 0) + amountForLevel(data.manaYieldLevel or 1)
 	return data.mana
 end
 
@@ -38,9 +43,9 @@ function ManaHandler.getYieldUpgradeState(player: Player)
 	return {
 		level = level,
 		maxLevel = MAX_YIELD_LEVEL,
-		amountPerPickup = getYieldAmount(data),
-		nextAmountPerPickup = not maxed and (level + 1) or nil,
-		nextLevelCost = not maxed and UpgradeCost.costForLevel(level + 1) or nil,
+		amountPerPickup = amountForLevel(level),
+		nextAmountPerPickup = not maxed and amountForLevel(level + 1) or nil,
+		nextLevelCost = not maxed and UpgradeCost.costForLevel(level) or nil,
 		mana = data.mana or 0,
 	}
 end
@@ -59,7 +64,7 @@ function ManaHandler.buyYieldUpgrade(player: Player, mode: string?)
 		return false, "Already at max level"
 	end
 
-	local cost = UpgradeCost.costForLevel(level + 1)
+	local cost = UpgradeCost.costForLevel(level)
 	if (data.mana or 0) < cost then
 		return false, "Not enough Mana"
 	end
@@ -68,8 +73,8 @@ function ManaHandler.buyYieldUpgrade(player: Player, mode: string?)
 	level += 1
 
 	if mode == "max" then
-		while level < MAX_YIELD_LEVEL and data.mana >= UpgradeCost.costForLevel(level + 1) do
-			data.mana -= UpgradeCost.costForLevel(level + 1)
+		while level < MAX_YIELD_LEVEL and data.mana >= UpgradeCost.costForLevel(level) do
+			data.mana -= UpgradeCost.costForLevel(level)
 			level += 1
 		end
 	end

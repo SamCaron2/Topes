@@ -93,16 +93,19 @@ design notes.
   folders from scratch, so editing this file and reconnecting Rojo is
   how you iterate on world layout.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
-  its levels through (`costForLevel(targetLevel) = targetLevel * 10`),
-  so buying into level N always costs the same N*10 Mana no matter which
-  upgrade it is — keeps every upgrade "in line" with the others as more
-  get added, instead of each handler inventing its own curve.
+  its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
+  so the very first purchase (from level 1) always costs 10 Mana no
+  matter which upgrade it is — keeps every upgrade "in line" with the
+  others as more get added, instead of each handler inventing its own curve.
 - `ManaHandler.lua` — server-authoritative Mana collection and its "Mana
-  Per Pickup" upgrade (level 1-100, +1 Mana per pickup per level, costed
-  through `UpgradeCost`). `buyYieldUpgrade` takes an optional `"max"`
-  mode that buys as many levels in a row as currently affordable.
-  Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones`
-  for now — a fresh, much simpler mechanic until the new vision needs more.
+  Per Pickup" upgrade (level 1-100, costed through `UpgradeCost`). The
+  yield itself is a mildly convex curve, not flat +1/level -
+  `amountForLevel(level) = floor(level * (level + 5) / 6)` - so later
+  levels pay off faster than early ones (level 1 gives 1, level 15 gives
+  50). `buyYieldUpgrade` takes an optional `"max"` mode that buys as
+  many levels in a row as currently affordable. Deliberately kept
+  separate from `ResourceEngine`/`GameConfig.Zones` for now — a fresh,
+  much simpler mechanic until the new vision needs more.
 - `ManaSpawnHandler.lua` — the "Mana Spawn Speed" upgrade (level 1-10,
   same `UpgradeCost` curve as every other Mana upgrade). Two effects per
   level, both linear: respawn delay 2.0s → 0.2s, and live node count 3 →
