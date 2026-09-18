@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local PlayerData = require(script.Parent.PlayerData)
 local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
+local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
@@ -51,6 +52,8 @@ local getManaYieldStateFunction = newRemoteFunction("GetManaYieldState")
 local buyManaYieldUpgradeFunction = newRemoteFunction("BuyManaYieldUpgrade")
 local getManaSpawnStateFunction = newRemoteFunction("GetManaSpawnState")
 local buyManaSpawnUpgradeFunction = newRemoteFunction("BuyManaSpawnUpgrade")
+local getWalkSpeedStateFunction = newRemoteFunction("GetWalkSpeedState")
+local buyWalkSpeedUpgradeFunction = newRemoteFunction("BuyWalkSpeedUpgrade")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -201,6 +204,21 @@ buyManaSpawnUpgradeFunction.OnServerInvoke = function(player, mode)
 		return false, "Invalid request"
 	end
 	local success, err, newState = ManaSpawnHandler.buyUpgrade(player, mode)
+	if success then
+		manaUpdatedEvent:FireClient(player, newState.mana)
+	end
+	return success, err, newState
+end
+
+getWalkSpeedStateFunction.OnServerInvoke = function(player)
+	return WalkSpeedHandler.getUpgradeState(player)
+end
+
+buyWalkSpeedUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = WalkSpeedHandler.buyUpgrade(player, mode)
 	if success then
 		manaUpdatedEvent:FireClient(player, newState.mana)
 	end

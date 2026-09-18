@@ -64,6 +64,7 @@ local function defaultData()
 		mana = 0, -- collected from ManaNodes on the ground; not a Zone/ResourceEngine currency yet
 		manaYieldLevel = 1, -- "Mana Per Pickup" upgrade level, 1-100, +1 Mana per pickup per level
 		manaSpawnSpeedLevel = 1, -- "Mana Spawn Speed" upgrade level, 1-10, faster ManaNode respawns per level
+		walkSpeedLevel = 1, -- "Walking Speed" upgrade level, 1-10, 1x-3x Humanoid.WalkSpeed
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,

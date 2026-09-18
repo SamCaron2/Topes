@@ -113,6 +113,14 @@ design notes.
   latter maxed across everyone online) — the upgrade is per-player even
   though the nodes themselves are shared world objects, same as how
   "Mana Per Pickup" already works.
+- `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
+  linear 1x → 3x `Humanoid.WalkSpeed`, applied on every spawn and
+  instantly on purchase). Costed steeply on purpose, NOT through the
+  shared `UpgradeCost` curve — only 10 levels, but each should feel like
+  real progress rather than a quick fill-in upgrade, so the first
+  purchase alone costs as much as reaching level 20 on "More Mana"
+  (`UpgradeCost.costForLevel(19)` = 190 Mana right now), climbing by
+  that same amount every level after.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
@@ -128,9 +136,10 @@ design notes.
   board: a "Mana Upgrades" title banner across the top (with a clear gap
   below it before the columns start), then a spaced-out column per
   upgrade built through one shared `createUpgradeColumn` helper so every
-  upgrade looks and behaves alike — currently "More Mana" and "Mana
-  Spawn Speed", each with a placeholder icon, level `(x/max)`, a value preview
-  (`+N > +N` or `Ns > Ns`), cost, and Buy/Max buttons (white text,
+  upgrade looks and behaves alike — currently "More Mana", "Mana Spawn
+  Speed", and "Walking Speed", each with a placeholder icon, level
+  `(x/max)`, a value preview (`+N > +N`, `Ns > Ns`, or `Nx > Nx`), cost,
+  and Buy/Max buttons (white text,
   padded so labels don't stretch edge-to-edge, all text with a subtle
   stroke for a slight 3D look). Its UI is a `SurfaceGui` painted onto
   the board's face (not a `BillboardGui` - a Billboard always turns to
