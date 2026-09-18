@@ -5,9 +5,10 @@
 --
 -- Costed on its OWN curve, deliberately not through the shared UpgradeCost
 -- module, per direct request: the first purchase (currently at level 1)
--- costs 50 Mana, climbing linearly to ~495 for the last purchase (currently
--- at level 11, buying into level 12) - about half of "More Mana"'s level
--- 100 cost (UpgradeCost.costForLevel(99) = 990).
+-- costs 50 Mana, climbing linearly to 495 for the last purchase (currently
+-- at level 11, buying into level 12) - a fixed target picked to be roughly
+-- half of "More Mana"'s old (since-changed) level 100 cost; no longer tied
+-- to that value directly now that More Mana's own curve is convex.
 
 local PlayerData = require(script.Parent.PlayerData)
 

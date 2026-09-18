@@ -115,11 +115,16 @@ design notes.
   matter which upgrade it is — keeps every upgrade "in line" with the
   others as more get added, instead of each handler inventing its own curve.
 - `ManaHandler.lua` — server-authoritative Mana collection and its "Mana
-  Per Pickup" upgrade (level 1-100, costed through `UpgradeCost`). The
-  yield itself is a mildly convex curve, not flat +1/level -
-  `amountForLevel(level) = floor(level * (level + 5) / 6)` - so later
-  levels pay off faster than early ones (level 1 gives 1, level 15 gives
-  50). `buyYieldUpgrade` takes an optional `"max"` mode that buys as
+  Per Pickup" upgrade (level 1-100). The yield itself is a mildly convex
+  curve, not flat +1/level - `amountForLevel(level) = floor(level *
+  (level + 5) / 6)` - so later levels pay off faster than early ones
+  (level 1 gives 1, level 15 gives 50). Cost is NOT the shared
+  `UpgradeCost` curve anymore - it tracks the yield curve itself
+  (`amountForLevel(currentLevel) * 10`), so cost scales with the payoff
+  instead of a flat level*10 making high levels feel cheap relative to
+  what they gave (level 1 still costs 10, but level 9 - to reach level
+  10's +25/pickup - now costs 210 instead of 90). `buyYieldUpgrade`
+  takes an optional `"max"` mode that buys as
   many levels in a row as currently affordable. Deliberately kept
   separate from `ResourceEngine`/`GameConfig.Zones` for now — a fresh,
   much simpler mechanic until the new vision needs more.
@@ -182,9 +187,10 @@ design notes.
   the board's face (not a `BillboardGui` - a Billboard always turns to
   face the camera, so it visibly slides around as you walk past; a
   SurfaceGui is flat against the physical face, unreadable from behind,
-  exactly like a real sign). Buy/Max turn green/yellow when affordable
-  and red when they aren't, tracked live off the same `ManaUpdated`
-  event the HUD counter uses.
+  exactly like a real sign). Buy/Max turn green/yellow when affordable,
+  red when they aren't, and gray with "Maxed" text once a column hits
+  its max level - tracked live off the same `ManaUpdated` event the HUD
+  counter uses.
 
 ## Manual steps required before everything works
 

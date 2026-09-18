@@ -198,10 +198,15 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 		if nextLevelCost == nil then
 			buyButton.Active = false
 			maxButton.Active = false
+			buyButton.Text = "Maxed"
+			maxButton.Text = "Maxed"
 			buyButton.BackgroundColor3 = COLOR_MAXED_OUT
 			maxButton.BackgroundColor3 = COLOR_MAXED_OUT
 			return
 		end
+
+		buyButton.Text = "Buy"
+		maxButton.Text = "Max"
 
 		local canAfford = currentMana >= nextLevelCost
 		buyButton.Active = canAfford

@@ -5,9 +5,10 @@
 -- Costed steeply ON PURPOSE, not through the shared UpgradeCost curve: only
 -- 10 levels total, but each should feel like real progress rather than a
 -- quick fill-in upgrade, so it shouldn't be finishable as fast as Mana
--- Spawn Speed's 10 levels are. The first purchase alone costs as much as
--- reaching level 20 on "More Mana" (UpgradeCost's curve at level 19), and
--- it climbs by that same amount every level after.
+-- Spawn Speed's 10 levels are. The first purchase costs 190 Mana (10x
+-- UpgradeCost's flat curve at level 19 - a fixed reference point, no longer
+-- tied to "More Mana" itself now that its cost curve is convex instead of
+-- flat), and it climbs by that same amount every level after.
 
 local Players = game:GetService("Players")
 

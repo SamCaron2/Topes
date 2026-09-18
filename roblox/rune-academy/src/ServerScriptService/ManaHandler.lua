@@ -5,7 +5,6 @@
 -- wired to it yet.
 
 local PlayerData = require(script.Parent.PlayerData)
-local UpgradeCost = require(script.Parent.UpgradeCost)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -17,6 +16,16 @@ local MAX_YIELD_LEVEL = 100
 -- adjust the +5 / 6 constants.
 local function amountForLevel(level: number): number
 	return math.floor(level * (level + 5) / 6)
+end
+
+-- Cost tracks the yield curve itself (amountForLevel * 10) instead of the
+-- shared UpgradeCost's flat level*10 - a flat curve made high levels feel
+-- cheap relative to the payoff they were giving (e.g. level 10 only cost
+-- ~90 for +25/pickup). This keeps the "payback" ratio roughly consistent
+-- the whole way up: level 1 still costs 10 (unchanged), but level 9 (to
+-- reach level 10, which gives +25/pickup) now costs 210 instead of 90.
+local function costForLevel(currentLevel: number): number
+	return amountForLevel(currentLevel) * 10
 end
 
 local ManaHandler = {}
@@ -45,7 +54,7 @@ function ManaHandler.getYieldUpgradeState(player: Player)
 		maxLevel = MAX_YIELD_LEVEL,
 		amountPerPickup = amountForLevel(level),
 		nextAmountPerPickup = not maxed and amountForLevel(level + 1) or nil,
-		nextLevelCost = not maxed and UpgradeCost.costForLevel(level) or nil,
+		nextLevelCost = not maxed and costForLevel(level) or nil,
 		mana = data.mana or 0,
 	}
 end
@@ -64,7 +73,7 @@ function ManaHandler.buyYieldUpgrade(player: Player, mode: string?)
 		return false, "Already at max level"
 	end
 
-	local cost = UpgradeCost.costForLevel(level)
+	local cost = costForLevel(level)
 	if (data.mana or 0) < cost then
 		return false, "Not enough Mana"
 	end
@@ -73,8 +82,8 @@ function ManaHandler.buyYieldUpgrade(player: Player, mode: string?)
 	level += 1
 
 	if mode == "max" then
-		while level < MAX_YIELD_LEVEL and data.mana >= UpgradeCost.costForLevel(level) do
-			data.mana -= UpgradeCost.costForLevel(level)
+		while level < MAX_YIELD_LEVEL and data.mana >= costForLevel(level) do
+			data.mana -= costForLevel(level)
 			level += 1
 		end
 	end
