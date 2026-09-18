@@ -83,18 +83,30 @@ design notes.
   Currently the 60x60 Mana collection platform (a hollow square outline,
   4 thin Neon parts, non-collide, centered on `SpawnLocation`) plus 3
   Mana cubes spawned inside it at a time (`MANA_NODE_COUNT`): touch one
-  for Mana, a replacement respawns at a new random spot ~2 seconds
-  later so the total stays at 3. Grows one piece at a time
-  as the new vision gets specified — rerunning it (every server start)
-  rebuilds the `ManaZone` folder from scratch, so editing this file and
-  reconnecting Rojo is how you iterate on world layout.
-- `ManaHandler.lua` — server-authoritative Mana collection and its one
-  upgrade so far: "Mana Per Pickup" (level 1-100, +1 Mana per pickup per
-  level, level costs `level * 10` Mana — a placeholder linear curve).
-  `buyYieldUpgrade` takes an optional `"max"` mode that buys as many
-  levels in a row as currently affordable. Deliberately kept separate
-  from `ResourceEngine`/`GameConfig.Zones` for now — a fresh, much
-  simpler mechanic until the new vision needs more.
+  for Mana, a replacement respawns elsewhere after a delay set by the
+  collecting player's own "Mana Spawn Speed" level, so the total stays
+  at 3. Grows one piece at a time as the new vision gets specified —
+  rerunning it (every server start) rebuilds the `ManaZone`/`Kiosks`
+  folders from scratch, so editing this file and reconnecting Rojo is
+  how you iterate on world layout.
+- `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
+  its levels through (`costForLevel(targetLevel) = targetLevel * 10`),
+  so buying into level N always costs the same N*10 Mana no matter which
+  upgrade it is — keeps every upgrade "in line" with the others as more
+  get added, instead of each handler inventing its own curve.
+- `ManaHandler.lua` — server-authoritative Mana collection and its "Mana
+  Per Pickup" upgrade (level 1-100, +1 Mana per pickup per level, costed
+  through `UpgradeCost`). `buyYieldUpgrade` takes an optional `"max"`
+  mode that buys as many levels in a row as currently affordable.
+  Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones`
+  for now — a fresh, much simpler mechanic until the new vision needs more.
+- `ManaSpawnHandler.lua` — the "Mana Spawn Speed" upgrade (level 1-10,
+  linear from 2.0s down to 0.2s respawn delay, same `UpgradeCost` curve
+  as every other Mana upgrade). `getRespawnSeconds(player)` is read by
+  `WorldBuilder` right after that player collects a node, to time its
+  replacement — the upgrade is per-player even though the nodes
+  themselves are shared world objects, same as how "Mana Per Pickup"
+  already works.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
@@ -103,23 +115,24 @@ design notes.
   bounds (read off attributes `WorldBuilder` sets on that folder:
   `CenterX`/`CenterZ`/`Size`/`GroundY`). `RING_RADIUS` is the one number
   to bump later for a "bigger collection ring" upgrade.
-- `ManaYieldKioskClient.client.lua` — the first 3D upgrade card, standing
-  just outside the platform (`Workspace.Kiosks.ManaYieldKiosk`, wide and
-  mostly empty on purpose so more upgrade columns can go left-to-right on
-  the same board later). Styled like a typical incremental-game upgrades
-  board: a "Mana Upgrades" title banner across the top, then a
-  spaced-out column per upgrade (currently just "More Mana") with a
-  placeholder icon, level `(x/100)`, a `+N > +N` yield preview, cost, and
-  Buy/Max buttons (white text on both, padded so labels don't stretch
-  edge-to-edge, all text with a subtle stroke for a slight 3D look). Its UI
-  is a `SurfaceGui` painted onto the card's face (not a `BillboardGui` -
-  a Billboard always turns to face the camera, so it visibly slides
-  around as you walk past; a SurfaceGui is flat against the physical
-  face, unreadable from behind, exactly like a real sign). Wired to
-  `GetManaYieldState`/`BuyManaYieldUpgrade` (the latter takes `"one"` or
-  `"max"` - Max buys as many levels in a row as currently affordable).
-  Buy/Max turn green/yellow when affordable and red when they aren't,
-  tracked live off the same `ManaUpdated` event the HUD counter uses.
+- `ManaUpgradeBoardClient.client.lua` — the 3D upgrade board standing
+  just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`, wide
+  and mostly empty on purpose so more upgrade columns can go
+  left-to-right later). Styled like a typical incremental-game upgrades
+  board: a "Mana Upgrades" title banner across the top (with a clear gap
+  below it before the columns start), then a spaced-out column per
+  upgrade built through one shared `createUpgradeColumn` helper so every
+  upgrade looks and behaves alike — currently "More Mana" and "Spawn
+  Speed", each with a placeholder icon, level `(x/max)`, a value preview
+  (`+N > +N` or `Ns > Ns`), cost, and Buy/Max buttons (white text,
+  padded so labels don't stretch edge-to-edge, all text with a subtle
+  stroke for a slight 3D look). Its UI is a `SurfaceGui` painted onto
+  the board's face (not a `BillboardGui` - a Billboard always turns to
+  face the camera, so it visibly slides around as you walk past; a
+  SurfaceGui is flat against the physical face, unreadable from behind,
+  exactly like a real sign). Buy/Max turn green/yellow when affordable
+  and red when they aren't, tracked live off the same `ManaUpdated`
+  event the HUD counter uses.
 
 ## Manual steps required before everything works
 

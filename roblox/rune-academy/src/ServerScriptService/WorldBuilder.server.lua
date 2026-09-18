@@ -7,13 +7,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local ManaHandler = require(script.Parent.ManaHandler)
+local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
 local BORDER_HEIGHT = 0.2
 local MANA_NODE_SIZE = Vector3.new(2, 2, 2)
 local MANA_NODE_MARGIN = 3 -- keep nodes off the border line
-local MANA_RESPAWN_DELAY = 2
 
 local manaUpdatedEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ManaUpdated")
 
@@ -64,9 +64,11 @@ makeBorderPart("BorderEast", BORDER_THICKNESS, MANA_ZONE_SIZE, half - BORDER_THI
 makeBorderPart("BorderWest", BORDER_THICKNESS, MANA_ZONE_SIZE, -half + BORDER_THICKNESS / 2, 0)
 
 -- Several Mana cubes spawned at once: touch one for Mana, a replacement
--- spawns elsewhere a couple seconds later so the total stays at MANA_NODE_COUNT.
--- More nodes at once is itself a future upgrade - MANA_NODE_COUNT is the one
--- knob to raise for that later.
+-- spawns elsewhere after a delay set by the COLLECTING player's own "Mana
+-- Spawn Speed" level (2.0s at level 1 down to 0.2s at level 10 - see
+-- ManaSpawnHandler), so the total stays at MANA_NODE_COUNT. More nodes at
+-- once is itself a future upgrade - MANA_NODE_COUNT is the one knob to
+-- raise for that later.
 local MANA_NODE_COUNT = 3
 
 local function randomPointInZone()
@@ -107,7 +109,7 @@ local function spawnManaNode()
 		end
 
 		node:Destroy()
-		task.delay(MANA_RESPAWN_DELAY, spawnManaNode)
+		task.delay(ManaSpawnHandler.getRespawnSeconds(player), spawnManaNode)
 	end)
 end
 
@@ -116,7 +118,7 @@ for _ = 1, MANA_NODE_COUNT do
 end
 
 -- Upgrade cards live outside the platform, a few studs past the border.
--- ManaYieldKioskClient finds this part by name and builds its SurfaceGui UI.
+-- ManaUpgradeBoardClient finds this part by name and builds its SurfaceGui UI.
 local kiosksFolder = Workspace:FindFirstChild("Kiosks")
 if kiosksFolder then
 	kiosksFolder:Destroy()
@@ -125,8 +127,8 @@ kiosksFolder = Instance.new("Folder")
 kiosksFolder.Name = "Kiosks"
 kiosksFolder.Parent = Workspace
 
--- Wide and mostly empty on purpose: one upgrade column fills the left side,
--- leaving room to add more columns left-to-right later without resizing the
+-- Wide and mostly empty on purpose: two upgrade columns fill the left side
+-- so far, leaving room to add more left-to-right later without resizing the
 -- board. Thin along X (the approach direction), wide along Z, so its wide
 -- face - not its thin edge - points back at the platform, toward the player.
 local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
@@ -136,10 +138,10 @@ local function makeKioskCard(name: string, offsetX: number, offsetZ: number)
 	card.CanCollide = true
 	card.Material = Enum.Material.SmoothPlastic
 	card.Color = Color3.fromRGB(45, 45, 60)
-	card.Size = Vector3.new(1, 18, 26)
+	card.Size = Vector3.new(1, 18, 42)
 	card.CFrame = CFrame.new(centerX + offsetX, groundY + 9, centerZ + offsetZ)
 	card.Parent = kiosksFolder
 	return card
 end
 
-makeKioskCard("ManaYieldKiosk", half + 6, 0)
+makeKioskCard("ManaUpgradeBoard", half + 6, 0)

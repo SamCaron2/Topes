@@ -5,14 +5,9 @@
 -- mechanic for the new vision - no Zones wired to it yet.
 
 local PlayerData = require(script.Parent.PlayerData)
+local UpgradeCost = require(script.Parent.UpgradeCost)
 
 local MAX_YIELD_LEVEL = 100
-
--- Cost (in Mana) to go from `level` to `level + 1`. Placeholder linear curve -
--- easy to retune once real playtesting numbers exist.
-local function costForLevel(level: number): number
-	return level * 10
-end
 
 local ManaHandler = {}
 
@@ -30,8 +25,8 @@ function ManaHandler.collect(player: Player): number?
 	return data.mana
 end
 
--- Read-only snapshot for the kiosk UI: current level, current yield, and the
--- Mana cost to buy the next level (nil once maxed).
+-- Read-only snapshot for the kiosk UI: current level, current yield, the
+-- yield one more level would give, and the Mana cost to buy it (nil once maxed).
 function ManaHandler.getYieldUpgradeState(player: Player)
 	local data = PlayerData.get(player)
 	if not data then
@@ -39,11 +34,13 @@ function ManaHandler.getYieldUpgradeState(player: Player)
 	end
 
 	local level = data.manaYieldLevel or 1
+	local maxed = level >= MAX_YIELD_LEVEL
 	return {
 		level = level,
 		maxLevel = MAX_YIELD_LEVEL,
 		amountPerPickup = getYieldAmount(data),
-		nextLevelCost = level < MAX_YIELD_LEVEL and costForLevel(level) or nil,
+		nextAmountPerPickup = not maxed and (level + 1) or nil,
+		nextLevelCost = not maxed and UpgradeCost.costForLevel(level + 1) or nil,
 		mana = data.mana or 0,
 	}
 end
@@ -62,7 +59,7 @@ function ManaHandler.buyYieldUpgrade(player: Player, mode: string?)
 		return false, "Already at max level"
 	end
 
-	local cost = costForLevel(level)
+	local cost = UpgradeCost.costForLevel(level + 1)
 	if (data.mana or 0) < cost then
 		return false, "Not enough Mana"
 	end
@@ -71,8 +68,8 @@ function ManaHandler.buyYieldUpgrade(player: Player, mode: string?)
 	level += 1
 
 	if mode == "max" then
-		while level < MAX_YIELD_LEVEL and data.mana >= costForLevel(level) do
-			data.mana -= costForLevel(level)
+		while level < MAX_YIELD_LEVEL and data.mana >= UpgradeCost.costForLevel(level + 1) do
+			data.mana -= UpgradeCost.costForLevel(level + 1)
 			level += 1
 		end
 	end

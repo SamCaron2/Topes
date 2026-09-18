@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 
 local PlayerData = require(script.Parent.PlayerData)
 local ManaHandler = require(script.Parent.ManaHandler)
+local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
 local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
@@ -48,6 +49,8 @@ local getFloorTilesFunction = newRemoteFunction("GetFloorTiles") -- args: zoneKe
 local manaUpdatedEvent = newRemoteEvent("ManaUpdated") -- server -> client, fired on join and every pickup/purchase
 local getManaYieldStateFunction = newRemoteFunction("GetManaYieldState")
 local buyManaYieldUpgradeFunction = newRemoteFunction("BuyManaYieldUpgrade")
+local getManaSpawnStateFunction = newRemoteFunction("GetManaSpawnState")
+local buyManaSpawnUpgradeFunction = newRemoteFunction("BuyManaSpawnUpgrade")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -183,6 +186,21 @@ buyManaYieldUpgradeFunction.OnServerInvoke = function(player, mode)
 		return false, "Invalid request"
 	end
 	local success, err, newState = ManaHandler.buyYieldUpgrade(player, mode)
+	if success then
+		manaUpdatedEvent:FireClient(player, newState.mana)
+	end
+	return success, err, newState
+end
+
+getManaSpawnStateFunction.OnServerInvoke = function(player)
+	return ManaSpawnHandler.getUpgradeState(player)
+end
+
+buyManaSpawnUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = ManaSpawnHandler.buyUpgrade(player, mode)
 	if success then
 		manaUpdatedEvent:FireClient(player, newState.mana)
 	end
