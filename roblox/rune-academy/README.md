@@ -125,11 +125,15 @@ design notes.
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
-  Mana counter's placement: Store/Runes/Profile/Settings, each a
-  colored circle with a placeholder symbol (safe basic Unicode glyphs -
-  `$`/★/☺/⚙ - not emoji, so they render reliably without a real icon
-  asset) and a name label underneath. Not wired to any panel yet - it
-  only needed to exist on screen for now.
+  Mana counter's placement, laid out 2x2: Store/Runes/Profile/Settings,
+  each a colored circle with a placeholder symbol (safe basic Unicode
+  glyphs - `$`/★/☺/⚙ - not emoji, so they render reliably without a
+  real icon asset) filling most of the circle, and a bold `FredokaOne`
+  name label with a heavy stroke underneath for a "cool logo" look.
+  Hovering tweens the icon up to 1.15x size (centered growth, not
+  top-anchored, so it doesn't push into the label) to show what's
+  highlighted. Not wired to any panel yet - it only needed to exist on
+  screen for now.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
   feet, visible only while standing inside the `ManaZone` platform
   bounds (read off attributes `WorldBuilder` sets on that folder:
