@@ -80,18 +80,28 @@ design notes.
   `friendBoost = true`, once a currency has that flag again.
 
 - `WorldBuilder.server.lua` — generates world content on server start.
-  Currently the 60x60 Mana collection platform (a hollow square outline,
-  4 thin Neon parts, non-collide, centered on `SpawnLocation`) plus Mana
-  cubes spawned inside it: touch one for Mana, a replacement respawns
-  elsewhere after a delay set by the collecting player's own "Mana Spawn
-  Speed" level. That same level also sets how many nodes exist at once
-  (3 at level 1, up to 10 at level 10, taking the max across everyone
-  online) — a `TOP_UP_INTERVAL` poll spawns more as needed, not just on
-  pickup, so a purchase (or another player's higher level) adds nodes
-  right away. Grows one piece at a time as the new vision gets specified
-  — rerunning it (every server start) rebuilds the `ManaZone`/`Kiosks`
-  folders from scratch, so editing this file and reconnecting Rojo is
-  how you iterate on world layout.
+  Builds a 120x120 floating grass island (`StartingIsland`, Roblox's
+  built-in Grass material, no image asset needed) 60 studs up, and lifts
+  `SpawnLocation` onto its surface — everything else (platform, Mana
+  nodes, kiosk board) is positioned relative to `SpawnLocation`, so it
+  all rides up with it. Walk off the edge and you fall into the void;
+  `Workspace.FallenPartsDestroyHeight` (30 studs below the island)
+  destroys your character once you've fallen that far, and Roblox
+  respawns you at `SpawnLocation` automatically, same as any other
+  death. Future unlockable areas are meant to be more islands like this
+  one, gated behind a Mana threshold or similar — not built yet.
+  Contains the 60x60 Mana collection platform (a hollow square outline,
+  4 thin Neon parts, non-collide) plus Mana cubes spawned inside it:
+  touch one for Mana, a replacement respawns elsewhere after a delay set
+  by the collecting player's own "Mana Spawn Speed" level. That same
+  level also sets how many nodes exist at once (3 at level 1, up to 10
+  at level 10, taking the max across everyone online) — a
+  `TOP_UP_INTERVAL` poll spawns more as needed, not just on pickup, so a
+  purchase (or another player's higher level) adds nodes right away.
+  Grows one piece at a time as the new vision gets specified —
+  rerunning it (every server start) rebuilds the `StartingIsland`,
+  `ManaZone`, and `Kiosks` from scratch, so editing this file and
+  reconnecting Rojo is how you iterate on world layout.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
   its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
   so the very first purchase (from level 1) always costs 10 Mana no
@@ -180,11 +190,20 @@ design notes.
 
 ## One-time cleanup if Studio still shows old world parts
 
-Nothing server-side generates or removes world parts anymore. If your
-saved `.rbxl` still has leftover parts from before the reset (e.g. a
+Nothing server-side generates or removes world parts anymore except what
+`WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`, `Kiosks`,
+all rebuilt from scratch on every server start). If your saved `.rbxl`
+still has leftover parts from before the reset (e.g. a
 saved-while-in-Play-mode `GeneratedWorld` folder or similar), delete them
 by hand in Workspace — they're just leftover geometry, nothing references
 them.
+
+The original `Baseplate` from Studio's blank template is still down at
+its original spot (around y=0), well below where `FallenPartsDestroyHeight`
+now destroys a falling character — so it's harmless but also never
+actually reachable anymore. It's left in place rather than auto-deleted
+since it's Studio-authored content, not something `WorldBuilder` created;
+delete it by hand in Workspace if you want it gone for good.
 
 ## Not yet built (next steps)
 

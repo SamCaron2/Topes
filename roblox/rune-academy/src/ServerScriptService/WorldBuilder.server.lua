@@ -15,14 +15,52 @@ local BORDER_HEIGHT = 0.2
 local MANA_NODE_SIZE = Vector3.new(2, 2, 2)
 local MANA_NODE_MARGIN = 3 -- keep nodes off the border line
 
+local ISLAND_SIZE = 120 -- studs, square - comfortably fits the platform + kiosk board with room to spare
+local ISLAND_THICKNESS = 6
+local ISLAND_TOP_Y = 60 -- how high above the void the starting island floats
+local FALL_KILL_MARGIN = 30 -- studs below the island surface before a fallen player is destroyed and respawned
+
 local manaUpdatedEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ManaUpdated")
 
+-- Everything below is positioned relative to SpawnLocation, so building the
+-- island here and lifting spawn onto its surface lifts the whole build with
+-- it - nothing past this block needs to change for "up in the air."
+local spawnPart = Workspace:FindFirstChildOfClass("SpawnLocation")
+local islandCenterX = spawnPart and spawnPart.Position.X or 0
+local islandCenterZ = spawnPart and spawnPart.Position.Z or 0
+
+local existingIsland = Workspace:FindFirstChild("StartingIsland")
+if existingIsland then
+	existingIsland:Destroy()
+end
+
+local island = Instance.new("Part")
+island.Name = "StartingIsland"
+island.Anchored = true
+island.CanCollide = true
+island.Material = Enum.Material.Grass
+island.Color = Color3.fromRGB(90, 170, 60)
+island.Size = Vector3.new(ISLAND_SIZE, ISLAND_THICKNESS, ISLAND_SIZE)
+island.CFrame = CFrame.new(islandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, islandCenterZ)
+island.Parent = Workspace
+
+if spawnPart then
+	spawnPart.Position = Vector3.new(islandCenterX, ISLAND_TOP_Y + spawnPart.Size.Y / 2, islandCenterZ)
+end
+
+-- Future areas unlock by placing more islands like this one and bridging or
+-- gating access to them (e.g. behind a Mana threshold) - not built yet.
+
+-- Run off the edge and you fall into the void; once you're this far below
+-- the island's surface, Roblox destroys your character and respawns you at
+-- SpawnLocation automatically, same as any other death.
+Workspace.FallenPartsDestroyHeight = ISLAND_TOP_Y - FALL_KILL_MARGIN
+
 local function findGroundAnchor()
-	local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
-	if spawn then
-		return spawn.Position.X, spawn.Position.Z, spawn.Position.Y + spawn.Size.Y / 2
+	if spawnPart then
+		return spawnPart.Position.X, spawnPart.Position.Z, spawnPart.Position.Y + spawnPart.Size.Y / 2
 	end
-	return 0, 0, 0
+	return islandCenterX, islandCenterZ, ISLAND_TOP_Y
 end
 
 local centerX, centerZ, groundY = findGroundAnchor()
