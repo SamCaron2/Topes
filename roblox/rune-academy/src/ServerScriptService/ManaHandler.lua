@@ -1,12 +1,12 @@
 -- Server-authoritative Mana collection and its one upgrade so far: a player
 -- touches a ManaNode part on the ground and gets Mana equal to their current
--- "Mana Per Pickup" level (starts at 1, buyable up to 20, +1 per level).
+-- "Mana Per Pickup" level (starts at 1, buyable up to 100, +1 per level).
 -- Kept separate from ResourceEngine since this is a fresh, much simpler
 -- mechanic for the new vision - no Zones wired to it yet.
 
 local PlayerData = require(script.Parent.PlayerData)
 
-local MAX_YIELD_LEVEL = 20
+local MAX_YIELD_LEVEL = 100
 
 -- Cost (in Mana) to go from `level` to `level + 1`. Placeholder linear curve -
 -- easy to retune once real playtesting numbers exist.

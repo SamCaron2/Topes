@@ -89,7 +89,7 @@ design notes.
   rebuilds the `ManaZone` folder from scratch, so editing this file and
   reconnecting Rojo is how you iterate on world layout.
 - `ManaHandler.lua` — server-authoritative Mana collection and its one
-  upgrade so far: "Mana Per Pickup" (level 1-20, +1 Mana per pickup per
+  upgrade so far: "Mana Per Pickup" (level 1-100, +1 Mana per pickup per
   level, level costs `level * 10` Mana — a placeholder linear curve).
   `buyYieldUpgrade` takes an optional `"max"` mode that buys as many
   levels in a row as currently affordable. Deliberately kept separate
@@ -109,7 +109,7 @@ design notes.
   the same board later). Styled like a typical incremental-game upgrades
   board: a "Mana Upgrades" title banner across the top, then a
   spaced-out column per upgrade (currently just "More Mana") with a
-  placeholder icon, level `(x/20)`, a `+N > +N` yield preview, cost, and
+  placeholder icon, level `(x/100)`, a `+N > +N` yield preview, cost, and
   Buy/Max buttons (white text on both, padded so labels don't stretch
   edge-to-edge, all text with a subtle stroke for a slight 3D look). Its UI
   is a `SurfaceGui` painted onto the card's face (not a `BillboardGui` -
