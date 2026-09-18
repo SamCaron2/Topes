@@ -65,11 +65,12 @@ makeBorderPart("BorderWest", BORDER_THICKNESS, MANA_ZONE_SIZE, -half + BORDER_TH
 
 -- Several Mana cubes spawned at once: touch one for Mana, a replacement
 -- spawns elsewhere after a delay set by the COLLECTING player's own "Mana
--- Spawn Speed" level (2.0s at level 1 down to 0.2s at level 10 - see
--- ManaSpawnHandler), so the total stays at MANA_NODE_COUNT. More nodes at
--- once is itself a future upgrade - MANA_NODE_COUNT is the one knob to
--- raise for that later.
-local MANA_NODE_COUNT = 3
+-- Spawn Speed" level (see ManaSpawnHandler). That same upgrade also raises
+-- how many nodes exist in the world at once (3 at level 1, up to 10 at level
+-- 10) - TOP_UP_INTERVAL polls for that rising instead of only reacting to
+-- pickups, so a purchase (or another player joining with a higher level)
+-- adds nodes without needing one to be collected first.
+local TOP_UP_INTERVAL = 2
 
 local function randomPointInZone()
 	local innerHalf = MANA_ZONE_SIZE / 2 - MANA_NODE_MARGIN
@@ -113,9 +114,41 @@ local function spawnManaNode()
 	end)
 end
 
-for _ = 1, MANA_NODE_COUNT do
-	spawnManaNode()
+-- The max across everyone online, so any player's Spawn Speed progress
+-- raises the shared node count for the whole platform, not just for them.
+local function getTargetNodeCount(): number
+	local target = ManaSpawnHandler.getBaseNodeCount()
+	for _, player in Players:GetPlayers() do
+		target = math.max(target, ManaSpawnHandler.getNodeCount(player))
+	end
+	return target
 end
+
+local function countLiveNodes(): number
+	local count = 0
+	for _, child in manaZone:GetChildren() do
+		if child.Name == "ManaNode" then
+			count += 1
+		end
+	end
+	return count
+end
+
+local function topUpNodes()
+	local missing = getTargetNodeCount() - countLiveNodes()
+	for _ = 1, missing do
+		spawnManaNode()
+	end
+end
+
+topUpNodes()
+
+task.spawn(function()
+	while true do
+		task.wait(TOP_UP_INTERVAL)
+		topUpNodes()
+	end
+end)
 
 -- Upgrade cards live outside the platform, a few studs past the border.
 -- ManaUpgradeBoardClient finds this part by name and builds its SurfaceGui UI.

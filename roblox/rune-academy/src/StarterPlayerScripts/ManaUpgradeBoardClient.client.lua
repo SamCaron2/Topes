@@ -1,6 +1,6 @@
 -- Builds the whole Mana upgrades board: a "Mana Upgrades" title banner
 -- across the top, then upgrade columns left-to-right below it - "More Mana"
--- and "Spawn Speed" so far, with empty space to the right for more later.
+-- and "Mana Spawn Speed" so far, with empty space to the right for more later.
 -- Painted directly onto the board's face with a SurfaceGui, not a
 -- BillboardGui - a Billboard always turns to face the camera, which made an
 -- earlier version look like it was sliding around as you walked past; a
@@ -250,7 +250,7 @@ createUpgradeColumn(1, "More Mana", Color3.fromRGB(150, 80, 255), getManaYieldSt
 	return ("+%d (MAX)"):format(state.amountPerPickup)
 end)
 
-createUpgradeColumn(2, "Spawn Speed", Color3.fromRGB(80, 220, 255), getManaSpawnStateFunction, buyManaSpawnUpgradeFunction, function(state)
+createUpgradeColumn(2, "Mana Spawn Speed", Color3.fromRGB(80, 220, 255), getManaSpawnStateFunction, buyManaSpawnUpgradeFunction, function(state)
 	if state.nextLevelCost then
 		return ("%.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
 	end

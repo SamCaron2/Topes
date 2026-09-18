@@ -81,12 +81,15 @@ design notes.
 
 - `WorldBuilder.server.lua` — generates world content on server start.
   Currently the 60x60 Mana collection platform (a hollow square outline,
-  4 thin Neon parts, non-collide, centered on `SpawnLocation`) plus 3
-  Mana cubes spawned inside it at a time (`MANA_NODE_COUNT`): touch one
-  for Mana, a replacement respawns elsewhere after a delay set by the
-  collecting player's own "Mana Spawn Speed" level, so the total stays
-  at 3. Grows one piece at a time as the new vision gets specified —
-  rerunning it (every server start) rebuilds the `ManaZone`/`Kiosks`
+  4 thin Neon parts, non-collide, centered on `SpawnLocation`) plus Mana
+  cubes spawned inside it: touch one for Mana, a replacement respawns
+  elsewhere after a delay set by the collecting player's own "Mana Spawn
+  Speed" level. That same level also sets how many nodes exist at once
+  (3 at level 1, up to 10 at level 10, taking the max across everyone
+  online) — a `TOP_UP_INTERVAL` poll spawns more as needed, not just on
+  pickup, so a purchase (or another player's higher level) adds nodes
+  right away. Grows one piece at a time as the new vision gets specified
+  — rerunning it (every server start) rebuilds the `ManaZone`/`Kiosks`
   folders from scratch, so editing this file and reconnecting Rojo is
   how you iterate on world layout.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
@@ -101,12 +104,12 @@ design notes.
   Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones`
   for now — a fresh, much simpler mechanic until the new vision needs more.
 - `ManaSpawnHandler.lua` — the "Mana Spawn Speed" upgrade (level 1-10,
-  linear from 2.0s down to 0.2s respawn delay, same `UpgradeCost` curve
-  as every other Mana upgrade). `getRespawnSeconds(player)` is read by
-  `WorldBuilder` right after that player collects a node, to time its
-  replacement — the upgrade is per-player even though the nodes
-  themselves are shared world objects, same as how "Mana Per Pickup"
-  already works.
+  same `UpgradeCost` curve as every other Mana upgrade). Two effects per
+  level, both linear: respawn delay 2.0s → 0.2s, and live node count 3 →
+  10. `getRespawnSeconds`/`getNodeCount` are read by `WorldBuilder` (the
+  latter maxed across everyone online) — the upgrade is per-player even
+  though the nodes themselves are shared world objects, same as how
+  "Mana Per Pickup" already works.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent. No icon yet.
@@ -122,8 +125,8 @@ design notes.
   board: a "Mana Upgrades" title banner across the top (with a clear gap
   below it before the columns start), then a spaced-out column per
   upgrade built through one shared `createUpgradeColumn` helper so every
-  upgrade looks and behaves alike — currently "More Mana" and "Spawn
-  Speed", each with a placeholder icon, level `(x/max)`, a value preview
+  upgrade looks and behaves alike — currently "More Mana" and "Mana
+  Spawn Speed", each with a placeholder icon, level `(x/max)`, a value preview
   (`+N > +N` or `Ns > Ns`), cost, and Buy/Max buttons (white text,
   padded so labels don't stretch edge-to-edge, all text with a subtle
   stroke for a slight 3D look). Its UI is a `SurfaceGui` painted onto
