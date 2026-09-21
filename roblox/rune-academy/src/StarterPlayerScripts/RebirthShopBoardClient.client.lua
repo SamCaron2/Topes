@@ -2,10 +2,10 @@
 -- that survive rebirthing (unlike the Mana Upgrades board's 4 columns,
 -- which reset every rebirth) - a small clear "Rebirths: <amount>" readout
 -- above a "Rebirth Upgrades" title banner (same template as the Mana
--- Upgrades board), then one column so far: "Mana Value Multiplier". Two
--- more columns are planned for this same board later - widen
--- REBIRTH_SHOP_BOARD_WIDTH in WorldBuilder and lay them out left-to-right
--- the way the Mana Upgrades board does, once they're specified.
+-- Upgrades board), then 3 columns left-to-right filling the board
+-- edge-to-edge: "Mana Value Multiplier", "Rebirth Multiplier", and
+-- "XP Multiplier". Same createUpgradeColumn pattern as the Mana Upgrades
+-- board, just costed in Rebirths instead of Mana.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -13,7 +13,12 @@ local Workspace = game:GetService("Workspace")
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getManaValueMultiplierStateFunction = remotes:WaitForChild("GetManaValueMultiplierState")
 local buyManaValueMultiplierFunction = remotes:WaitForChild("BuyManaValueMultiplier")
+local getRebirthMultiplierStateFunction = remotes:WaitForChild("GetRebirthMultiplierState")
+local buyRebirthMultiplierFunction = remotes:WaitForChild("BuyRebirthMultiplier")
+local getXpMultiplierStateFunction = remotes:WaitForChild("GetXpMultiplierState")
+local buyXpMultiplierFunction = remotes:WaitForChild("BuyXpMultiplier")
 local rebirthsUpdatedEvent = remotes:WaitForChild("RebirthsUpdated")
+local playerRebirthedEvent = remotes:WaitForChild("PlayerRebirthed")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("RebirthShopBoard")
 
@@ -22,6 +27,13 @@ local COLOR_CANT_AFFORD = Color3.fromRGB(200, 55, 55)
 local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
 local COLOR_MAXED_OUT = Color3.fromRGB(90, 90, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
+
+-- Sized to fill the board edge-to-edge for exactly 3 columns (0.03 margin on
+-- both sides), same spacing scheme as the Mana Upgrades board's 4 columns.
+local COLUMN_WIDTH = 0.2867
+local COLUMN_GAP = 0.04
+local COLUMN_START_X = 0.03
+local COLUMN_TOP_Y = 0.33
 
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "RebirthShopBoardGui"
@@ -88,186 +100,236 @@ titleText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 titleText.Text = "Rebirth Upgrades"
 titleText.Parent = titleBanner
 
--- Single column for now, centered, filling most of the board's width.
-local column = Instance.new("Frame")
-column.Size = UDim2.new(0.8, 0, 0.55, 0)
-column.Position = UDim2.new(0.1, 0, 0.33, 0)
-column.BackgroundTransparency = 1
-column.Parent = background
+-- Builds one upgrade column, identical structure to the Mana Upgrades
+-- board's createUpgradeColumn but costed and gated in Rebirths instead of
+-- Mana. Returns a refresh() function used after a rebirth (Rebirths itself
+-- doesn't reset, but this keeps the pattern consistent with the Mana board).
+local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3, getStateRemote, buyRemote, formatDetail)
+	local column = Instance.new("Frame")
+	column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
+	column.Position = UDim2.new(COLUMN_START_X + (slotIndex - 1) * (COLUMN_WIDTH + COLUMN_GAP), 0, COLUMN_TOP_Y, 0)
+	column.BackgroundTransparency = 1
+	column.Parent = background
 
-local iconFrame = Instance.new("Frame")
-iconFrame.AnchorPoint = Vector2.new(0.5, 0)
-iconFrame.Size = UDim2.new(0.4, 0, 0.18, 0)
-iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
-iconFrame.BackgroundColor3 = Color3.fromRGB(255, 200, 60)
-iconFrame.BorderSizePixel = 0
-iconFrame.Parent = column
+	local iconFrame = Instance.new("Frame")
+	iconFrame.AnchorPoint = Vector2.new(0.5, 0)
+	iconFrame.Size = UDim2.new(0.55, 0, 0.22, 0)
+	iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
+	iconFrame.BackgroundColor3 = iconColor
+	iconFrame.BorderSizePixel = 0
+	iconFrame.Parent = column
 
-local iconAspect = Instance.new("UIAspectRatioConstraint")
-iconAspect.AspectRatio = 1
-iconAspect.Parent = iconFrame
+	local iconAspect = Instance.new("UIAspectRatioConstraint")
+	iconAspect.AspectRatio = 1
+	iconAspect.Parent = iconFrame
 
-local iconCorner = Instance.new("UICorner")
-iconCorner.CornerRadius = UDim.new(1, 0)
-iconCorner.Parent = iconFrame
+	local iconCorner = Instance.new("UICorner")
+	iconCorner.CornerRadius = UDim.new(1, 0)
+	iconCorner.Parent = iconFrame
 
-local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
-nameLabel.Position = UDim2.new(0, 0, 0.22, 0)
-nameLabel.BackgroundTransparency = 1
-nameLabel.Font = Enum.Font.GothamBold
-nameLabel.TextScaled = true
-nameLabel.TextColor3 = Color3.fromRGB(255, 220, 90)
-nameLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-nameLabel.Text = "Mana Value Multiplier"
-nameLabel.Parent = column
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
+	nameLabel.Position = UDim2.new(0, 0, 0.28, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.TextScaled = true
+	nameLabel.TextColor3 = Color3.fromRGB(255, 220, 90)
+	nameLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+	nameLabel.Text = name
+	nameLabel.Parent = column
 
-local levelLabel = Instance.new("TextLabel")
-levelLabel.Size = UDim2.new(1, 0, 0.08, 0)
-levelLabel.Position = UDim2.new(0, 0, 0.34, 0)
-levelLabel.BackgroundTransparency = 1
-levelLabel.Font = Enum.Font.GothamBold
-levelLabel.TextScaled = true
-levelLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-levelLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-levelLabel.Text = "(-/-)"
-levelLabel.Parent = column
+	local levelLabel = Instance.new("TextLabel")
+	levelLabel.Size = UDim2.new(1, 0, 0.08, 0)
+	levelLabel.Position = UDim2.new(0, 0, 0.4, 0)
+	levelLabel.BackgroundTransparency = 1
+	levelLabel.Font = Enum.Font.GothamBold
+	levelLabel.TextScaled = true
+	levelLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	levelLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+	levelLabel.Text = "(-/-)"
+	levelLabel.Parent = column
 
-local detailLabel = Instance.new("TextLabel")
-detailLabel.Size = UDim2.new(1, 0, 0.08, 0)
-detailLabel.Position = UDim2.new(0, 0, 0.44, 0)
-detailLabel.BackgroundTransparency = 1
-detailLabel.Font = Enum.Font.GothamBold
-detailLabel.TextScaled = true
-detailLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-detailLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-detailLabel.Text = "-"
-detailLabel.Parent = column
+	local detailLabel = Instance.new("TextLabel")
+	detailLabel.Size = UDim2.new(1, 0, 0.08, 0)
+	detailLabel.Position = UDim2.new(0, 0, 0.5, 0)
+	detailLabel.BackgroundTransparency = 1
+	detailLabel.Font = Enum.Font.GothamBold
+	detailLabel.TextScaled = true
+	detailLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	detailLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+	detailLabel.Text = "-"
+	detailLabel.Parent = column
 
-local costLabel = Instance.new("TextLabel")
-costLabel.Size = UDim2.new(1, 0, 0.08, 0)
-costLabel.Position = UDim2.new(0, 0, 0.54, 0)
-costLabel.BackgroundTransparency = 1
-costLabel.Font = Enum.Font.Gotham
-costLabel.TextScaled = true
-costLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-costLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-costLabel.Text = "Cost: -"
-costLabel.Parent = column
+	local costLabel = Instance.new("TextLabel")
+	costLabel.Size = UDim2.new(1, 0, 0.08, 0)
+	costLabel.Position = UDim2.new(0, 0, 0.6, 0)
+	costLabel.BackgroundTransparency = 1
+	costLabel.Font = Enum.Font.Gotham
+	costLabel.TextScaled = true
+	costLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	costLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+	costLabel.Text = "Cost: -"
+	costLabel.Parent = column
 
-local buyButton = Instance.new("TextButton")
-buyButton.Size = UDim2.new(0.46, 0, 0.16, 0)
-buyButton.Position = UDim2.new(0, 0, 0.75, 0)
-buyButton.BackgroundColor3 = COLOR_CAN_BUY
-buyButton.Font = Enum.Font.GothamBold
-buyButton.TextScaled = true
-buyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-buyButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-buyButton.Text = "Buy"
-buyButton.Parent = column
-
-local buyCorner = Instance.new("UICorner")
-buyCorner.CornerRadius = UDim.new(0.3, 0)
-buyCorner.Parent = buyButton
-
-local buyPadding = Instance.new("UIPadding")
-buyPadding.PaddingTop = UDim.new(0.22, 0)
-buyPadding.PaddingBottom = UDim.new(0.22, 0)
-buyPadding.PaddingLeft = UDim.new(0.15, 0)
-buyPadding.PaddingRight = UDim.new(0.15, 0)
-buyPadding.Parent = buyButton
-
-local maxButton = Instance.new("TextButton")
-maxButton.Size = UDim2.new(0.46, 0, 0.16, 0)
-maxButton.Position = UDim2.new(0.54, 0, 0.75, 0)
-maxButton.BackgroundColor3 = COLOR_MAX_ACTIVE
-maxButton.Font = Enum.Font.GothamBold
-maxButton.TextScaled = true
-maxButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-maxButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-maxButton.Text = "Max"
-maxButton.Parent = column
-
-local maxCorner = Instance.new("UICorner")
-maxCorner.CornerRadius = UDim.new(0.3, 0)
-maxCorner.Parent = maxButton
-
-local maxPadding = Instance.new("UIPadding")
-maxPadding.PaddingTop = UDim.new(0.22, 0)
-maxPadding.PaddingBottom = UDim.new(0.22, 0)
-maxPadding.PaddingLeft = UDim.new(0.15, 0)
-maxPadding.PaddingRight = UDim.new(0.15, 0)
-maxPadding.Parent = maxButton
-
-local BUY_SIZE = buyButton.Size
-local BUY_POSITION = buyButton.Position
-local MAXED_SIZE = UDim2.new(1, 0, 0.16, 0)
-local MAXED_POSITION = UDim2.new(0, 0, 0.75, 0)
-
-local currentRebirths = 0
-local nextLevelCost = nil -- nil once maxed
-
-local function updateButtonColors()
-	if nextLevelCost == nil then
-		maxButton.Visible = false
-		buyButton.Size = MAXED_SIZE
-		buyButton.Position = MAXED_POSITION
-		buyButton.Active = false
-		buyButton.Text = "Maxed"
-		buyButton.BackgroundColor3 = COLOR_MAXED_OUT
-		return
-	end
-
-	maxButton.Visible = true
-	buyButton.Size = BUY_SIZE
-	buyButton.Position = BUY_POSITION
+	local buyButton = Instance.new("TextButton")
+	buyButton.Size = UDim2.new(0.46, 0, 0.16, 0)
+	buyButton.Position = UDim2.new(0, 0, 0.82, 0)
+	buyButton.BackgroundColor3 = COLOR_CAN_BUY
+	buyButton.Font = Enum.Font.GothamBold
+	buyButton.TextScaled = true
+	buyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	buyButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 	buyButton.Text = "Buy"
+	buyButton.Parent = column
+
+	local buyCorner = Instance.new("UICorner")
+	buyCorner.CornerRadius = UDim.new(0.3, 0)
+	buyCorner.Parent = buyButton
+
+	local buyPadding = Instance.new("UIPadding")
+	buyPadding.PaddingTop = UDim.new(0.22, 0)
+	buyPadding.PaddingBottom = UDim.new(0.22, 0)
+	buyPadding.PaddingLeft = UDim.new(0.15, 0)
+	buyPadding.PaddingRight = UDim.new(0.15, 0)
+	buyPadding.Parent = buyButton
+
+	local maxButton = Instance.new("TextButton")
+	maxButton.Size = UDim2.new(0.46, 0, 0.16, 0)
+	maxButton.Position = UDim2.new(0.54, 0, 0.82, 0)
+	maxButton.BackgroundColor3 = COLOR_MAX_ACTIVE
+	maxButton.Font = Enum.Font.GothamBold
+	maxButton.TextScaled = true
+	maxButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	maxButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 	maxButton.Text = "Max"
+	maxButton.Parent = column
 
-	local canAfford = currentRebirths >= nextLevelCost
-	buyButton.Active = canAfford
-	maxButton.Active = canAfford
-	buyButton.BackgroundColor3 = canAfford and COLOR_CAN_BUY or COLOR_CANT_AFFORD
-	maxButton.BackgroundColor3 = canAfford and COLOR_MAX_ACTIVE or COLOR_CANT_AFFORD
-end
+	local maxCorner = Instance.new("UICorner")
+	maxCorner.CornerRadius = UDim.new(0.3, 0)
+	maxCorner.Parent = maxButton
 
-local function render(state)
-	if not state then
-		return
+	local maxPadding = Instance.new("UIPadding")
+	maxPadding.PaddingTop = UDim.new(0.22, 0)
+	maxPadding.PaddingBottom = UDim.new(0.22, 0)
+	maxPadding.PaddingLeft = UDim.new(0.15, 0)
+	maxPadding.PaddingRight = UDim.new(0.15, 0)
+	maxPadding.Parent = maxButton
+
+	local BUY_SIZE = buyButton.Size
+	local BUY_POSITION = buyButton.Position
+	local MAXED_SIZE = UDim2.new(1, 0, 0.16, 0)
+	local MAXED_POSITION = UDim2.new(0, 0, 0.82, 0)
+
+	local currentRebirths = 0
+	local nextLevelCost = nil -- nil once maxed
+
+	local function updateButtonColors()
+		if nextLevelCost == nil then
+			maxButton.Visible = false
+			buyButton.Size = MAXED_SIZE
+			buyButton.Position = MAXED_POSITION
+			buyButton.Active = false
+			buyButton.Text = "Maxed"
+			buyButton.BackgroundColor3 = COLOR_MAXED_OUT
+			return
+		end
+
+		maxButton.Visible = true
+		buyButton.Size = BUY_SIZE
+		buyButton.Position = BUY_POSITION
+		buyButton.Text = "Buy"
+		maxButton.Text = "Max"
+
+		local canAfford = currentRebirths >= nextLevelCost
+		buyButton.Active = canAfford
+		maxButton.Active = canAfford
+		buyButton.BackgroundColor3 = canAfford and COLOR_CAN_BUY or COLOR_CANT_AFFORD
+		maxButton.BackgroundColor3 = canAfford and COLOR_MAX_ACTIVE or COLOR_CANT_AFFORD
 	end
 
-	currentRebirths = state.rebirths
-	nextLevelCost = state.nextLevelCost
+	local function render(state)
+		if not state then
+			return
+		end
 
-	levelLabel.Text = ("(%d/%d)"):format(state.level, state.maxLevel)
+		currentRebirths = state.rebirths
+		nextLevelCost = state.nextLevelCost
+
+		levelLabel.Text = ("(%d/%d)"):format(state.level, state.maxLevel)
+		detailLabel.Text = formatDetail(state)
+		costLabel.Text = state.nextLevelCost and ("Cost: %d Rebirths"):format(state.nextLevelCost) or "Cost: -"
+
+		updateButtonColors()
+	end
+
+	render(getStateRemote:InvokeServer())
+
+	rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
+		currentRebirths = amount
+		updateButtonColors()
+	end)
+
+	buyButton.MouseButton1Click:Connect(function()
+		local success, _, newState = buyRemote:InvokeServer("one")
+		if success then
+			render(newState)
+		end
+	end)
+
+	maxButton.MouseButton1Click:Connect(function()
+		local success, _, newState = buyRemote:InvokeServer("max")
+		if success then
+			render(newState)
+		end
+	end)
+
+	local function refresh()
+		render(getStateRemote:InvokeServer())
+	end
+
+	return refresh
+end
+
+local function formatMultiplierDetail(state)
 	if state.nextLevelCost then
-		detailLabel.Text = ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
-		costLabel.Text = ("Cost: %d Rebirths"):format(state.nextLevelCost)
-	else
-		detailLabel.Text = ("%.1fx (MAX)"):format(state.multiplier)
-		costLabel.Text = "Cost: -"
+		return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
 	end
-
-	updateButtonColors()
+	return ("%.1fx (MAX)"):format(state.multiplier)
 end
 
-render(getManaValueMultiplierStateFunction:InvokeServer())
+local columnRefreshFunctions = {
+	createUpgradeColumn(
+		1,
+		"Mana Value Multiplier",
+		Color3.fromRGB(255, 200, 60),
+		getManaValueMultiplierStateFunction,
+		buyManaValueMultiplierFunction,
+		formatMultiplierDetail
+	),
 
-rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
-	currentRebirths = amount
-	updateButtonColors()
-end)
+	createUpgradeColumn(
+		2,
+		"Rebirth Multiplier",
+		Color3.fromRGB(255, 100, 100),
+		getRebirthMultiplierStateFunction,
+		buyRebirthMultiplierFunction,
+		formatMultiplierDetail
+	),
 
-buyButton.MouseButton1Click:Connect(function()
-	local success, _, newState = buyManaValueMultiplierFunction:InvokeServer("one")
-	if success then
-		render(newState)
-	end
-end)
+	createUpgradeColumn(
+		3,
+		"XP Multiplier",
+		Color3.fromRGB(150, 220, 255),
+		getXpMultiplierStateFunction,
+		buyXpMultiplierFunction,
+		formatMultiplierDetail
+	),
+}
 
-maxButton.MouseButton1Click:Connect(function()
-	local success, _, newState = buyManaValueMultiplierFunction:InvokeServer("max")
-	if success then
-		render(newState)
+-- Rebirths and Rebirth Shop levels aren't reset by rebirthing, but refresh
+-- anyway on the same event so this board never drifts from server state.
+playerRebirthedEvent.OnClientEvent:Connect(function()
+	for _, refresh in columnRefreshFunctions do
+		refresh()
 	end
 end)

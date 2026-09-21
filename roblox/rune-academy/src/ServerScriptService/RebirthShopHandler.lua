@@ -1,84 +1,121 @@
 -- Server-authoritative Rebirth Shop: permanent upgrades bought with
 -- Rebirths, NOT reset when you rebirth (unlike the Mana-side upgrades,
 -- which DO reset - see RebirthHandler.rebirth) - that's the whole point,
--- so each rebirth run collects Mana faster than the last. Currently just
--- one column: "Mana Value Multiplier" (level 1-100, linear 1x -> 200x,
--- first purchase costs 1 Rebirth, cost climbs by 1 Rebirth per level
--- after). Two more columns are planned for this same board later.
+-- so each rebirth run collects Mana faster than the last. Three columns:
+--
+--  - "Mana Value Multiplier": level 1-100, LINEAR 1x -> 200x, cost
+--    currentLevel Rebirths (unchanged from when it was the only column).
+--  - "Rebirth Multiplier": level 1-100, NON-linear (quadratic) 1x -> 50x,
+--    scales how many Rebirths a rebirth actually grants (RebirthHandler).
+--  - "XP Multiplier": level 1-25, NON-linear (quadratic) 1x -> 5x (a
+--    placeholder range - no target was given, easy to retune), scales XP
+--    per pickup (XPHandler). Cost also non-linear per direct request -
+--    "periodically cost more," not a flat per-level increase.
+--
+-- Rebirth Multiplier and XP Multiplier are deliberately NOT linear, unlike
+-- Mana Value Multiplier: both their multiplier curves and cost curves use
+-- power functions, so the step between consecutive levels keeps changing
+-- instead of growing by the same fixed amount or ratio every time.
 
 local PlayerData = require(script.Parent.PlayerData)
 
-local MAX_MULTIPLIER_LEVEL = 100
-local MIN_MULTIPLIER = 1
-local MAX_MULTIPLIER = 200
+-- Builds get/buy functions for one multiplier upgrade from its config, so
+-- the three columns above don't each duplicate the same get-state/buy-with-
+-- max-mode logic.
+local function makeMultiplierUpgrade(config)
+	local function multiplierFor(player: Player): number
+		local data = PlayerData.get(player)
+		local level = (data and data[config.fieldName]) or 1
+		return config.multiplierForLevel(level)
+	end
 
-local function multiplierForLevel(level: number): number
-	local t = (level - 1) / (MAX_MULTIPLIER_LEVEL - 1)
-	return MIN_MULTIPLIER + (MAX_MULTIPLIER - MIN_MULTIPLIER) * t
-end
+	local function getState(player: Player)
+		local data = PlayerData.get(player)
+		if not data then
+			return nil
+		end
 
--- Cost is in Rebirths, not Mana: 1 Rebirth for the first purchase (from
--- level 1), climbing by 1 Rebirth per level after.
-local function costForLevel(currentLevel: number): number
-	return currentLevel
+		local level = data[config.fieldName] or 1
+		local maxed = level >= config.maxLevel
+		return {
+			level = level,
+			maxLevel = config.maxLevel,
+			multiplier = config.multiplierForLevel(level),
+			nextMultiplier = not maxed and config.multiplierForLevel(level + 1) or nil,
+			nextLevelCost = not maxed and config.costForLevel(level) or nil,
+			rebirths = data.rebirths or 0,
+		}
+	end
+
+	local function buy(player: Player, mode: string?)
+		local data = PlayerData.get(player)
+		if not data then
+			return false, "Not loaded"
+		end
+
+		local level = data[config.fieldName] or 1
+		if level >= config.maxLevel then
+			return false, "Already at max level"
+		end
+
+		local cost = config.costForLevel(level)
+		if (data.rebirths or 0) < cost then
+			return false, "Not enough Rebirths"
+		end
+
+		data.rebirths -= cost
+		level += 1
+
+		if mode == "max" then
+			while level < config.maxLevel and data.rebirths >= config.costForLevel(level) do
+				data.rebirths -= config.costForLevel(level)
+				level += 1
+			end
+		end
+
+		data[config.fieldName] = level
+
+		return true, nil, getState(player)
+	end
+
+	return multiplierFor, getState, buy
 end
 
 local RebirthShopHandler = {}
 
--- Read by ManaHandler so every pickup is scaled by this permanent multiplier.
-function RebirthShopHandler.getManaValueMultiplier(player: Player): number
-	local data = PlayerData.get(player)
-	local level = (data and data.manaValueMultiplierLevel) or 1
-	return multiplierForLevel(level)
-end
+RebirthShopHandler.getManaValueMultiplier, RebirthShopHandler.getManaValueMultiplierState, RebirthShopHandler.buyManaValueMultiplier =
+	makeMultiplierUpgrade({
+		fieldName = "manaValueMultiplierLevel",
+		maxLevel = 100,
+		multiplierForLevel = function(level)
+			return 1 + (200 - 1) * (level - 1) / 99
+		end,
+		costForLevel = function(currentLevel)
+			return currentLevel
+		end,
+	})
 
-function RebirthShopHandler.getManaValueMultiplierState(player: Player)
-	local data = PlayerData.get(player)
-	if not data then
-		return nil
-	end
+RebirthShopHandler.getRebirthMultiplier, RebirthShopHandler.getRebirthMultiplierState, RebirthShopHandler.buyRebirthMultiplier =
+	makeMultiplierUpgrade({
+		fieldName = "rebirthMultiplierLevel",
+		maxLevel = 100,
+		multiplierForLevel = function(level)
+			return 1 + 49 * ((level - 1) / 99) ^ 2
+		end,
+		costForLevel = function(currentLevel)
+			return math.ceil(currentLevel ^ 1.5)
+		end,
+	})
 
-	local level = data.manaValueMultiplierLevel or 1
-	local maxed = level >= MAX_MULTIPLIER_LEVEL
-	return {
-		level = level,
-		maxLevel = MAX_MULTIPLIER_LEVEL,
-		multiplier = multiplierForLevel(level),
-		nextMultiplier = not maxed and multiplierForLevel(level + 1) or nil,
-		nextLevelCost = not maxed and costForLevel(level) or nil,
-		rebirths = data.rebirths or 0,
-	}
-end
-
-function RebirthShopHandler.buyManaValueMultiplier(player: Player, mode: string?)
-	local data = PlayerData.get(player)
-	if not data then
-		return false, "Not loaded"
-	end
-
-	local level = data.manaValueMultiplierLevel or 1
-	if level >= MAX_MULTIPLIER_LEVEL then
-		return false, "Already at max level"
-	end
-
-	local cost = costForLevel(level)
-	if (data.rebirths or 0) < cost then
-		return false, "Not enough Rebirths"
-	end
-
-	data.rebirths -= cost
-	level += 1
-
-	if mode == "max" then
-		while level < MAX_MULTIPLIER_LEVEL and data.rebirths >= costForLevel(level) do
-			data.rebirths -= costForLevel(level)
-			level += 1
-		end
-	end
-
-	data.manaValueMultiplierLevel = level
-
-	return true, nil, RebirthShopHandler.getManaValueMultiplierState(player)
-end
+RebirthShopHandler.getXpMultiplier, RebirthShopHandler.getXpMultiplierState, RebirthShopHandler.buyXpMultiplier = makeMultiplierUpgrade({
+	fieldName = "xpMultiplierLevel",
+	maxLevel = 25,
+	multiplierForLevel = function(level)
+		return 1 + 4 * ((level - 1) / 24) ^ 2
+	end,
+	costForLevel = function(currentLevel)
+		return math.ceil(currentLevel ^ 1.6)
+	end,
+})
 
 return RebirthShopHandler

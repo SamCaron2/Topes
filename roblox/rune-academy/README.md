@@ -104,7 +104,9 @@ design notes.
   Collection is range-based, not touch-based: a `COLLECT_CHECK_INTERVAL`
   (0.15s) poll collects any live node within a player's current
   "Collection Range" upgrade radius (`CollectionRangeHandler`) — the
-  same radius `ManaRingClient` draws as a ring around their feet. A
+  same radius `ManaRingClient` draws as a ring around their feet. Every
+  pickup also grants XP through `XPHandler.grantXpForPickup`, firing
+  `XPUpdated` for the bottom-middle XP bar. A
   replacement node spawns elsewhere after a delay set by the collecting
   player's own "Mana Spawn Speed" level. That same level also sets how
   many nodes exist at once (3 at level 1, up to 10 at level 10, taking
@@ -114,9 +116,8 @@ design notes.
   physical kiosk boards past the platform's edge, each just outside the
   previous one's far edge - `ManaUpgradeBoard` (42 studs wide, the
   4-column Mana upgrades board), `RebirthBoard` (20 studs wide, the
-  reset-for-Rebirths action board), and `RebirthShopBoard` (16 studs
-  wide, sized snugly for its one active column - widen it when the next
-  2 Rebirth Shop columns get built; rotated -90 degrees from the other
+  reset-for-Rebirths action board), and `RebirthShopBoard` (32 studs
+  wide, fitting its 3 columns edge-to-edge; rotated -90 degrees from the other
   two since it's the last board at the end of the row, so it faces back
   along the row instead of straight ahead - that rotation also swaps
   which of its dimensions runs along the row, so its offset uses half
@@ -147,7 +148,7 @@ design notes.
   what they gave (level 1 still costs 10, but level 9 - to reach level
   10's +25/pickup - now costs 210 instead of 90). Every pickup is also
   scaled by `RebirthShopHandler`'s permanent "Mana Value Multiplier"
-  (1x-2x, survives rebirthing) - `amountPerPickup`/`nextAmountPerPickup`
+  (1x-200x, survives rebirthing) - `amountPerPickup`/`nextAmountPerPickup`
   in the returned state already include it, so the board always shows
   the real effective yield. `buyYieldUpgrade` takes an optional `"max"`
   mode that buys as many levels in a row as currently affordable.
@@ -187,12 +188,27 @@ design notes.
   (`RebirthShopHandler`) are deliberately NOT reset - they're the whole
   point of rebirthing, so each run collects Mana faster than the last.
 - `RebirthShopHandler.lua` — permanent upgrades bought with Rebirths
-  instead of Mana, that survive rebirthing. Currently one: "Mana Value
-  Multiplier" (level 1-100, linear 1x → 200x, first purchase costs 1
-  Rebirth, cost climbs by 1 Rebirth per level after - its own curve, not
-  `UpgradeCost`). `getManaValueMultiplier(player)` is read by
-  `ManaHandler` to scale every pickup. Two more columns are planned for
-  this same board later.
+  instead of Mana, that survive rebirthing. Three columns, built through
+  a shared `makeMultiplierUpgrade(config)` factory so they don't each
+  duplicate the same get-state/buy-with-max-mode logic: "Mana Value
+  Multiplier" (level 1-100, linear 1x → 200x, cost = currentLevel
+  Rebirths - read by `ManaHandler` to scale every pickup), "Rebirth
+  Multiplier" (level 1-100, non-linear/quadratic 1x → 50x, cost =
+  `ceil(level^1.5)` Rebirths - read by `RebirthHandler` to scale how many
+  Rebirths a rebirth actually grants), and "XP Multiplier" (level 1-25,
+  non-linear/quadratic 1x → 5x, cost = `ceil(level^1.6)` Rebirths - read
+  by `XPHandler` to scale XP per pickup). Rebirth Multiplier and XP
+  Multiplier are deliberately non-linear on both their multiplier and
+  cost curves per direct request, unlike Mana Value Multiplier's linear
+  curve — the step between consecutive levels keeps changing instead of
+  growing by the same fixed amount every time.
+- `XPHandler.lua` — a separate XP/Level progression track, NOT reset by
+  rebirthing. 50 levels; every Mana pickup grants 10 XP scaled by the
+  Rebirth Shop's "XP Multiplier". The level-up cost curve is non-linear
+  (`floor(100 * currentLevel^1.4)`), landing exactly on 100 XP for the
+  first level-up as specified. `grantXpForPickup` is called once per
+  successful pickup from `WorldBuilder`'s collection loop and returns the
+  resulting state so it can be pushed to the client via `XPUpdated`.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent (no icon yet), plus a red "Rebirths: X.X" label right
@@ -255,11 +271,20 @@ design notes.
 - `RebirthShopBoardClient.client.lua` — the Rebirth Shop board
   (`Workspace.Kiosks.RebirthShopBoard`), styled in the same red as the
   Rebirths board (not the Mana board's blue - both are Rebirth-themed).
-  Same clear "Rebirths: X.X" readout + title banner template as the Mana Upgrades
-  board, then one column so far: "Mana Value Multiplier", level
-  `(x/100)`, a `%.1fx > %.1fx` preview, cost in Rebirths, and the same
-  Buy/Max -> single "Maxed" button behavior as the Mana board's columns.
-  Two more columns are planned for this same board later.
+  Same clear "Rebirths: X.X" readout + title banner template as the Mana
+  Upgrades board, then 3 columns filling the board edge-to-edge through
+  the same `createUpgradeColumn` pattern as the Mana Upgrades board, just
+  costed and gated in Rebirths instead of Mana: "Mana Value Multiplier"
+  (`(x/100)`), "Rebirth Multiplier" (`(x/100)`), and "XP Multiplier"
+  (`(x/25)`), each with a `%.1fx > %.1fx` preview, cost in Rebirths, and
+  the same Buy/Max → single "Maxed" button behavior as the Mana board's
+  columns.
+- `XPBarClient.client.lua` — a small bottom-middle HUD: "Level <N>" above
+  a progress bar that fills as XP approaches the next level, with
+  "<xp> / <xpToNextLevel> XP" over the bar itself (or "MAX LEVEL" once
+  `xpToNextLevel` comes back nil at level 50). Fetches its initial state
+  via `GetXPState` on load, then just renders whatever `XPUpdated` sends
+  after that — all the leveling logic lives server-side in `XPHandler`.
 
 ## Manual steps required before everything works
 

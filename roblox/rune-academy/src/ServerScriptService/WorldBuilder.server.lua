@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
+local XPHandler = require(script.Parent.XPHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -21,7 +22,9 @@ local ISLAND_THICKNESS = 6
 local ISLAND_TOP_Y = 60 -- how high above the void the starting island floats
 local FALL_KILL_MARGIN = 30 -- studs below the island surface before a fallen player is destroyed and respawned
 
-local manaUpdatedEvent = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ManaUpdated")
+local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
+local manaUpdatedEvent = remotesFolder:WaitForChild("ManaUpdated")
+local xpUpdatedEvent = remotesFolder:WaitForChild("XPUpdated")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
 -- island here and lifting spawn onto its surface lifts the whole build with
@@ -157,6 +160,12 @@ local function collectNode(node: BasePart, player: Player)
 	if newAmount then
 		manaUpdatedEvent:FireClient(player, newAmount)
 	end
+
+	local xpState = XPHandler.grantXpForPickup(player)
+	if xpState then
+		xpUpdatedEvent:FireClient(player, xpState)
+	end
+
 	task.delay(ManaSpawnHandler.getRespawnSeconds(player), spawnManaNode)
 end
 
@@ -255,7 +264,7 @@ end
 
 local MANA_BOARD_WIDTH = 42
 local REBIRTH_BOARD_WIDTH = 20
-local REBIRTH_SHOP_BOARD_WIDTH = 16 -- snug for its one active column; widen when more are added
+local REBIRTH_SHOP_BOARD_WIDTH = 32 -- fits its 3 active columns edge-to-edge
 local BOARD_GAP = 4 -- studs between separate boards
 local CARD_THICKNESS = 1 -- matches makeKioskCard's Size.X below
 

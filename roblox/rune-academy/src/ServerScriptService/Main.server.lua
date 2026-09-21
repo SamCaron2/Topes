@@ -12,6 +12,7 @@ local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local RebirthHandler = require(script.Parent.RebirthHandler)
 local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
+local XPHandler = require(script.Parent.XPHandler)
 local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
@@ -65,7 +66,13 @@ local performRebirthFunction = newRemoteFunction("PerformRebirth")
 local rebirthsUpdatedEvent = newRemoteEvent("RebirthsUpdated") -- server -> client, fired on join and whenever Rebirths changes
 local getManaValueMultiplierStateFunction = newRemoteFunction("GetManaValueMultiplierState")
 local buyManaValueMultiplierFunction = newRemoteFunction("BuyManaValueMultiplier")
+local getRebirthMultiplierStateFunction = newRemoteFunction("GetRebirthMultiplierState")
+local buyRebirthMultiplierFunction = newRemoteFunction("BuyRebirthMultiplier")
+local getXpMultiplierStateFunction = newRemoteFunction("GetXpMultiplierState")
+local buyXpMultiplierFunction = newRemoteFunction("BuyXpMultiplier")
 local playerRebirthedEvent = newRemoteEvent("PlayerRebirthed") -- server -> client, tells the Mana Upgrades board to re-fetch every column (levels reset)
+local getXPStateFunction = newRemoteFunction("GetXPState")
+local xpUpdatedEvent = newRemoteEvent("XPUpdated") -- server -> client, fired on join and every Mana pickup (XP/level bar)
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -283,6 +290,40 @@ buyManaValueMultiplierFunction.OnServerInvoke = function(player, mode)
 	return success, err, newState
 end
 
+getRebirthMultiplierStateFunction.OnServerInvoke = function(player)
+	return RebirthShopHandler.getRebirthMultiplierState(player)
+end
+
+buyRebirthMultiplierFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = RebirthShopHandler.buyRebirthMultiplier(player, mode)
+	if success then
+		rebirthsUpdatedEvent:FireClient(player, newState.rebirths)
+	end
+	return success, err, newState
+end
+
+getXpMultiplierStateFunction.OnServerInvoke = function(player)
+	return RebirthShopHandler.getXpMultiplierState(player)
+end
+
+buyXpMultiplierFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = RebirthShopHandler.buyXpMultiplier(player, mode)
+	if success then
+		rebirthsUpdatedEvent:FireClient(player, newState.rebirths)
+	end
+	return success, err, newState
+end
+
+getXPStateFunction.OnServerInvoke = function(player)
+	return XPHandler.getState(player)
+end
+
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered
 -- before any player join events fire from this point on.
 local _ = PlayerData
@@ -297,6 +338,7 @@ Players.PlayerAdded:Connect(function(player)
 	if data then
 		manaUpdatedEvent:FireClient(player, data.mana or 0)
 		collectionRangeUpdatedEvent:FireClient(player, CollectionRangeHandler.getRadius(player))
+		xpUpdatedEvent:FireClient(player, XPHandler.getState(player))
 		if (data.rebirths or 0) > 0 then
 			rebirthsUpdatedEvent:FireClient(player, data.rebirths)
 		end

@@ -71,7 +71,13 @@ local function defaultData()
 		collectionRangeLevel = 1, -- "Collection Range" upgrade level, 1-12, grows the auto-collect radius
 
 		rebirths = 0, -- permanent currency from resetting Mana; fractional (1000 Mana = 1.0 Rebirth exactly)
-		manaValueMultiplierLevel = 1, -- Rebirth Shop: "Mana Value Multiplier", 1-100, 1x-2x - NOT reset by rebirthing
+		manaValueMultiplierLevel = 1, -- Rebirth Shop: "Mana Value Multiplier", 1-100, 1x-200x - NOT reset by rebirthing
+		rebirthMultiplierLevel = 1, -- Rebirth Shop: "Rebirth Multiplier", 1-100, 1x-50x - NOT reset by rebirthing
+		xpMultiplierLevel = 1, -- Rebirth Shop: "XP Multiplier", 1-25, boosts XP per pickup - NOT reset by rebirthing
+
+		level = 1, -- XP level, 1-50 - a separate progression track, NOT reset by rebirthing
+		xp = 0, -- current XP progress toward the next level
+
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,
