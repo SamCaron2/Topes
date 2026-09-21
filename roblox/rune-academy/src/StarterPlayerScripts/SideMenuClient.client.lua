@@ -1,8 +1,9 @@
--- Right-side icon menu: Store, Runes, Profile, Settings, laid out 2x2.
--- Placeholder symbol icons (safe basic Unicode glyphs, not emoji, so they
--- render reliably) fill most of each colored circle. Hovering grows the
--- icon slightly to show what's highlighted. No panels wired up yet - just
--- needs to exist on screen.
+-- Right-side icon menu: Store, Runes, Profile, Settings, laid out 2x2. Store
+-- and Settings use uploaded icon images; Runes and Profile still use
+-- placeholder symbol icons (safe basic Unicode glyphs, not emoji, so they
+-- render reliably) until they get real art too. Hovering grows the icon
+-- slightly to show what's highlighted. No panels wired up yet - just needs
+-- to exist on screen.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -15,10 +16,10 @@ local HOVER_SCALE = 1.15
 local HOVER_TWEEN_INFO = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local MENU_ITEMS = {
-	{ name = "Store", symbol = "$", color = Color3.fromRGB(70, 190, 90) },
+	{ name = "Store", symbol = "$", color = Color3.fromRGB(70, 190, 90), imageId = "rbxassetid://87898848906072" },
 	{ name = "Runes", symbol = "\u{2726}", color = Color3.fromRGB(150, 80, 255) },
 	{ name = "Profile", symbol = "\u{263A}", color = Color3.fromRGB(70, 150, 220) },
-	{ name = "Settings", symbol = "\u{2699}", color = Color3.fromRGB(120, 120, 130) },
+	{ name = "Settings", symbol = "\u{2699}", color = Color3.fromRGB(120, 120, 130), imageId = "rbxassetid://90039600568167" },
 }
 
 local screenGui = Instance.new("ScreenGui")
@@ -46,7 +47,7 @@ layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
 layout.Parent = container
 
-local function createMenuButton(layoutOrder: number, name: string, symbol: string, color: Color3)
+local function createMenuButton(layoutOrder: number, name: string, symbol: string, color: Color3, imageId: string?)
 	local wrapper = Instance.new("Frame")
 	wrapper.BackgroundTransparency = 1
 	wrapper.LayoutOrder = layoutOrder
@@ -70,24 +71,39 @@ local function createMenuButton(layoutOrder: number, name: string, symbol: strin
 	corner.CornerRadius = UDim.new(1, 0)
 	corner.Parent = button
 
-	-- TextScaled + padding fills most of the circle with the glyph, and
-	-- keeps scaling correctly while the button tweens size on hover.
-	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.new(1, 0, 1, 0)
-	icon.BackgroundTransparency = 1
-	icon.Font = Enum.Font.GothamBold
-	icon.TextScaled = true
-	icon.TextColor3 = Color3.fromRGB(255, 255, 255)
-	icon.TextStrokeTransparency = 0.5
-	icon.Text = symbol
-	icon.Parent = button
+	-- Real icon art when we have it (Store, Settings); everything else still
+	-- falls back to a TextScaled glyph filling most of the circle.
+	if imageId then
+		local icon = Instance.new("ImageLabel")
+		icon.Size = UDim2.new(1, 0, 1, 0)
+		icon.BackgroundTransparency = 1
+		icon.Image = imageId
+		icon.Parent = button
 
-	local iconPadding = Instance.new("UIPadding")
-	iconPadding.PaddingTop = UDim.new(0.2, 0)
-	iconPadding.PaddingBottom = UDim.new(0.2, 0)
-	iconPadding.PaddingLeft = UDim.new(0.2, 0)
-	iconPadding.PaddingRight = UDim.new(0.2, 0)
-	iconPadding.Parent = icon
+		local iconPadding = Instance.new("UIPadding")
+		iconPadding.PaddingTop = UDim.new(0.15, 0)
+		iconPadding.PaddingBottom = UDim.new(0.15, 0)
+		iconPadding.PaddingLeft = UDim.new(0.15, 0)
+		iconPadding.PaddingRight = UDim.new(0.15, 0)
+		iconPadding.Parent = icon
+	else
+		local icon = Instance.new("TextLabel")
+		icon.Size = UDim2.new(1, 0, 1, 0)
+		icon.BackgroundTransparency = 1
+		icon.Font = Enum.Font.GothamBold
+		icon.TextScaled = true
+		icon.TextColor3 = Color3.fromRGB(255, 255, 255)
+		icon.TextStrokeTransparency = 0.5
+		icon.Text = symbol
+		icon.Parent = button
+
+		local iconPadding = Instance.new("UIPadding")
+		iconPadding.PaddingTop = UDim.new(0.2, 0)
+		iconPadding.PaddingBottom = UDim.new(0.2, 0)
+		iconPadding.PaddingLeft = UDim.new(0.2, 0)
+		iconPadding.PaddingRight = UDim.new(0.2, 0)
+		iconPadding.Parent = icon
+	end
 
 	-- Bold display font with a heavy stroke for a "cool logo" look, distinct
 	-- from the plainer Gotham text used elsewhere in the HUD.
@@ -114,5 +130,5 @@ local function createMenuButton(layoutOrder: number, name: string, symbol: strin
 end
 
 for index, item in MENU_ITEMS do
-	createMenuButton(index, item.name, item.symbol, item.color)
+	createMenuButton(index, item.name, item.symbol, item.color, item.imageId)
 end

@@ -22,6 +22,39 @@ local playerRebirthedEvent = remotes:WaitForChild("PlayerRebirthed")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("RebirthShopBoard")
 
+local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
+
+-- A small round white badge overlapping the readout pill's left edge -
+-- same look as the corner HUD's currency icons, so boards and HUD match.
+local function addReadoutIcon(parent: Frame, imageId: string)
+	local badge = Instance.new("Frame")
+	badge.AnchorPoint = Vector2.new(0, 0.5)
+	badge.Position = UDim2.new(0, -22, 0.5, 0)
+	badge.Size = UDim2.new(0, 40, 0, 40)
+	badge.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	badge.BorderSizePixel = 0
+	badge.ZIndex = 2
+	badge.Parent = parent
+
+	local badgeCorner = Instance.new("UICorner")
+	badgeCorner.CornerRadius = UDim.new(1, 0)
+	badgeCorner.Parent = badge
+
+	local icon = Instance.new("ImageLabel")
+	icon.Size = UDim2.new(1, 0, 1, 0)
+	icon.BackgroundTransparency = 1
+	icon.Image = imageId
+	icon.ZIndex = 3
+	icon.Parent = badge
+
+	local iconPadding = Instance.new("UIPadding")
+	iconPadding.PaddingTop = UDim.new(0.12, 0)
+	iconPadding.PaddingBottom = UDim.new(0.12, 0)
+	iconPadding.PaddingLeft = UDim.new(0.12, 0)
+	iconPadding.PaddingRight = UDim.new(0.12, 0)
+	iconPadding.Parent = icon
+end
+
 local COLOR_CAN_BUY = Color3.fromRGB(70, 190, 60)
 local COLOR_CANT_AFFORD = Color3.fromRGB(200, 55, 55)
 local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
@@ -73,6 +106,12 @@ currencyReadoutText.TextColor3 = Color3.fromRGB(255, 255, 255)
 currencyReadoutText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 currencyReadoutText.Text = "Rebirths: -"
 currencyReadoutText.Parent = currencyReadout
+
+local currencyReadoutPadding = Instance.new("UIPadding")
+currencyReadoutPadding.PaddingLeft = UDim.new(0, 26)
+currencyReadoutPadding.Parent = currencyReadoutText
+
+addReadoutIcon(currencyReadout, REBIRTHS_ICON_ID)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
 	currencyReadoutText.Text = ("Rebirths: %.1f"):format(amount)

@@ -16,6 +16,8 @@ local rebirthsUpdatedEvent = remotes:WaitForChild("RebirthsUpdated")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("RebirthBoard")
 
+local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
+
 local COLOR_CAN_REBIRTH = Color3.fromRGB(200, 40, 40)
 local COLOR_CANT_REBIRTH = Color3.fromRGB(90, 90, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
@@ -47,6 +49,14 @@ local titleBannerCorner = Instance.new("UICorner")
 titleBannerCorner.CornerRadius = UDim.new(0.25, 0)
 titleBannerCorner.Parent = titleBanner
 
+local titleIcon = Instance.new("ImageLabel")
+titleIcon.AnchorPoint = Vector2.new(0, 0.5)
+titleIcon.Position = UDim2.new(0, 8, 0.5, 0)
+titleIcon.Size = UDim2.new(0, 40, 0, 40)
+titleIcon.BackgroundTransparency = 1
+titleIcon.Image = REBIRTHS_ICON_ID
+titleIcon.Parent = titleBanner
+
 local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(1, 0, 1, 0)
 titleText.BackgroundTransparency = 1
@@ -56,6 +66,10 @@ titleText.TextColor3 = Color3.fromRGB(255, 210, 90)
 titleText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 titleText.Text = "Rebirths"
 titleText.Parent = titleBanner
+
+local titleTextPadding = Instance.new("UIPadding")
+titleTextPadding.PaddingLeft = UDim.new(0, 52)
+titleTextPadding.Parent = titleText
 
 local explainerLabel = Instance.new("TextLabel")
 explainerLabel.Size = UDim2.new(0.9, 0, 0.16, 0)
