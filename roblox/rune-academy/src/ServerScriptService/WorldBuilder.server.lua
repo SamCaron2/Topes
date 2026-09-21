@@ -10,6 +10,7 @@ local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local XPHandler = require(script.Parent.XPHandler)
+local PlayerData = require(script.Parent.PlayerData)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -52,8 +53,9 @@ if spawnPart then
 	spawnPart.Position = Vector3.new(islandCenterX, ISLAND_TOP_Y + spawnPart.Size.Y / 2, islandCenterZ)
 end
 
--- Future areas unlock by placing more islands like this one and bridging or
--- gating access to them (e.g. behind a Mana threshold) - not built yet.
+-- The first of those future areas - SecondIsland - is built near the bottom
+-- of this file: another floating island bridged from this one, gated behind
+-- a Mana + Rebirths + Level requirement.
 
 -- Run off the edge and you fall into the void; once you're this far below
 -- the island's surface, killing the Humanoid triggers Roblox's normal
@@ -286,3 +288,212 @@ makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH
 -- flush against the Rebirth board's edge instead of leaving a big gap.
 local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (CARD_THICKNESS / 2)
 makeKioskCard("RebirthShopBoard", half + -10, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH, math.rad(-90))
+
+-- ===========================================================================
+-- Second island: the next part of the obby. Straight out from the starting
+-- island along +Z (not tied to the kiosk row's own east-side X offset) -
+-- the player faces +Z when the kiosks read as being on their left, which is
+-- roughly the direction that got circled as "build the next island here."
+-- Bridged across a gap; no upgrade kiosks on it yet, just the island, a
+-- locked gate, and some edge decoration. If this lands in the wrong spot,
+-- the numbers to nudge are SECOND_ISLAND_SIZE/BRIDGE_LENGTH/BRIDGE_WIDTH
+-- below, same trial-and-error as the kiosk board offsets above.
+local SECOND_ISLAND_SIZE = ISLAND_SIZE -- "around the same size as this starting one"
+local BRIDGE_LENGTH = 30 -- gap of void the bridge spans
+local BRIDGE_WIDTH = 12
+
+local SECOND_ISLAND_MANA_REQUIREMENT = 40000000
+local SECOND_ISLAND_REBIRTHS_REQUIREMENT = 40000
+local SECOND_ISLAND_LEVEL_REQUIREMENT = 25
+
+for _, name in { "SecondIsland", "IslandBridge", "SecondIslandGate", "SecondIslandDecor" } do
+	local existingPart = Workspace:FindFirstChild(name)
+	if existingPart then
+		existingPart:Destroy()
+	end
+end
+
+-- Same axis SpawnLocation/StartingIsland already use, just further along Z.
+local islandEdgeZ = islandCenterZ + ISLAND_SIZE / 2
+local secondIslandCenterZ = islandEdgeZ + BRIDGE_LENGTH + SECOND_ISLAND_SIZE / 2
+
+local secondIsland = Instance.new("Part")
+secondIsland.Name = "SecondIsland"
+secondIsland.Anchored = true
+secondIsland.CanCollide = true
+secondIsland.Material = Enum.Material.Grass
+secondIsland.Color = Color3.fromRGB(90, 170, 60)
+secondIsland.Size = Vector3.new(SECOND_ISLAND_SIZE, ISLAND_THICKNESS, SECOND_ISLAND_SIZE)
+secondIsland.CFrame = CFrame.new(islandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, secondIslandCenterZ)
+secondIsland.Parent = Workspace
+
+local bridge = Instance.new("Part")
+bridge.Name = "IslandBridge"
+bridge.Anchored = true
+bridge.CanCollide = true
+bridge.Material = Enum.Material.WoodPlanks
+bridge.Color = Color3.fromRGB(130, 95, 60)
+bridge.Size = Vector3.new(BRIDGE_WIDTH, ISLAND_THICKNESS, BRIDGE_LENGTH)
+bridge.CFrame = CFrame.new(islandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, islandEdgeZ + BRIDGE_LENGTH / 2)
+bridge.Parent = Workspace
+
+-- Purely visual (CanCollide false, so it can never physically trap anyone on
+-- either side) - the position-check loop further down is what actually
+-- enforces the lock, by teleporting an under-leveled player back off the
+-- bridge the moment they step onto it.
+local gate = Instance.new("Part")
+gate.Name = "SecondIslandGate"
+gate.Anchored = true
+gate.CanCollide = false
+gate.Material = Enum.Material.ForceField
+gate.Color = Color3.fromRGB(255, 60, 60)
+gate.Transparency = 0.5
+gate.Size = Vector3.new(BRIDGE_WIDTH, 14, 1)
+gate.CFrame = CFrame.new(islandCenterX, ISLAND_TOP_Y + 7, islandEdgeZ + 0.5)
+gate.Parent = Workspace
+
+-- Faces back toward the starting island, i.e. the -Z direction players
+-- approach from - a guess like the kiosk boards' SurfaceGui faces were;
+-- flip to Enum.NormalId.Back if it renders unreadable from the approach side.
+local gateGui = Instance.new("SurfaceGui")
+gateGui.Name = "SecondIslandGateGui"
+gateGui.Face = Enum.NormalId.Front
+gateGui.Adornee = gate
+gateGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+gateGui.PixelsPerStud = 36
+gateGui.Parent = gate
+
+local gateBackground = Instance.new("Frame")
+gateBackground.Size = UDim2.new(1, 0, 1, 0)
+gateBackground.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+gateBackground.BackgroundTransparency = 0.35
+gateBackground.BorderSizePixel = 0
+gateBackground.Parent = gateGui
+
+local gateText = Instance.new("TextLabel")
+gateText.Size = UDim2.new(0.9, 0, 0.9, 0)
+gateText.Position = UDim2.new(0.05, 0, 0.05, 0)
+gateText.BackgroundTransparency = 1
+gateText.Font = Enum.Font.GothamBold
+gateText.TextScaled = true
+gateText.TextWrapped = true
+gateText.TextColor3 = Color3.fromRGB(255, 210, 210)
+gateText.TextStrokeTransparency = 0.4
+gateText.Text = "LOCKED\n40,000,000 Mana\n40,000 Rebirths\nLevel 25"
+gateText.Parent = gateBackground
+
+-- Edge decoration - flowers, trees, bushes, purely visual dressing since
+-- there's no kiosk content on this island yet.
+local decorFolder = Instance.new("Folder")
+decorFolder.Name = "SecondIslandDecor"
+decorFolder.Parent = Workspace
+
+local function makeTree(x: number, z: number)
+	local trunk = Instance.new("Part")
+	trunk.Name = "TreeTrunk"
+	trunk.Anchored = true
+	trunk.CanCollide = false
+	trunk.Material = Enum.Material.Wood
+	trunk.Color = Color3.fromRGB(90, 60, 35)
+	trunk.Shape = Enum.PartType.Cylinder
+	trunk.Size = Vector3.new(5, 1.5, 1.5) -- Cylinder's round axis is local X; rotated below to stand upright
+	trunk.CFrame = CFrame.new(x, ISLAND_TOP_Y + 2.5, z) * CFrame.Angles(0, 0, math.rad(90))
+	trunk.Parent = decorFolder
+
+	local leaves = Instance.new("Part")
+	leaves.Name = "TreeLeaves"
+	leaves.Anchored = true
+	leaves.CanCollide = false
+	leaves.Material = Enum.Material.Grass
+	leaves.Color = Color3.fromRGB(50, 140, 60)
+	leaves.Shape = Enum.PartType.Ball
+	leaves.Size = Vector3.new(7, 7, 7)
+	leaves.CFrame = CFrame.new(x, ISLAND_TOP_Y + 7, z)
+	leaves.Parent = decorFolder
+end
+
+local function makeBush(x: number, z: number)
+	local bush = Instance.new("Part")
+	bush.Name = "Bush"
+	bush.Anchored = true
+	bush.CanCollide = false
+	bush.Material = Enum.Material.Grass
+	bush.Color = Color3.fromRGB(60, 130, 55)
+	bush.Shape = Enum.PartType.Ball
+	bush.Size = Vector3.new(3, 2.2, 3)
+	bush.CFrame = CFrame.new(x, ISLAND_TOP_Y + 1.1, z)
+	bush.Parent = decorFolder
+end
+
+local FLOWER_COLORS = {
+	Color3.fromRGB(255, 90, 120),
+	Color3.fromRGB(255, 210, 60),
+	Color3.fromRGB(190, 110, 255),
+	Color3.fromRGB(255, 255, 255),
+}
+
+local function makeFlower(x: number, z: number)
+	local flower = Instance.new("Part")
+	flower.Name = "Flower"
+	flower.Anchored = true
+	flower.CanCollide = false
+	flower.Material = Enum.Material.Neon
+	flower.Color = FLOWER_COLORS[math.random(#FLOWER_COLORS)]
+	flower.Shape = Enum.PartType.Ball
+	flower.Size = Vector3.new(0.8, 0.8, 0.8)
+	flower.CFrame = CFrame.new(x, ISLAND_TOP_Y + 0.4, z)
+	flower.Parent = decorFolder
+end
+
+-- Rings the perimeter at a fixed inset, cycling tree/bush/flower/flower so
+-- flowers show up more often as small accents between the bigger anchors.
+-- Skips the near edge's middle stretch so the bridge entrance stays clear.
+local DECOR_INSET = 8
+local DECOR_STEP = 12
+local decorHalf = SECOND_ISLAND_SIZE / 2 - DECOR_INSET
+
+local decorKinds = { makeTree, makeBush, makeFlower, makeFlower }
+local decorIndex = 0
+local function placeNextDecor(x: number, z: number)
+	decorIndex += 1
+	decorKinds[(decorIndex - 1) % #decorKinds + 1](x, z)
+end
+
+for offset = -decorHalf, decorHalf, DECOR_STEP do
+	placeNextDecor(islandCenterX + offset, secondIslandCenterZ + decorHalf) -- far edge
+	if math.abs(offset) > BRIDGE_WIDTH / 2 then -- near edge, minus the bridge's entrance gap
+		placeNextDecor(islandCenterX + offset, secondIslandCenterZ - decorHalf)
+	end
+	placeNextDecor(islandCenterX + decorHalf, secondIslandCenterZ + offset) -- far X edge
+	placeNextDecor(islandCenterX - decorHalf, secondIslandCenterZ + offset) -- near X edge
+end
+
+-- Enforces the lock: an under-leveled player who steps onto the bridge gets
+-- pushed back onto the starting island, same poll-loop pattern as the
+-- fall-kill check above. Restricted to the bridge's own width so it never
+-- catches someone just walking near the starting island's edge elsewhere.
+local function meetsSecondIslandRequirement(player: Player): boolean
+	local data = PlayerData.get(player)
+	if not data then
+		return false
+	end
+	return (data.mana or 0) >= SECOND_ISLAND_MANA_REQUIREMENT
+		and (data.rebirths or 0) >= SECOND_ISLAND_REBIRTHS_REQUIREMENT
+		and (data.level or 1) >= SECOND_ISLAND_LEVEL_REQUIREMENT
+end
+
+local GATE_CHECK_INTERVAL = 0.25
+local GATE_Z = islandEdgeZ + 1 -- just onto the bridge past the starting island's edge
+
+task.spawn(function()
+	while true do
+		task.wait(GATE_CHECK_INTERVAL)
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+			if rootPart and rootPart.Position.Z >= GATE_Z and math.abs(rootPart.Position.X - islandCenterX) <= BRIDGE_WIDTH / 2 and not meetsSecondIslandRequirement(player) then
+				rootPart.CFrame = CFrame.new(islandCenterX, groundY + 3, GATE_Z - 5)
+			end
+		end
+	end
+end)

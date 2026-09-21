@@ -97,9 +97,7 @@ design notes.
   manual poll rather than the simpler `Workspace.FallenPartsDestroyHeight`
   because writing that property from a normal server Script is blocked
   ("lacking capability Plugin") - Roblox restricts it to Studio/plugin
-  contexts. Future unlockable areas are meant to be more islands like this
-  one, gated behind a Mana threshold or similar — not built yet.
-  Contains the 60x60 Mana collection platform (a hollow square outline,
+  contexts. Contains the 60x60 Mana collection platform (a hollow square outline,
   4 thin Neon parts, non-collide) plus Mana cubes spawned inside it.
   Collection is range-based, not touch-based: a `COLLECT_CHECK_INTERVAL`
   (0.15s) poll collects any live node within a player's current
@@ -132,6 +130,24 @@ design notes.
   (every server start) rebuilds the `StartingIsland`, `ManaZone`, and
   `Kiosks` from scratch, so editing this file and reconnecting Rojo is
   how you iterate on world layout.
+  The first of those future areas is now built too: a `SecondIsland` (same
+  120x120 footprint as the starting island) straight out along +Z from it -
+  the direction the kiosk row reads as being on your left when facing it -
+  connected by a 12-stud-wide, 30-stud-long `IslandBridge`. A translucent
+  red `SecondIslandGate` sits at the bridge's near end (`ForceField`
+  material, `CanCollide` false - purely visual) with a static SurfaceGui
+  reading the unlock requirement. The actual lock is enforced by a
+  `GATE_CHECK_INTERVAL` (0.25s) poll, same pattern as the fall-kill check:
+  anyone without 40,000,000 Mana, 40,000 Rebirths, and Level 25 (checked
+  straight off `PlayerData`) gets teleported back onto the starting island
+  the moment they step onto the bridge's own width - it never touches
+  someone just walking near the starting island's edge elsewhere. No
+  upgrade kiosks on `SecondIsland` yet, just a ring of procedurally placed
+  trees/bushes/flowers (`SecondIslandDecor`) around its edge, inset from the
+  border and skipping the bridge's landing spot. The exact direction/size
+  (`BRIDGE_LENGTH`/`BRIDGE_WIDTH`/`SECOND_ISLAND_SIZE`) is a best guess from
+  a screenshot, same "nudge the numbers after testing" situation as the
+  kiosk board offsets above if it's not quite lined up.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
   its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
   so the very first purchase (from level 1) always costs 10 Mana no
@@ -309,6 +325,7 @@ design notes.
 
 Nothing server-side generates or removes world parts anymore except what
 `WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`, `Kiosks`,
+`SecondIsland`, `IslandBridge`, `SecondIslandGate`, `SecondIslandDecor`,
 all rebuilt from scratch on every server start). If your saved `.rbxl`
 still has leftover parts from before the reset (e.g. a
 saved-while-in-Play-mode `GeneratedWorld` folder or similar), delete them
