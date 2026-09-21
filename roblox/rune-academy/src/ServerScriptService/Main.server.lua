@@ -21,6 +21,7 @@ local ResetHandler = require(script.Parent.ResetHandler)
 local StoreHandler = require(script.Parent.StoreHandler) -- self-wires MarketplaceService on require
 local TitleHandler = require(script.Parent.TitleHandler)
 local LeaderboardHandler = require(script.Parent.LeaderboardHandler)
+local SecondIslandHandler = require(script.Parent.SecondIslandHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -82,6 +83,8 @@ local getArcaneDustYieldStateFunction = newRemoteFunction("GetArcaneDustYieldSta
 local buyArcaneDustYieldUpgradeFunction = newRemoteFunction("BuyArcaneDustYieldUpgrade")
 local getArcaneDustSpawnStateFunction = newRemoteFunction("GetArcaneDustSpawnState")
 local buyArcaneDustSpawnUpgradeFunction = newRemoteFunction("BuyArcaneDustSpawnUpgrade")
+local getSecondIslandStateFunction = newRemoteFunction("GetSecondIslandState")
+local unlockSecondIslandFunction = newRemoteFunction("UnlockSecondIsland")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -264,6 +267,22 @@ buyArcaneDustSpawnUpgradeFunction.OnServerInvoke = function(player, mode)
 	local success, err, newState = ArcaneDustSpawnHandler.buyUpgrade(player, mode)
 	if success then
 		arcaneDustUpdatedEvent:FireClient(player, newState.arcaneDust)
+	end
+	return success, err, newState
+end
+
+getSecondIslandStateFunction.OnServerInvoke = function(player)
+	return SecondIslandHandler.getState(player)
+end
+
+unlockSecondIslandFunction.OnServerInvoke = function(player)
+	local success, err, newState = SecondIslandHandler.unlock(player)
+	if success then
+		local data = PlayerData.get(player)
+		if data then
+			manaUpdatedEvent:FireClient(player, data.mana or 0)
+			rebirthsUpdatedEvent:FireClient(player, data.rebirths or 0)
+		end
 	end
 	return success, err, newState
 end

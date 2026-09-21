@@ -312,10 +312,6 @@ local BRIDGE_POST_SPACING = 10
 -- crowding it - nudge this further if it's still too close.
 local SECOND_ISLAND_OFFSET_X = -25
 
-local SECOND_ISLAND_MANA_REQUIREMENT = 40000000
-local SECOND_ISLAND_REBIRTHS_REQUIREMENT = 40000
-local SECOND_ISLAND_LEVEL_REQUIREMENT = 25
-
 for _, name in { "SecondIsland", "IslandBridge", "SecondIslandGate", "SecondIslandDecor" } do
 	local existingPart = Workspace:FindFirstChild(name)
 	if existingPart then
@@ -389,8 +385,11 @@ end
 
 -- Purely visual (CanCollide false, so it can never physically trap anyone on
 -- either side) - the position-check loop further down is what actually
--- enforces the lock, by teleporting an under-leveled player back off the
--- bridge the moment they step onto it.
+-- enforces the lock, by teleporting a not-yet-unlocked player back off the
+-- bridge the moment they step onto it. Its UI (the "LOCKED" sign and the
+-- Unlock button) is built client-side by SecondIslandGateClient, since it
+-- needs to be interactive and hide itself locally once that player unlocks
+-- it - not just a static server-built sign.
 local gate = Instance.new("Part")
 gate.Name = "SecondIslandGate"
 gate.Anchored = true
@@ -401,67 +400,6 @@ gate.Transparency = 0.5
 gate.Size = Vector3.new(BRIDGE_WIDTH, 14, 1)
 gate.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y + 7, islandEdgeZ + 0.5)
 gate.Parent = Workspace
-
--- Faces back toward the starting island, i.e. the -Z direction players
--- approach from - a guess like the kiosk boards' SurfaceGui faces were;
--- flip to Enum.NormalId.Back if it renders unreadable from the approach side.
-local gateGui = Instance.new("SurfaceGui")
-gateGui.Name = "SecondIslandGateGui"
-gateGui.Face = Enum.NormalId.Front
-gateGui.Adornee = gate
-gateGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-gateGui.PixelsPerStud = 36
-gateGui.Parent = gate
-
-local gateBackground = Instance.new("Frame")
-gateBackground.Size = UDim2.new(1, 0, 1, 0)
-gateBackground.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-gateBackground.BackgroundTransparency = 0.35
-gateBackground.BorderSizePixel = 0
-gateBackground.Parent = gateGui
-
--- Title banner (matching the kiosk boards' banner look) plus one clean row
--- per requirement, instead of a single cramped multi-line label.
-local gateTitleBanner = Instance.new("Frame")
-gateTitleBanner.Size = UDim2.new(0.94, 0, 0.2, 0)
-gateTitleBanner.Position = UDim2.new(0.03, 0, 0.06, 0)
-gateTitleBanner.BackgroundColor3 = Color3.fromRGB(90, 15, 15)
-gateTitleBanner.BackgroundTransparency = 0.15
-gateTitleBanner.BorderSizePixel = 0
-gateTitleBanner.Parent = gateBackground
-
-local gateTitleCorner = Instance.new("UICorner")
-gateTitleCorner.CornerRadius = UDim.new(0.25, 0)
-gateTitleCorner.Parent = gateTitleBanner
-
-local gateTitleText = Instance.new("TextLabel")
-gateTitleText.Size = UDim2.new(1, 0, 1, 0)
-gateTitleText.BackgroundTransparency = 1
-gateTitleText.Font = Enum.Font.GothamBold
-gateTitleText.TextScaled = true
-gateTitleText.TextColor3 = Color3.fromRGB(255, 220, 90)
-gateTitleText.TextStrokeTransparency = 0.4
-gateTitleText.Text = "🔒 LOCKED"
-gateTitleText.Parent = gateTitleBanner
-
-local GATE_REQUIREMENT_LINES = {
-	"40,000,000 Mana",
-	"40,000 Rebirths",
-	"Level 25",
-}
-
-for i, line in GATE_REQUIREMENT_LINES do
-	local lineLabel = Instance.new("TextLabel")
-	lineLabel.Size = UDim2.new(0.9, 0, 0.14, 0)
-	lineLabel.Position = UDim2.new(0.05, 0, 0.35 + (i - 1) * 0.19, 0)
-	lineLabel.BackgroundTransparency = 1
-	lineLabel.Font = Enum.Font.GothamBold
-	lineLabel.TextScaled = true
-	lineLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	lineLabel.TextStrokeTransparency = 0.4
-	lineLabel.Text = line
-	lineLabel.Parent = gateBackground
-end
 
 -- Edge decoration - flowers, trees, bushes, purely visual dressing since
 -- there's no kiosk content on this island yet. Built from several
@@ -598,25 +536,15 @@ secondIslandDecorFolder.Parent = Workspace
 -- SecondIsland's bridge approaches from -Z, so that's the edge to skip.
 scatterIslandDecor(secondIslandDecorFolder, secondIslandCenterX, secondIslandCenterZ, SECOND_ISLAND_SIZE, -1)
 
--- Enforces the lock, and doubles as the "unlock" action: a player who
--- reaches the gate while meeting the requirement gets a permanent
--- secondIslandUnlocked flag (never touches their Mana/Rebirths - it's a
--- one-time threshold check, not a toll), so they only ever have to walk up
--- to it once. Anyone who reaches it without meeting the requirement, or
--- without having unlocked it previously, gets pushed back onto the
--- starting island - same poll-loop pattern as the fall-kill check above.
--- Restricted to the bridge's own width so it never catches someone just
--- walking near the starting island's edge elsewhere.
-local function meetsSecondIslandRequirement(player: Player): boolean
-	local data = PlayerData.get(player)
-	if not data then
-		return false
-	end
-	return (data.mana or 0) >= SECOND_ISLAND_MANA_REQUIREMENT
-		and (data.rebirths or 0) >= SECOND_ISLAND_REBIRTHS_REQUIREMENT
-		and (data.level or 1) >= SECOND_ISLAND_LEVEL_REQUIREMENT
-end
-
+-- Enforces the lock: a player who hasn't pressed the gate's Unlock button
+-- yet (SecondIslandHandler.unlock, via SecondIslandGateClient) gets pushed
+-- back onto the starting island the moment they step onto the bridge -
+-- meeting the stat requirement alone no longer opens it, only pressing the
+-- button does (that's the whole point of the button - it actually SPENDS
+-- the Mana/Rebirths requirement instead of just checking it). Same
+-- poll-loop pattern as the fall-kill check above. Restricted to the
+-- bridge's own width so it never catches someone just walking near the
+-- starting island's edge elsewhere.
 local GATE_CHECK_INTERVAL = 0.25
 local GATE_Z = islandEdgeZ + 1 -- just onto the bridge past the starting island's edge
 
@@ -633,11 +561,7 @@ task.spawn(function()
 			then
 				local data = PlayerData.get(player)
 				if data and not data.secondIslandUnlocked then
-					if meetsSecondIslandRequirement(player) then
-						data.secondIslandUnlocked = true
-					else
-						rootPart.CFrame = CFrame.new(secondIslandCenterX, groundY + 3, GATE_Z - 5)
-					end
+					rootPart.CFrame = CFrame.new(secondIslandCenterX, groundY + 3, GATE_Z - 5)
 				end
 			end
 		end
@@ -676,10 +600,13 @@ arcaneDustPad.Size = Vector3.new(0.6, ARCANE_DUST_PAD_RADIUS * 2, ARCANE_DUST_PA
 arcaneDustPad.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
 arcaneDustPad.Parent = Workspace
 
+-- Small and only visible up close (MaxDistance) - per direct request, it
+-- was reading as way too large/visible from across the map.
 local padLabelGui = Instance.new("BillboardGui")
 padLabelGui.Name = "ArcaneDustPadLabel"
-padLabelGui.Size = UDim2.new(0, 160, 0, 40)
-padLabelGui.StudsOffset = Vector3.new(0, 3, 0)
+padLabelGui.Size = UDim2.new(0, 100, 0, 24)
+padLabelGui.StudsOffset = Vector3.new(0, 2.5, 0)
+padLabelGui.MaxDistance = 20
 padLabelGui.AlwaysOnTop = true
 padLabelGui.Adornee = arcaneDustPad
 padLabelGui.Parent = arcaneDustPad

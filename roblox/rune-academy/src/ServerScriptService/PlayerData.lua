@@ -78,7 +78,7 @@ local function defaultData()
 		level = 1, -- XP level, 1-50 - a separate progression track, NOT reset by rebirthing
 		xp = 0, -- current XP progress toward the next level
 
-		secondIslandUnlocked = false, -- true once the player has reached SecondIslandGate while meeting its requirement; permanent, doesn't consume Mana/Rebirths
+		secondIslandUnlocked = false, -- true once the player presses SecondIslandGate's Unlock button (SecondIslandHandler.unlock, which SPENDS the Mana/Rebirths requirement); permanent once set
 
 		totalManaEarned = 0, -- lifetime Mana ever collected, NOT reset by rebirthing (unlike the live `mana` balance above) - feeds the "Total Mana" leaderboard
 

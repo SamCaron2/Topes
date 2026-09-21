@@ -99,6 +99,15 @@ design notes.
   balance) rather than the live balance itself, since rebirthing resets
   that to 0 - a lifetime counter is what actually makes sense on a
   leaderboard.
+- `SecondIslandHandler.lua` — owns the SecondIsland unlock: `meetsRequirement`
+  (40,000,000 Mana / 40,000 Rebirths / Level 25, read straight off
+  `PlayerData`), `getState` (for the gate's client UI to show the
+  requirement and enable/disable its Unlock button live), and `unlock` -
+  which actually SPENDS the exact Mana/Rebirths requirement and sets the
+  permanent `secondIslandUnlocked` flag, rather than just checking a
+  threshold and leaving the balance untouched. Calling `unlock` on an
+  already-unlocked player is a harmless no-op success, so a stale/retried
+  client call can't double-charge them.
 - `FriendBoostHandler.lua` — tracks how many of a player's Roblox friends
   are in the same server (live, never saved); `ResourceEngine` applies
   `GameConfig.FriendBoost` on top of any currency flagged
@@ -158,23 +167,29 @@ design notes.
   (WoodPlanks) with two `BridgeRail` cylinders along its edges and
   `BridgePost` supports every `BRIDGE_POST_SPACING` studs, for a rope-bridge
   look. A translucent red `SecondIslandGate` sits at the bridge's near end
-  (`ForceField` material, `CanCollide` false - purely visual) with a static
-  SurfaceGui: a "🔒 LOCKED" title banner (same look as the kiosk boards'
-  banners) plus one clean line per requirement instead of one cramped
-  multi-line label. The lock is enforced (and "unlocked") by a
+  (`ForceField` material, `CanCollide` false - purely visual, built bare
+  here; its "LOCKED" sign and Unlock button are built client-side by
+  `SecondIslandGateClient` instead of as a static server sign, since they
+  need to be interactive and to disappear locally once that specific
+  player unlocks it). The physical block is enforced by a
   `GATE_CHECK_INTERVAL` (0.25s) poll, same pattern as the fall-kill check:
-  reaching the gate without the permanent `secondIslandUnlocked` flag set
-  checks 40,000,000 Mana, 40,000 Rebirths, and Level 25 straight off
-  `PlayerData` - meeting it flips that flag permanently (never touches
-  Mana/Rebirths, it's a one-time threshold check, not a toll) so the player
-  only has to walk up to the gate once; falling short teleports them back
-  onto the starting island instead. Restricted to the bridge's own width so
+  anyone without the permanent `secondIslandUnlocked` flag set gets
+  teleported back onto the starting island the moment they step onto the
+  bridge - meeting the 40,000,000 Mana / 40,000 Rebirths / Level 25
+  requirement is no longer enough by itself. Only pressing the gate's
+  Unlock button (`SecondIslandHandler.unlock`) sets that flag, and doing
+  so actually SPENDS the Mana/Rebirths requirement (Level is checked but
+  never spent - there's nothing to take from a level) rather than just
+  checking it, per direct correction to the original "walk up and it
+  auto-unlocks for free" design. Restricted to the bridge's own width so
   it never touches someone just walking near the starting island's edge
   elsewhere. Off to one side near the island's -X edge (`ARCANE_DUST_AREA_X`,
   15 studs in from the edge - moved there per direct request, after an
   earlier dead-center placement) sits `ArcaneDustPad` - a flat gold
-  cylinder (Neon material, rotated flat) with a floating "Stand for Arcane
-  Dust" `BillboardGui` label - the second wizard resource, entirely
+  cylinder (Neon material, rotated flat) with a small floating "Stand for
+  Arcane Dust" `BillboardGui` label - kept small and given a `MaxDistance`
+  (20 studs) so it only shows up close instead of being readable from
+  across the map, per direct request - the second wizard resource, entirely
   separate from Mana (no Rebirth Shop interaction, not reset by
   rebirthing). No pickup nodes to walk past, per direct request - standing
   on the pad's radius grants Arcane Dust immediately, then again every
@@ -431,6 +446,22 @@ design notes.
   that; empty rows show "-" until that stat's `OrderedDataStore` actually
   has entries (e.g. in Studio without API access enabled). Same
   SurfaceGui-on-a-face approach as every other board here.
+- `SecondIslandGateClient.client.lua` — builds `SecondIslandGate`'s
+  "🔒 LOCKED" sign and Unlock button. Fetches `GetSecondIslandState` on
+  load (retrying a few times if `PlayerData` isn't loaded yet rather than
+  building the sign with placeholder numbers); if already unlocked from a
+  previous visit, just sets the gate's `Transparency` to 1 for this
+  player and stops there - a purely local visual change, so the gate
+  stays solid-looking for anyone who hasn't unlocked it. Otherwise builds
+  the sign (same title-banner-plus-clean-lines look as the kiosk boards)
+  plus an Unlock button, tracking current Mana/Rebirths/Level locally off
+  the same `ManaUpdated`/`RebirthsUpdated`/`XPUpdated` events the HUD
+  uses (seeded from real starting values via `GetRebirthState`/
+  `GetXPState`, not 0s, so the button's enabled state doesn't glitch on
+  the first live update) so the button enables/disables in real time
+  without hitting the server on every Mana pickup. Clicking it while
+  affordable calls `UnlockSecondIsland`; on success, hides the gate and
+  its sign locally, same as the already-unlocked case.
 
 ## Manual steps required before everything works
 
