@@ -237,142 +237,6 @@ task.spawn(function()
 	end
 end)
 
--- ===========================================================================
--- Arcane Dust: the second wizard resource, entirely separate from Mana (no
--- shared currency, no Rebirth Shop interaction). A smaller collection zone
--- west of the Mana platform (the one strip of the starting island nothing
--- else uses yet), same range-based auto-collect mechanic as Mana, just its
--- own node type/color and its own smaller node-count/respawn curve
--- (ArcaneDustSpawnHandler).
-local ARCANE_DUST_ZONE_SIZE = 18
-local ARCANE_DUST_NODE_SIZE = Vector3.new(1.6, 1.6, 1.6)
-local ARCANE_DUST_NODE_MARGIN = 2
-local ARCANE_DUST_ZONE_OFFSET_X = -(MANA_ZONE_SIZE / 2) - 2 - (ARCANE_DUST_ZONE_SIZE / 2) -- 2-stud gap west of the Mana platform's border
-
-local existingArcaneDustZone = Workspace:FindFirstChild("ArcaneDustZone")
-if existingArcaneDustZone then
-	existingArcaneDustZone:Destroy()
-end
-
-local arcaneDustZoneCenterX = centerX + ARCANE_DUST_ZONE_OFFSET_X
-local arcaneDustZoneCenterZ = centerZ
-
-local arcaneDustZone = Instance.new("Folder")
-arcaneDustZone.Name = "ArcaneDustZone"
-arcaneDustZone:SetAttribute("CenterX", arcaneDustZoneCenterX)
-arcaneDustZone:SetAttribute("CenterZ", arcaneDustZoneCenterZ)
-arcaneDustZone:SetAttribute("Size", ARCANE_DUST_ZONE_SIZE)
-arcaneDustZone:SetAttribute("GroundY", groundY)
-arcaneDustZone.Parent = Workspace
-
-local function makeArcaneDustBorderPart(name, sizeX, sizeZ, offsetX, offsetZ)
-	local part = Instance.new("Part")
-	part.Name = name
-	part.Anchored = true
-	part.CanCollide = false
-	part.Material = Enum.Material.Neon
-	part.Color = Color3.fromRGB(255, 200, 80)
-	part.Size = Vector3.new(sizeX, BORDER_HEIGHT, sizeZ)
-	part.CFrame = CFrame.new(arcaneDustZoneCenterX + offsetX, groundY + BORDER_HEIGHT / 2, arcaneDustZoneCenterZ + offsetZ)
-	part.Parent = arcaneDustZone
-	return part
-end
-
-local arcaneDustHalf = ARCANE_DUST_ZONE_SIZE / 2
-makeArcaneDustBorderPart("BorderNorth", ARCANE_DUST_ZONE_SIZE, BORDER_THICKNESS, 0, -arcaneDustHalf + BORDER_THICKNESS / 2)
-makeArcaneDustBorderPart("BorderSouth", ARCANE_DUST_ZONE_SIZE, BORDER_THICKNESS, 0, arcaneDustHalf - BORDER_THICKNESS / 2)
-makeArcaneDustBorderPart("BorderEast", BORDER_THICKNESS, ARCANE_DUST_ZONE_SIZE, arcaneDustHalf - BORDER_THICKNESS / 2, 0)
-makeArcaneDustBorderPart("BorderWest", BORDER_THICKNESS, ARCANE_DUST_ZONE_SIZE, -arcaneDustHalf + BORDER_THICKNESS / 2, 0)
-
-local ARCANE_DUST_TOP_UP_INTERVAL = 2
-
-local function randomPointInArcaneDustZone()
-	local innerHalf = ARCANE_DUST_ZONE_SIZE / 2 - ARCANE_DUST_NODE_MARGIN
-	local offsetX = (math.random() * 2 - 1) * innerHalf
-	local offsetZ = (math.random() * 2 - 1) * innerHalf
-	return arcaneDustZoneCenterX + offsetX, arcaneDustZoneCenterZ + offsetZ
-end
-
-local function spawnArcaneDustNode()
-	local x, z = randomPointInArcaneDustZone()
-
-	local node = Instance.new("Part")
-	node.Name = "ArcaneDustNode"
-	node.Anchored = true
-	node.CanCollide = false
-	node.Material = Enum.Material.Neon
-	node.Color = Color3.fromRGB(255, 200, 80)
-	node.Shape = Enum.PartType.Ball
-	node.Size = ARCANE_DUST_NODE_SIZE
-	node.CFrame = CFrame.new(x, groundY + ARCANE_DUST_NODE_SIZE.Y / 2, z)
-	node.Parent = arcaneDustZone
-end
-
-local function collectArcaneDustNode(node: BasePart, player: Player)
-	node:Destroy()
-	local newAmount = ArcaneDustHandler.collect(player)
-	if newAmount then
-		arcaneDustUpdatedEvent:FireClient(player, newAmount)
-	end
-
-	task.delay(ArcaneDustSpawnHandler.getRespawnSeconds(player), spawnArcaneDustNode)
-end
-
-task.spawn(function()
-	while true do
-		task.wait(COLLECT_CHECK_INTERVAL)
-		for _, node in arcaneDustZone:GetChildren() do
-			if node.Name == "ArcaneDustNode" and node.Parent then
-				for _, player in Players:GetPlayers() do
-					local character = player.Character
-					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-					if rootPart then
-						local radius = CollectionRangeHandler.getRadius(player)
-						if (rootPart.Position - node.Position).Magnitude <= radius then
-							collectArcaneDustNode(node, player)
-							break
-						end
-					end
-				end
-			end
-		end
-	end
-end)
-
-local function getTargetArcaneDustNodeCount(): number
-	local target = ArcaneDustSpawnHandler.getBaseNodeCount()
-	for _, player in Players:GetPlayers() do
-		target = math.max(target, ArcaneDustSpawnHandler.getNodeCount(player))
-	end
-	return target
-end
-
-local function countLiveArcaneDustNodes(): number
-	local count = 0
-	for _, child in arcaneDustZone:GetChildren() do
-		if child.Name == "ArcaneDustNode" then
-			count += 1
-		end
-	end
-	return count
-end
-
-local function topUpArcaneDustNodes()
-	local missing = getTargetArcaneDustNodeCount() - countLiveArcaneDustNodes()
-	for _ = 1, missing do
-		spawnArcaneDustNode()
-	end
-end
-
-topUpArcaneDustNodes()
-
-task.spawn(function()
-	while true do
-		task.wait(ARCANE_DUST_TOP_UP_INTERVAL)
-		topUpArcaneDustNodes()
-	end
-end)
-
 -- Upgrade cards live outside the platform, a few studs past the border.
 -- ManaUpgradeBoardClient finds this part by name and builds its SurfaceGui UI.
 local kiosksFolder = Workspace:FindFirstChild("Kiosks")
@@ -427,16 +291,6 @@ makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH
 -- flush against the Rebirth board's edge instead of leaving a big gap.
 local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (CARD_THICKNESS / 2)
 makeKioskCard("RebirthShopBoard", half + -10, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH, math.rad(-90))
-
--- Arcane Dust's own upgrade board, west of its zone (the opposite side of
--- the platform from the Mana/Rebirth row) - not rotated, same as the Mana
--- board, but since the player approaches from the east (the zone side)
--- instead of the west, the readable face is the opposite one: "Right"
--- (+X), not "Left". A guess like every other board's face here; flip to
--- Left if it renders unreadable from the zone side.
-local ARCANE_DUST_BOARD_WIDTH = 24
-local arcaneDustBoardOffsetX = -half - 2 - ARCANE_DUST_ZONE_SIZE - BOARD_GAP - (CARD_THICKNESS / 2)
-makeKioskCard("ArcaneDustUpgradeBoard", arcaneDustBoardOffsetX, 0, ARCANE_DUST_BOARD_WIDTH)
 
 -- ===========================================================================
 -- Second island: the next part of the obby. Straight out from the starting
@@ -789,6 +643,105 @@ task.spawn(function()
 		end
 	end
 end)
+
+-- ===========================================================================
+-- Arcane Dust: the second wizard resource, entirely separate from Mana (no
+-- shared currency, no Rebirth Shop interaction, not reset by rebirthing).
+-- Lives here on SecondIsland rather than a collection zone on the starting
+-- island - a single stand-on pad instead of scattered pickup nodes, per
+-- direct request. Standing on it grants Arcane Dust immediately, then
+-- again every ArcaneDustSpawnHandler interval for as long as you stay -
+-- step off and the timer resets, so it's "stand here to farm," not
+-- "walk past to collect once."
+local secondIslandNearEdgeZ = secondIslandCenterZ - (SECOND_ISLAND_SIZE / 2)
+local ARCANE_DUST_PAD_RADIUS = 5
+local arcaneDustPadZ = secondIslandNearEdgeZ + 25
+
+local existingArcaneDustPad = Workspace:FindFirstChild("ArcaneDustPad")
+if existingArcaneDustPad then
+	existingArcaneDustPad:Destroy()
+end
+
+local arcaneDustPad = Instance.new("Part")
+arcaneDustPad.Name = "ArcaneDustPad"
+arcaneDustPad.Anchored = true
+arcaneDustPad.CanCollide = true
+arcaneDustPad.Material = Enum.Material.Neon
+arcaneDustPad.Color = Color3.fromRGB(255, 200, 80)
+arcaneDustPad.Shape = Enum.PartType.Cylinder
+arcaneDustPad.Size = Vector3.new(0.6, ARCANE_DUST_PAD_RADIUS * 2, ARCANE_DUST_PAD_RADIUS * 2) -- Cylinder's round axis is local X; rotated below to lie flat
+arcaneDustPad.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
+arcaneDustPad.Parent = Workspace
+
+local padLabelGui = Instance.new("BillboardGui")
+padLabelGui.Name = "ArcaneDustPadLabel"
+padLabelGui.Size = UDim2.new(0, 160, 0, 40)
+padLabelGui.StudsOffset = Vector3.new(0, 3, 0)
+padLabelGui.AlwaysOnTop = true
+padLabelGui.Adornee = arcaneDustPad
+padLabelGui.Parent = arcaneDustPad
+
+local padLabelText = Instance.new("TextLabel")
+padLabelText.Size = UDim2.new(1, 0, 1, 0)
+padLabelText.BackgroundTransparency = 1
+padLabelText.Font = Enum.Font.GothamBold
+padLabelText.TextScaled = true
+padLabelText.TextColor3 = Color3.fromRGB(255, 200, 80)
+padLabelText.TextStrokeTransparency = 0.2
+padLabelText.Text = "Stand for Arcane Dust"
+padLabelText.Parent = padLabelGui
+
+local arcaneDustNextGrant = {} -- [player] = os.clock() time of the next grant while standing on the pad
+
+Players.PlayerRemoving:Connect(function(player)
+	arcaneDustNextGrant[player] = nil
+end)
+
+local ARCANE_DUST_PAD_CHECK_INTERVAL = 0.5
+
+task.spawn(function()
+	while true do
+		task.wait(ARCANE_DUST_PAD_CHECK_INTERVAL)
+		local now = os.clock()
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+			local onPad = rootPart
+				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(secondIslandCenterX, arcaneDustPadZ)).Magnitude
+					<= ARCANE_DUST_PAD_RADIUS
+
+			if onPad then
+				local nextGrant = arcaneDustNextGrant[player]
+				if not nextGrant or now >= nextGrant then
+					local newAmount = ArcaneDustHandler.collect(player)
+					if newAmount then
+						arcaneDustUpdatedEvent:FireClient(player, newAmount)
+					end
+					arcaneDustNextGrant[player] = now + ArcaneDustSpawnHandler.getRespawnSeconds(player)
+				end
+			else
+				arcaneDustNextGrant[player] = nil
+			end
+		end
+	end
+end)
+
+-- Its upgrade board, further onto the island past the pad, facing back
+-- toward the entrance (-Z normal, "Front") like SecondIslandGate does -
+-- same guess-now-flip-if-wrong situation as every other board's face here.
+local ARCANE_DUST_BOARD_WIDTH = 24
+local arcaneDustBoardZ = arcaneDustPadZ + 15
+
+local arcaneDustBoard = Instance.new("Part")
+arcaneDustBoard.Name = "ArcaneDustUpgradeBoard"
+arcaneDustBoard.Anchored = true
+arcaneDustBoard.CanCollide = true
+arcaneDustBoard.Material = Enum.Material.Glass
+arcaneDustBoard.Color = Color3.fromRGB(45, 45, 60)
+arcaneDustBoard.Transparency = 0.7
+arcaneDustBoard.Size = Vector3.new(ARCANE_DUST_BOARD_WIDTH, 18, 1)
+arcaneDustBoard.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y + 9, arcaneDustBoardZ)
+arcaneDustBoard.Parent = kiosksFolder
 
 -- ===========================================================================
 -- Leaderboard island: a third island, straight out along -Z (the opposite

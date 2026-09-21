@@ -130,15 +130,6 @@ design notes.
   the max across everyone online) — a `TOP_UP_INTERVAL` poll spawns more
   as needed, not just on pickup, so a purchase (or another player's
   higher level) adds nodes right away.
-  A second, smaller `ArcaneDustZone` (18x18, gold-colored ball nodes
-  instead of Mana's purple cubes) sits just west of the Mana platform's
-  border, in the one strip of the starting island nothing else used yet -
-  the second wizard resource, entirely separate from Mana. Same
-  range-based auto-collect mechanic, own respawn/node-count loop
-  (`ArcaneDustSpawnHandler`, smaller node counts since it's a smaller
-  zone), sharing the same `CollectionRangeHandler` radius as Mana (it's a
-  player-wide stat, not Mana-specific) - `ManaRingClient`'s feet-ring now
-  shows in either zone for that reason.
   Also places physical kiosk boards past the platform's edge, each just
   outside the previous one's far edge - `ManaUpgradeBoard` (42 studs wide,
   the 4-column Mana upgrades board), `RebirthBoard` (20 studs wide, the
@@ -148,21 +139,16 @@ design notes.
   along the row instead of straight ahead - that rotation also swaps
   which of its dimensions runs along the row, so its offset uses half
   its thickness there instead of half its width, to sit flush against
-  the Rebirth board's edge), and `ArcaneDustUpgradeBoard` (24 studs wide,
-  its 2-column board, on the opposite side of the platform west of
-  `ArcaneDustZone` - un-rotated like `ManaUpgradeBoard`, but since players
-  approach from the east instead of the west, its readable face is
-  `Right` instead of `Left`) - each just a bare Part
+  the Rebirth board's edge) - each just a bare Part
   (Glass material, 0.7 transparency, for a see-through card look - still
   solid, `CanCollide` stays true); `ManaUpgradeBoardClient`,
-  `RebirthBoardClient`, `RebirthShopBoardClient`, and
-  `ArcaneDustUpgradeBoardClient` build their actual UI (their SurfaceGui
+  `RebirthBoardClient`, and `RebirthShopBoardClient` build their actual UI (their SurfaceGui
   backgrounds are also transparent, so the glass shows through behind the
   UI, not just around its edges). Grows
   one piece at a time as the new vision gets specified — rerunning it
-  (every server start) rebuilds the `StartingIsland`, `ManaZone`,
-  `ArcaneDustZone`, and `Kiosks` from scratch, so editing this file and
-  reconnecting Rojo is how you iterate on world layout.
+  (every server start) rebuilds the `StartingIsland`, `ManaZone`, and
+  `Kiosks` from scratch, so editing this file and reconnecting Rojo is
+  how you iterate on world layout.
   The first of those future areas is now built too: a `SecondIsland` (same
   120x120 footprint as the starting island) straight out along +Z from it -
   the direction the kiosk row reads as being on your left when facing it -
@@ -184,8 +170,21 @@ design notes.
   only has to walk up to the gate once; falling short teleports them back
   onto the starting island instead. Restricted to the bridge's own width so
   it never touches someone just walking near the starting island's edge
-  elsewhere. No upgrade kiosks on `SecondIsland` yet, just a ring of
-  procedurally placed trees/bushes/flowers (`SecondIslandDecor`) around its
+  elsewhere. Past the gate, 25 studs onto the island, sits `ArcaneDustPad`
+  - a flat gold cylinder (Neon material, rotated flat) with a floating
+  "Stand for Arcane Dust" `BillboardGui` label - the second wizard
+  resource, entirely separate from Mana (no Rebirth Shop interaction, not
+  reset by rebirthing). No pickup nodes to walk past, per direct request -
+  standing on the pad's radius grants Arcane Dust immediately, then again
+  every `ArcaneDustSpawnHandler` interval for as long as you stay; step off
+  and the timer (`arcaneDustNextGrant`, keyed per player) resets, so it's
+  "stand here to farm," not "walk past to collect once." 15 studs further
+  onto the island sits `ArcaneDustUpgradeBoard` (24 studs wide, un-rotated,
+  facing back toward the entrance like `SecondIslandGate` does) with its
+  own 2-column UI (`ArcaneDustUpgradeBoardClient`) - "More Arcane Dust" and
+  "Grant Speed" (how often the pad pays out).
+  Also a ring of procedurally placed trees/bushes/flowers
+  (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
   given a small random `DECOR_JITTER` offset so the ring reads as staggered
   rather than a perfectly straight line. Each piece is also built from
@@ -254,10 +253,12 @@ design notes.
   all, not reset by rebirthing). Mirrors `ManaHandler`'s exact shape and
   yield curve for consistency - its own "More Arcane Dust" upgrade (level
   1-100), its own `arcaneDust` currency and `arcaneDustYieldLevel` field.
-- `ArcaneDustSpawnHandler.lua` — mirrors `ManaSpawnHandler`: the "Arcane
-  Dust Spawn Speed" upgrade (level 1-10, respawn delay 2.0s → 0.2s), but a
-  smaller node-count curve (2 → 6, vs Mana's 3 → 10) since its collection
-  zone is much smaller. Costed on its own curve (`currentLevel * 10`,
+- `ArcaneDustSpawnHandler.lua` — the "Grant Speed" upgrade for
+  `ArcaneDustPad` (level 1-10, its grant interval going 2.0s → 0.2s while
+  you stand on the pad) - shaped like `ManaSpawnHandler` (same lerp curve,
+  same `getRespawnSeconds`/`getUpgradeState`/`buyUpgrade` API), even though
+  there's no node count to raise here since Arcane Dust has no pickup
+  nodes, just the one pad. Costed on its own curve (`currentLevel * 10`,
   paid in Arcane Dust - not Mana's shared `UpgradeCost`, a different
   currency entirely).
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
@@ -341,14 +342,13 @@ design notes.
   into the label) to show what's highlighted. Not wired to any panel yet -
   it only needed to exist on screen for now.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
-  feet, visible while standing inside either collection zone -
-  `ManaZone` or `ArcaneDustZone` (read off attributes `WorldBuilder` sets
-  on each folder: `CenterX`/`CenterZ`/`Size`/`GroundY`, checked via a
-  shared `findZoneGroundY` helper so this works the same in both). Its
-  radius IS the "Collection Range" upgrade's real pickup radius - a
-  single stat shared by both zones - kept live via the
+  feet, visible only while standing inside the `ManaZone` platform
+  bounds (read off attributes `WorldBuilder` sets on that folder:
+  `CenterX`/`CenterZ`/`Size`/`GroundY`). Its radius IS the "Collection
+  Range" upgrade's real pickup radius, kept live via the
   `CollectionRangeUpdated` event, so the ring always shows exactly how
-  far away a node will still get auto-collected.
+  far away a Mana node will still get auto-collected. (Arcane Dust has no
+  ring of its own - it's a stand-on pad, not a pickup-range mechanic.)
 - `ManaUpgradeBoardClient.client.lua` — the 3D upgrade board standing
   just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`).
   Styled like a typical incremental-game upgrades board: a small clear
@@ -376,13 +376,16 @@ design notes.
   fires, so the board never keeps showing stale pre-rebirth
   levels/costs after a rebirth resets them server-side.
 - `ArcaneDustUpgradeBoardClient.client.lua` — the Arcane Dust upgrade
-  board (`Workspace.Kiosks.ArcaneDustUpgradeBoard`), a gold-themed
-  version of `ManaUpgradeBoardClient` with just 2 columns instead of 4 -
-  "More Arcane Dust" and "Dust Spawn Speed" - same `createUpgradeColumn`
-  pattern, clear readout, and Buy/Max → "Maxed" behavior, just costed and
-  gated in Arcane Dust instead of Mana. No `PlayerRebirthed` hookup -
-  Arcane Dust is entirely separate from Mana/Rebirths, so rebirthing
-  never resets it.
+  board on SecondIsland (`Workspace.Kiosks.ArcaneDustUpgradeBoard`), a
+  gold-themed version of `ManaUpgradeBoardClient` with just 2 columns
+  instead of 4 - "More Arcane Dust" and "Grant Speed" - same
+  `createUpgradeColumn` pattern, clear readout, and Buy/Max → "Maxed"
+  behavior, just costed and gated in Arcane Dust instead of Mana. Faces
+  `Front` (back toward the bridge entrance), unlike the starting island's
+  boards, since a player reaches it by crossing `SecondIslandGate` and
+  continuing onward rather than approaching from the platform side.
+  No `PlayerRebirthed` hookup - Arcane Dust is entirely separate from
+  Mana/Rebirths, so rebirthing never resets it.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner
@@ -448,7 +451,7 @@ design notes.
 
 Nothing server-side generates or removes world parts anymore except what
 `WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`,
-`ArcaneDustZone`, `Kiosks`, `SecondIsland`, `IslandBridge`,
+`Kiosks`, `SecondIsland`, `IslandBridge`, `ArcaneDustPad`,
 `SecondIslandGate`, `SecondIslandDecor`, `LeaderboardIsland`,
 `LeaderboardBridge`, `LeaderboardDecor`, all rebuilt from scratch on every
 server start). If your saved `.rbxl`

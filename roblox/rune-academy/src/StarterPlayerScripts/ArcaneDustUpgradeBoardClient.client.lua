@@ -1,7 +1,9 @@
--- Builds the Arcane Dust upgrade board: a small clear icon + amount readout
--- (no "Arcane Dust" word) above an "Arcane Dust Upgrades" title banner, then
--- 2 columns filling the board edge-to-edge - "More Arcane Dust" and "Arcane
--- Dust Spawn Speed". Same createUpgradeColumn pattern as the Mana Upgrades
+-- Builds the Arcane Dust upgrade board on SecondIsland (past the
+-- ArcaneDustPad you stand on to actually collect it): a small clear icon +
+-- amount readout (no "Arcane Dust" word) above an "Arcane Dust Upgrades"
+-- title banner, then 2 columns filling the board edge-to-edge - "More
+-- Arcane Dust" and "Grant Speed" (how often the pad pays out while you're
+-- standing on it). Same createUpgradeColumn pattern as the Mana Upgrades
 -- board, just costed in Arcane Dust instead of Mana, and with no
 -- PlayerRebirthed hookup - Arcane Dust is entirely separate from Mana/
 -- Rebirths, so rebirthing never resets it.
@@ -33,13 +35,14 @@ local COLUMN_GAP = 0.04
 local COLUMN_START_X = 0.03
 local COLUMN_TOP_Y = 0.33
 
--- The board sits west of its zone (the opposite side from the Mana/Rebirth
--- row), un-rotated, so the player approaches from the east - the readable
--- face is "Right" (+X), not the Mana board's "Left" (-X). A guess like
--- every other board's face here; flip to Left if it renders unreadable.
+-- Un-rotated, facing back toward the bridge entrance (the -Z direction
+-- players approach from, having crossed onto SecondIsland and continued
+-- past the pad) - "Front" in Roblox's NormalId naming, same reasoning as
+-- SecondIslandGate's face. A guess like every other board's face here;
+-- flip to Back if it renders unreadable from the approach side.
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "ArcaneDustUpgradeBoardGui"
-surfaceGui.Face = Enum.NormalId.Right
+surfaceGui.Face = Enum.NormalId.Front
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36
@@ -293,9 +296,9 @@ createUpgradeColumn(1, "More Arcane Dust", Color3.fromRGB(255, 200, 80), getArca
 	return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
 end)
 
-createUpgradeColumn(2, "Dust Spawn Speed", Color3.fromRGB(255, 160, 220), getArcaneDustSpawnStateFunction, buyArcaneDustSpawnUpgradeFunction, function(state)
+createUpgradeColumn(2, "Grant Speed", Color3.fromRGB(255, 160, 220), getArcaneDustSpawnStateFunction, buyArcaneDustSpawnUpgradeFunction, function(state)
 	if state.nextLevelCost then
-		return ("%.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
+		return ("Every %.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
 	end
-	return ("%.1fs (MAX)"):format(state.respawnSeconds)
+	return ("Every %.1fs (MAX)"):format(state.respawnSeconds)
 end)
