@@ -6,6 +6,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
@@ -59,7 +61,7 @@ rebirthsCorner.CornerRadius = UDim.new(0, 8)
 rebirthsCorner.Parent = rebirthsLabel
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
-	manaLabel.Text = ("Mana: %d"):format(amount)
+	manaLabel.Text = "Mana: " .. NumberFormat.format(amount)
 end)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)

@@ -12,6 +12,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getManaYieldStateFunction = remotes:WaitForChild("GetManaYieldState")
 local buyManaYieldUpgradeFunction = remotes:WaitForChild("BuyManaYieldUpgrade")
@@ -84,7 +86,7 @@ currencyReadoutText.Text = "Mana: -"
 currencyReadoutText.Parent = currencyReadout
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
-	currencyReadoutText.Text = ("Mana: %d"):format(amount)
+	currencyReadoutText.Text = "Mana: " .. NumberFormat.format(amount)
 end)
 
 -- Title banner across the top, matching the reference's "<Currency> Upgrades" pill.
@@ -272,7 +274,7 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 
 		levelLabel.Text = ("(%d/%d)"):format(state.level, state.maxLevel)
 		detailLabel.Text = formatDetail(state)
-		costLabel.Text = state.nextLevelCost and ("Cost: %d Mana"):format(state.nextLevelCost) or "Cost: -"
+		costLabel.Text = state.nextLevelCost and ("Cost: %s Mana"):format(NumberFormat.format(state.nextLevelCost)) or "Cost: -"
 
 		updateButtonColors()
 	end
@@ -308,9 +310,9 @@ end
 local columnRefreshFunctions = {
 	createUpgradeColumn(1, "More Mana", Color3.fromRGB(150, 80, 255), getManaYieldStateFunction, buyManaYieldUpgradeFunction, function(state)
 		if state.nextLevelCost then
-			return ("+%d > +%d"):format(state.amountPerPickup, state.nextAmountPerPickup)
+			return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
 		end
-		return ("+%d (MAX)"):format(state.amountPerPickup)
+		return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
 	end),
 
 	createUpgradeColumn(2, "Mana Spawn Speed", Color3.fromRGB(80, 220, 255), getManaSpawnStateFunction, buyManaSpawnUpgradeFunction, function(state)

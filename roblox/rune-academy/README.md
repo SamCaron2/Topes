@@ -40,7 +40,13 @@ design notes.
   `Zones` config (upgrades, self-prestige tiers, chain resets, floor
   tiles), stat definitions, Rune rarity odds + boosts, Ascension tiers.
   Change balance here, not in the handler scripts.
-- `NumberFormat.lua` — K/M/B/T/Qd/... suffix formatting for big numbers.
+- `NumberFormat.lua` — plain comma-separated whole numbers below a
+  million ("999,000"), then a 2-decimal suffix from a million up
+  ("5.32B" for 5,324,222,143) - suffix ladder M, B, T, Qd, Qt, St, SEt,
+  Oc, No, Dc. Used by every client-side Mana display so far
+  (`ManaHUDClient`, `ManaUpgradeBoardClient`'s readout/costs/yield
+  preview) - use it for any other currency display that could reach
+  seven figures too.
 - `PlayerData.lua` — DataStore load/save/autosave, leaderstats, and
   `defaultData()` builds every zone/currency's save-data shape straight
   from `GameConfig.Zones` (add a currency to config, its save slot exists
@@ -155,7 +161,8 @@ design notes.
   though the nodes themselves are shared world objects, same as how
   "Mana Per Pickup" already works.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
-  linear 1x → 3x `Humanoid.WalkSpeed`, applied on every spawn and
+  linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
+  max, which felt too strong, applied on every spawn and
   instantly on purchase). Costed steeply on purpose, NOT through the
   shared `UpgradeCost` curve — only 10 levels, but each should feel like
   real progress rather than a quick fill-in upgrade, so the first
@@ -163,7 +170,8 @@ design notes.
   (`UpgradeCost.costForLevel(19)` = 190 Mana right now), climbing by
   that same amount every level after.
 - `CollectionRangeHandler.lua` — the "Collection Range" upgrade (level
-  1-12, radius linear 3 studs → 18 studs). Also on its own cost curve
+  1-12, radius linear 3 studs → 9 studs - halved from 18, which felt
+  too strong). Also on its own cost curve
   per direct request — the first purchase costs 50 Mana, climbing
   linearly to 495 for the last purchase. `getRadius(player)` is read by
   `WorldBuilder`'s collection loop (see below) and by `ManaRingClient`,

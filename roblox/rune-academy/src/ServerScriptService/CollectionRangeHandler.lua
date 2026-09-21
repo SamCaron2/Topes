@@ -1,7 +1,8 @@
 -- Server-authoritative "Collection Range" upgrade: grows the radius around
 -- the player that automatically collects any Mana node inside it (checked
 -- by WorldBuilder's collection loop). 12 levels, radius linear from 3 studs
--- (level 1 - matches the feet-ring's original fixed radius) to 18 (level 12).
+-- (level 1 - matches the feet-ring's original fixed radius) to 9 (level 12,
+-- halved from 18 - the old max felt too strong).
 --
 -- Costed on its OWN curve, deliberately not through the shared UpgradeCost
 -- module, per direct request: the first purchase (currently at level 1)
@@ -14,7 +15,7 @@ local PlayerData = require(script.Parent.PlayerData)
 
 local MAX_RANGE_LEVEL = 12
 local BASE_RADIUS = 3
-local MAX_RADIUS = 18
+local MAX_RADIUS = 9
 local FIRST_PURCHASE_COST = 50
 local LAST_PURCHASE_COST = 495
 

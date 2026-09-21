@@ -1,6 +1,6 @@
 -- Server-authoritative "Walking Speed" upgrade: 10 levels, linear from 1x
--- (level 1, Roblox's default WalkSpeed of 16) up to 3x (level 10, 48) - the
--- requested "3x by upgrade 10."
+-- (level 1, Roblox's default WalkSpeed of 16) up to 1.5x (level 10, 24) -
+-- halved from the original 3x max, which felt too strong.
 --
 -- Costed steeply ON PURPOSE, not through the shared UpgradeCost curve: only
 -- 10 levels total, but each should feel like real progress rather than a
@@ -17,7 +17,7 @@ local UpgradeCost = require(script.Parent.UpgradeCost)
 
 local MAX_SPEED_LEVEL = 10
 local BASE_WALK_SPEED = 16
-local MAX_MULTIPLIER = 3
+local MAX_MULTIPLIER = 1.5
 local COST_PER_LEVEL = UpgradeCost.costForLevel(19) -- = 190 Mana right now
 
 local function multiplierForLevel(level: number): number
