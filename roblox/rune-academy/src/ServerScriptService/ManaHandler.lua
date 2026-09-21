@@ -43,7 +43,12 @@ function ManaHandler.collect(player: Player): number?
 	if not data then
 		return nil
 	end
-	data.mana = (data.mana or 0) + effectiveAmountForLevel(player, data.manaYieldLevel or 1)
+	local amount = effectiveAmountForLevel(player, data.manaYieldLevel or 1)
+	data.mana = (data.mana or 0) + amount
+	-- Separate from the live balance above (which rebirthing resets to 0) -
+	-- this is the lifetime total for the "Total Mana" leaderboard, so a
+	-- rebirth never erases a player's standing on it.
+	data.totalManaEarned = (data.totalManaEarned or 0) + amount
 	return data.mana
 end
 

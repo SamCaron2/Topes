@@ -80,6 +80,8 @@ local function defaultData()
 
 		secondIslandUnlocked = false, -- true once the player has reached SecondIslandGate while meeting its requirement; permanent, doesn't consume Mana/Rebirths
 
+		totalManaEarned = 0, -- lifetime Mana ever collected, NOT reset by rebirthing (unlike the live `mana` balance above) - feeds the "Total Mana" leaderboard
+
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,
@@ -191,7 +193,21 @@ function PlayerData.save(player: Player): boolean
 	return success
 end
 
+-- Other modules that need a final look at a player's data before it's gone
+-- (LeaderboardHandler's last sync, e.g.) subscribe here instead of their own
+-- PlayerRemoving listener - Roblox doesn't guarantee listener order across
+-- separate scripts, so a second PlayerRemoving connection could easily fire
+-- after release() below has already cleared the session.
+local beforeReleaseCallbacks = {}
+
+function PlayerData.onBeforeRelease(callback: (Player) -> ())
+	table.insert(beforeReleaseCallbacks, callback)
+end
+
 function PlayerData.release(player: Player)
+	for _, callback in beforeReleaseCallbacks do
+		callback(player)
+	end
 	PlayerData.save(player)
 	sessions[player] = nil
 end

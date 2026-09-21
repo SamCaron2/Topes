@@ -630,3 +630,119 @@ task.spawn(function()
 		end
 	end
 end)
+
+-- ===========================================================================
+-- Leaderboard island: a third island, straight out along -Z (the opposite
+-- direction from SecondIsland, and the side that reads as "to the left" of
+-- the Mana Upgrades board when facing it - the kiosk row itself grows in
+-- +Z). Same bridge look as SecondIsland's, minus the gate - this one is
+-- never locked. Holds 4 plain sign boards - Playtime, Robux Spent, Total
+-- Mana, Runes Opened - each a top-5 list pulled from LeaderboardHandler.
+local LEADERBOARD_ISLAND_SIZE = 80
+local LEADERBOARD_BOARD_WIDTH = 16
+local LEADERBOARD_BOARD_GAP = 4
+
+for _, name in { "LeaderboardIsland", "LeaderboardBridge" } do
+	local existingPart = Workspace:FindFirstChild(name)
+	if existingPart then
+		existingPart:Destroy()
+	end
+end
+
+local islandWestEdgeZ = islandCenterZ - ISLAND_SIZE / 2
+local leaderboardIslandCenterZ = islandWestEdgeZ - BRIDGE_LENGTH - LEADERBOARD_ISLAND_SIZE / 2
+local leaderboardIslandCenterX = islandCenterX
+
+local leaderboardIsland = Instance.new("Part")
+leaderboardIsland.Name = "LeaderboardIsland"
+leaderboardIsland.Anchored = true
+leaderboardIsland.CanCollide = true
+leaderboardIsland.Material = Enum.Material.Grass
+leaderboardIsland.Color = Color3.fromRGB(90, 170, 60)
+leaderboardIsland.Size = Vector3.new(LEADERBOARD_ISLAND_SIZE, ISLAND_THICKNESS, LEADERBOARD_ISLAND_SIZE)
+leaderboardIsland.CFrame = CFrame.new(leaderboardIslandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, leaderboardIslandCenterZ)
+leaderboardIsland.Parent = Workspace
+
+-- Same rope-bridge look as SecondIsland's (deck + rails + posts), just never
+-- gated - reusing the same BRIDGE_* constants for a consistent look.
+local leaderboardBridgeFolder = Instance.new("Folder")
+leaderboardBridgeFolder.Name = "LeaderboardBridge"
+leaderboardBridgeFolder.Parent = Workspace
+
+local leaderboardBridgeCenterZ = islandWestEdgeZ - BRIDGE_LENGTH / 2
+
+local leaderboardDeck = Instance.new("Part")
+leaderboardDeck.Name = "BridgeDeck"
+leaderboardDeck.Anchored = true
+leaderboardDeck.CanCollide = true
+leaderboardDeck.Material = Enum.Material.WoodPlanks
+leaderboardDeck.Color = Color3.fromRGB(150, 110, 70)
+leaderboardDeck.Size = Vector3.new(BRIDGE_WIDTH, BRIDGE_THICKNESS, BRIDGE_LENGTH)
+leaderboardDeck.CFrame = CFrame.new(leaderboardIslandCenterX, ISLAND_TOP_Y - BRIDGE_THICKNESS / 2, leaderboardBridgeCenterZ)
+leaderboardDeck.Parent = leaderboardBridgeFolder
+
+local function makeLeaderboardBridgeRail(xOffset: number)
+	local rail = Instance.new("Part")
+	rail.Name = "BridgeRail"
+	rail.Anchored = true
+	rail.CanCollide = false
+	rail.Material = Enum.Material.Wood
+	rail.Color = Color3.fromRGB(110, 80, 50)
+	rail.Shape = Enum.PartType.Cylinder
+	rail.Size = Vector3.new(BRIDGE_LENGTH, 0.6, 0.6)
+	rail.CFrame = CFrame.new(leaderboardIslandCenterX + xOffset, ISLAND_TOP_Y + BRIDGE_RAIL_HEIGHT, leaderboardBridgeCenterZ)
+		* CFrame.Angles(0, math.rad(90), 0)
+	rail.Parent = leaderboardBridgeFolder
+end
+makeLeaderboardBridgeRail(BRIDGE_WIDTH / 2)
+makeLeaderboardBridgeRail(-BRIDGE_WIDTH / 2)
+
+for postOffsetZ = 0, BRIDGE_LENGTH, BRIDGE_POST_SPACING do
+	for _, xOffset in { BRIDGE_WIDTH / 2, -BRIDGE_WIDTH / 2 } do
+		local post = Instance.new("Part")
+		post.Name = "BridgePost"
+		post.Anchored = true
+		post.CanCollide = false
+		post.Material = Enum.Material.Wood
+		post.Color = Color3.fromRGB(110, 80, 50)
+		post.Size = Vector3.new(0.6, BRIDGE_RAIL_HEIGHT, 0.6)
+		post.CFrame = CFrame.new(leaderboardIslandCenterX + xOffset, ISLAND_TOP_Y + BRIDGE_RAIL_HEIGHT / 2, islandWestEdgeZ - postOffsetZ)
+		post.Parent = leaderboardBridgeFolder
+	end
+end
+
+-- 4 boards in a row near the island's near edge (the side facing the
+-- bridge/starting island), thin along Z so their wide face - not their
+-- thin edge - points back at a player crossing the bridge (coming from
+-- +Z), same Glass-card look as the main kiosks. LeaderboardBoardClient
+-- finds each by name and builds its SurfaceGui UI.
+local leaderboardBoardZ = leaderboardIslandCenterZ + LEADERBOARD_ISLAND_SIZE / 2 - 10
+
+local function makeLeaderboardBoard(name: string, xOffset: number)
+	local boardPart = Instance.new("Part")
+	boardPart.Name = name
+	boardPart.Anchored = true
+	boardPart.CanCollide = true
+	boardPart.Material = Enum.Material.Glass
+	boardPart.Color = Color3.fromRGB(45, 45, 60)
+	boardPart.Transparency = 0.7
+	boardPart.Size = Vector3.new(LEADERBOARD_BOARD_WIDTH, 14, 1)
+	boardPart.CFrame = CFrame.new(leaderboardIslandCenterX + xOffset, ISLAND_TOP_Y + 7, leaderboardBoardZ)
+	boardPart.Parent = kiosksFolder
+	return boardPart
+end
+
+local LEADERBOARD_BOARD_NAMES = {
+	"LeaderboardPlaytimeBoard",
+	"LeaderboardRobuxBoard",
+	"LeaderboardManaBoard",
+	"LeaderboardRunesBoard",
+}
+
+local totalBoardsWidth = (#LEADERBOARD_BOARD_NAMES * LEADERBOARD_BOARD_WIDTH)
+	+ ((#LEADERBOARD_BOARD_NAMES - 1) * LEADERBOARD_BOARD_GAP)
+local leaderboardBoardStartX = -totalBoardsWidth / 2 + LEADERBOARD_BOARD_WIDTH / 2
+
+for index, name in LEADERBOARD_BOARD_NAMES do
+	makeLeaderboardBoard(name, leaderboardBoardStartX + (index - 1) * (LEADERBOARD_BOARD_WIDTH + LEADERBOARD_BOARD_GAP))
+end

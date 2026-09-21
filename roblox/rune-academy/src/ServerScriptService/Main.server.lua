@@ -18,6 +18,7 @@ local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
 local StoreHandler = require(script.Parent.StoreHandler) -- self-wires MarketplaceService on require
 local TitleHandler = require(script.Parent.TitleHandler)
+local LeaderboardHandler = require(script.Parent.LeaderboardHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -73,6 +74,7 @@ local buyXpMultiplierFunction = newRemoteFunction("BuyXpMultiplier")
 local playerRebirthedEvent = newRemoteEvent("PlayerRebirthed") -- server -> client, tells the Mana Upgrades board to re-fetch every column (levels reset)
 local getXPStateFunction = newRemoteFunction("GetXPState")
 local xpUpdatedEvent = newRemoteEvent("XPUpdated") -- server -> client, fired on join and every Mana pickup (XP/level bar)
+local getLeaderboardFunction = newRemoteFunction("GetLeaderboard") -- args: statKey ("playtime"|"robux"|"mana"|"runes")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -322,6 +324,16 @@ end
 
 getXPStateFunction.OnServerInvoke = function(player)
 	return XPHandler.getState(player)
+end
+
+local VALID_LEADERBOARD_KEYS = { playtime = true, robux = true, mana = true, runes = true }
+local LEADERBOARD_ENTRY_LIMIT = 5
+
+getLeaderboardFunction.OnServerInvoke = function(_player, statKey)
+	if type(statKey) ~= "string" or not VALID_LEADERBOARD_KEYS[statKey] then
+		return {}
+	end
+	return LeaderboardHandler.getTop(statKey, LEADERBOARD_ENTRY_LIMIT)
 end
 
 -- Touch PlayerData once so its PlayerAdded listener is guaranteed registered

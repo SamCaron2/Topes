@@ -80,6 +80,25 @@ design notes.
   against double-granting a retried purchase.
 - `TitleHandler.lua` — unlocks and equips Titles (`GameConfig.Titles`),
   mirrors the equipped one onto Player attributes.
+- `LeaderboardHandler.lua` — the 4 global leaderboards (Playtime, Robux
+  Spent, Total Mana, Runes Opened) shown on the Leaderboard island's sign
+  boards, backed by one `OrderedDataStore` per stat so rankings persist
+  across restarts and cover every player who's ever played, not just who's
+  online - same "DataStores might be unavailable in Studio" defensive
+  `pcall` pattern as `PlayerData`, so a missing store just returns an empty
+  list instead of crashing. A `task.spawn` loop pushes every online
+  player's current stats into the stores every 60s; `PlayerData.onBeforeRelease`
+  (not `Players.PlayerRemoving` directly - listener order across separate
+  scripts isn't guaranteed, and `PlayerData.release` clearing the session
+  could easily run first) does one more sync on the way out so a leaving
+  player's final numbers aren't lost to the interval's timing.
+  `getTop(statKey, limit)` resolves each entry's player name live via
+  `Players:GetNameFromUserIdAsync` and returns `{name, value}` pairs,
+  highest first. "Total Mana" reads a new `totalManaEarned` PlayerData
+  field (incremented by `ManaHandler.collect` alongside the live `mana`
+  balance) rather than the live balance itself, since rebirthing resets
+  that to 0 - a lifetime counter is what actually makes sense on a
+  leaderboard.
 - `FriendBoostHandler.lua` — tracks how many of a player's Roblox friends
   are in the same server (live, never saved); `ResourceEngine` applies
   `GameConfig.FriendBoost` on top of any currency flagged
@@ -163,6 +182,21 @@ design notes.
   `SECOND_ISLAND_OFFSET_X`) is a best guess from a screenshot, same "nudge
   the numbers after testing" situation as the kiosk board offsets above if
   it's not quite lined up.
+  A third island - `LeaderboardIsland` (80x80, smaller than the other two -
+  it's just holding sign boards) - goes the opposite direction, straight
+  out along -Z, the side that reads as "to the left" of the Mana Upgrades
+  board when facing it (the kiosk row itself grows in +Z, `SecondIsland`
+  in +Z from the starting island's far edge - this is the one direction
+  left unused). `LeaderboardBridge` reuses the exact same deck/rail/post
+  look and the same `BRIDGE_*` constants as `IslandBridge`, just with no
+  gate - this one is never locked, per direct request. 4 plain white sign
+  boards (`LeaderboardPlaytimeBoard`/`LeaderboardRobuxBoard`/
+  `LeaderboardManaBoard`/`LeaderboardRunesBoard`) sit in a row near the
+  island's near edge, same Glass-card physical style as the main kiosks
+  but thin along Z instead of X so their wide face points back at a player
+  crossing the bridge from +Z; `LeaderboardBoardClient` builds each one's
+  UI, pulling its top-5 list from the new `GetLeaderboard` remote
+  (`LeaderboardHandler`).
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
   its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
   so the very first purchase (from level 1) always costs 10 Mana no
@@ -328,6 +362,16 @@ design notes.
   `xpToNextLevel` comes back nil at level 50). Fetches its initial state
   via `GetXPState` on load, then just renders whatever `XPUpdated` sends
   after that — all the leveling logic lives server-side in `XPHandler`.
+- `LeaderboardBoardClient.client.lua` — builds the 4 plain white sign
+  boards on `LeaderboardIsland` (Playtime/Robux Spent/Total Mana/Runes
+  Opened), each just a title banner over a top-5 list ("N. Name - value"),
+  no Buy/Max buttons or anything interactive. Each stat gets its own value
+  formatter - Playtime as "Xh Ym", Robux as "R$<amount>", Mana/Runes
+  through the shared `NumberFormat`. Pulls its list from the `GetLeaderboard`
+  remote on load and every `REFRESH_INTERVAL` (20s) after that; empty rows
+  show "-" until that stat's `OrderedDataStore` actually has entries (e.g.
+  in Studio without API access enabled). Same SurfaceGui-on-a-face
+  approach as every other board here.
 
 ## Manual steps required before everything works
 
@@ -353,7 +397,8 @@ design notes.
 Nothing server-side generates or removes world parts anymore except what
 `WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`, `Kiosks`,
 `SecondIsland`, `IslandBridge`, `SecondIslandGate`, `SecondIslandDecor`,
-all rebuilt from scratch on every server start). If your saved `.rbxl`
+`LeaderboardIsland`, `LeaderboardBridge`, all rebuilt from scratch on every
+server start). If your saved `.rbxl`
 still has leftover parts from before the reset (e.g. a
 saved-while-in-Play-mode `GeneratedWorld` folder or similar), delete them
 by hand in Workspace — they're just leftover geometry, nothing references
