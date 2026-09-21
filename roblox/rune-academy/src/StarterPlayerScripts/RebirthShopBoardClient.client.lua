@@ -97,8 +97,12 @@ local currencyReadoutCorner = Instance.new("UICorner")
 currencyReadoutCorner.CornerRadius = UDim.new(0.3, 0)
 currencyReadoutCorner.Parent = currencyReadout
 
+-- Sized/positioned to leave room for the icon badge on the left - UIPadding
+-- on a TextLabel doesn't inset its own rendered Text (it only repositions
+-- child Instances), so the space has to be carved out here instead.
 local currencyReadoutText = Instance.new("TextLabel")
-currencyReadoutText.Size = UDim2.new(1, 0, 1, 0)
+currencyReadoutText.Size = UDim2.new(1, -26, 1, 0)
+currencyReadoutText.Position = UDim2.new(0, 26, 0, 0)
 currencyReadoutText.BackgroundTransparency = 1
 currencyReadoutText.Font = Enum.Font.GothamBold
 currencyReadoutText.TextScaled = true
@@ -106,10 +110,6 @@ currencyReadoutText.TextColor3 = Color3.fromRGB(255, 255, 255)
 currencyReadoutText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 currencyReadoutText.Text = "Rebirths: -"
 currencyReadoutText.Parent = currencyReadout
-
-local currencyReadoutPadding = Instance.new("UIPadding")
-currencyReadoutPadding.PaddingLeft = UDim.new(0, 26)
-currencyReadoutPadding.Parent = currencyReadoutText
 
 addReadoutIcon(currencyReadout, REBIRTHS_ICON_ID)
 

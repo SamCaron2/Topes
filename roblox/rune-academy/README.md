@@ -250,13 +250,15 @@ design notes.
   value above 0 - the server only ever fires it once a player has
   actually rebirthed, so it stays hidden until Rebirths are unlocked.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
-  Mana counter's placement, laid out 2x2: Store/Runes/Profile/Settings,
-  each a colored circle filling most of the circle with either an
-  uploaded icon image (Store, Settings) or a placeholder symbol
-  (Runes/Profile still use safe basic Unicode glyphs - ★/☺ - not emoji,
-  until they get real art too), and a bold `FredokaOne` name label with a
-  heavy stroke underneath for a "cool logo" look. Hovering tweens the icon
-  up to 1.15x size (centered growth, not top-anchored, so it doesn't push
+  Mana counter's placement, laid out 2x2: Store/Runes/Profile/Settings.
+  Store and Settings show their uploaded icon image directly (background
+  transparent, no colored circle behind it - the art reads fine on its
+  own); Runes/Profile don't have real art yet, so they keep the original
+  colored-circle-plus-placeholder-symbol look (safe basic Unicode glyphs -
+  ★/☺ - not emoji) until they do. Each item also gets a bold `FredokaOne`
+  name label with a heavy stroke underneath for a "cool logo" look.
+  Hovering tweens the icon up to 1.15x size (centered growth, not
+  top-anchored, so it doesn't push
   into the label) to show what's highlighted. Not wired to any panel yet -
   it only needed to exist on screen for now.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's

@@ -62,14 +62,19 @@ local function createMenuButton(layoutOrder: number, name: string, symbol: strin
 	button.AnchorPoint = Vector2.new(0.5, 0.5)
 	button.Position = UDim2.new(0.5, 0, 0, BUTTON_SIZE / 2)
 	button.Size = baseSize
+	-- Real icon art already reads fine on its own - only the placeholder
+	-- glyphs need the colored circle behind them for contrast/shape.
 	button.BackgroundColor3 = color
+	button.BackgroundTransparency = imageId and 1 or 0
 	button.AutoButtonColor = false
 	button.Text = ""
 	button.Parent = wrapper
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1, 0)
-	corner.Parent = button
+	if not imageId then
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(1, 0)
+		corner.Parent = button
+	end
 
 	-- Real icon art when we have it (Store, Settings); everything else still
 	-- falls back to a TextScaled glyph filling most of the circle.

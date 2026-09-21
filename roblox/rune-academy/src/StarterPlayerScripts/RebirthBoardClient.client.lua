@@ -57,8 +57,12 @@ titleIcon.BackgroundTransparency = 1
 titleIcon.Image = REBIRTHS_ICON_ID
 titleIcon.Parent = titleBanner
 
+-- Sized/positioned to leave room for the icon on the left - UIPadding on a
+-- TextLabel doesn't inset its own rendered Text (it only repositions child
+-- Instances), so the space has to be carved out here instead.
 local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, 0, 1, 0)
+titleText.Size = UDim2.new(1, -52, 1, 0)
+titleText.Position = UDim2.new(0, 52, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.Font = Enum.Font.GothamBold
 titleText.TextScaled = true
@@ -66,10 +70,6 @@ titleText.TextColor3 = Color3.fromRGB(255, 210, 90)
 titleText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 titleText.Text = "Rebirths"
 titleText.Parent = titleBanner
-
-local titleTextPadding = Instance.new("UIPadding")
-titleTextPadding.PaddingLeft = UDim.new(0, 52)
-titleTextPadding.Parent = titleText
 
 local explainerLabel = Instance.new("TextLabel")
 explainerLabel.Size = UDim2.new(0.9, 0, 0.16, 0)

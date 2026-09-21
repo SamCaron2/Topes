@@ -53,67 +53,56 @@ local function addIconBadge(parent: GuiObject, imageId: string)
 	iconPadding.Parent = icon
 end
 
--- Shifts the pill's text right so it doesn't run under the icon badge, while
--- keeping it centered in the remaining space.
-local function addTextLeftPadding(label: TextLabel)
-	local padding = Instance.new("UIPadding")
-	padding.PaddingLeft = UDim.new(0, 34)
-	padding.Parent = label
+-- Builds an empty pill (background only) plus a child TextLabel reserved to
+-- the right of the icon badge. UIPadding on a TextLabel does NOT inset its
+-- own rendered Text (padding only repositions child Instances), so the only
+-- way to keep text from running under the badge is a separate child label
+-- with its own Size/Position actually carving out that space.
+local function createCounterPill(name: string, yOffset: number, textColor: Color3, imageId: string)
+	local pill = Instance.new("Frame")
+	pill.Name = name
+	pill.AnchorPoint = Vector2.new(0, 0.5)
+	pill.Position = UDim2.new(0, 10, 0.5, yOffset)
+	pill.Size = UDim2.new(0, 220, 0, 50)
+	pill.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+	pill.BackgroundTransparency = 0.35
+	pill.BorderSizePixel = 0
+	pill.Parent = screenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = pill
+
+	local text = Instance.new("TextLabel")
+	text.Name = "Text"
+	text.Size = UDim2.new(1, -34, 1, 0)
+	text.Position = UDim2.new(0, 34, 0, 0)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.GothamBold
+	text.TextSize = 28
+	text.TextColor3 = textColor
+	text.TextStrokeTransparency = 0.5
+	text.TextXAlignment = Enum.TextXAlignment.Center
+	text.Parent = pill
+
+	addIconBadge(pill, imageId)
+
+	return pill, text
 end
 
 -- Middle-left of the screen: vertically centered, flush against the left edge.
-local manaLabel = Instance.new("TextLabel")
-manaLabel.Name = "ManaCounter"
-manaLabel.AnchorPoint = Vector2.new(0, 0.5)
-manaLabel.Position = UDim2.new(0, 10, 0.5, 0)
-manaLabel.Size = UDim2.new(0, 220, 0, 50)
-manaLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-manaLabel.BackgroundTransparency = 0.35
-manaLabel.BorderSizePixel = 0
-manaLabel.Font = Enum.Font.GothamBold
-manaLabel.TextSize = 28
-manaLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-manaLabel.TextStrokeTransparency = 0.5
-manaLabel.TextXAlignment = Enum.TextXAlignment.Center
-manaLabel.Text = "Mana: 0"
-manaLabel.Parent = screenGui
+local manaPill, manaText = createCounterPill("ManaCounter", 0, Color3.fromRGB(255, 255, 255), MANA_ICON_ID)
+manaText.Text = "Mana: 0"
 
-local manaCorner = Instance.new("UICorner")
-manaCorner.CornerRadius = UDim.new(0, 8)
-manaCorner.Parent = manaLabel
-
-addIconBadge(manaLabel, MANA_ICON_ID)
-addTextLeftPadding(manaLabel)
-
-local rebirthsLabel = Instance.new("TextLabel")
-rebirthsLabel.Name = "RebirthsCounter"
-rebirthsLabel.Visible = false
-rebirthsLabel.AnchorPoint = Vector2.new(0, 0.5)
-rebirthsLabel.Position = UDim2.new(0, 10, 0.5, 60)
-rebirthsLabel.Size = UDim2.new(0, 220, 0, 50)
-rebirthsLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-rebirthsLabel.BackgroundTransparency = 0.35
-rebirthsLabel.BorderSizePixel = 0
-rebirthsLabel.Font = Enum.Font.GothamBold
-rebirthsLabel.TextSize = 28
-rebirthsLabel.TextColor3 = Color3.fromRGB(255, 90, 90)
-rebirthsLabel.TextStrokeTransparency = 0.5
-rebirthsLabel.TextXAlignment = Enum.TextXAlignment.Center
-rebirthsLabel.Text = "Rebirths: 0"
-rebirthsLabel.Parent = screenGui
-
-local rebirthsCorner = Instance.new("UICorner")
-rebirthsCorner.CornerRadius = UDim.new(0, 8)
-rebirthsCorner.Parent = rebirthsLabel
-
-addIconBadge(rebirthsLabel, REBIRTHS_ICON_ID)
-addTextLeftPadding(rebirthsLabel)
+local rebirthsPill, rebirthsText = createCounterPill("RebirthsCounter", 60, Color3.fromRGB(255, 90, 90), REBIRTHS_ICON_ID)
+rebirthsPill.Visible = false
+rebirthsText.Text = "Rebirths: 0"
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
-	manaLabel.Text = "Mana: " .. NumberFormat.format(amount)
+	manaText.Text = "Mana: " .. NumberFormat.format(amount)
 end)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
-	rebirthsLabel.Visible = true
-	rebirthsLabel.Text = ("Rebirths: %.1f"):format(amount)
+	rebirthsPill.Visible = true
+	rebirthsText.Text = ("Rebirths: %.1f"):format(amount)
 end)
