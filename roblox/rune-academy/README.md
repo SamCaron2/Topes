@@ -359,9 +359,16 @@ design notes.
   grid, so the icons read as one solid unit: Store/Runes/Profile/Settings.
   Store and Settings show their uploaded icon image directly (background
   transparent, no colored circle behind it - the art reads fine on its
-  own); Runes/Profile don't have real art yet, so they keep the original
-  colored-circle-plus-placeholder-symbol look (safe basic Unicode glyphs -
-  ★/☺ - not emoji) until they do. Each item also gets a bold `FredokaOne`
+  own); Profile shows the PLAYER'S OWN live avatar headshot instead, via
+  `Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)`
+  - no uploaded asset needed since Roblox already renders and hosts a
+  thumbnail per-player - swapped in after the fact (starts as the usual
+  placeholder circle+glyph, same as Runes, since the fetch yields on a
+  network call) with the colored circle dropped once the real image
+  lands, same as Store/Settings; Runes doesn't have real art yet, so it
+  keeps the original colored-circle-plus-placeholder-symbol look (safe
+  basic Unicode glyphs - not emoji) until it does. Each item also gets a
+  bold `FredokaOne`
   name label with a heavy stroke underneath for a "cool logo" look. A
   small round `SideMenuToggle` tab sits fixed just above the panel and
   tweens it fully off-screen to the right (and back) on click, so the

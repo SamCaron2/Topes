@@ -1,10 +1,12 @@
 -- Right-side icon menu: Store, Runes, Profile, Settings, laid out 2x2 on a
 -- high-opacity dark panel, with a small toggle tab above it to slide the
 -- whole thing off-screen and hide it. Store and Settings use uploaded icon
--- images; Runes and Profile still use placeholder symbol icons (safe basic
--- Unicode glyphs, not emoji, so they render reliably) until they get real
--- art too. Hovering grows the icon slightly to show what's highlighted. No
--- panels wired up yet - just needs to exist on screen.
+-- images; Profile gets the player's own live avatar headshot (fetched via
+-- GetUserThumbnailAsync, no upload needed - see below); Runes still uses a
+-- placeholder symbol icon (a safe basic Unicode glyph, not emoji, so it
+-- renders reliably) until it gets real art too. Hovering grows the icon
+-- slightly to show what's highlighted. No panels wired up yet - just needs
+-- to exist on screen.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -188,6 +190,45 @@ local function createMenuButton(layoutOrder: number, name: string, symbol: strin
 	return button
 end
 
+local buttonsByName = {}
 for index, item in MENU_ITEMS do
-	createMenuButton(index, item.name, item.symbol, item.color, item.imageId)
+	buttonsByName[item.name] = createMenuButton(index, item.name, item.symbol, item.color, item.imageId)
 end
+
+-- Profile gets the PLAYER'S OWN avatar headshot instead of a placeholder
+-- symbol - fetched live via GetUserThumbnailAsync, no uploaded asset
+-- needed since Roblox already renders and hosts this per-player. Swapped
+-- in after the fact (starts as the usual placeholder circle+glyph, same
+-- as Runes) since the fetch is a yielding network call.
+task.spawn(function()
+	local success, content = pcall(function()
+		return Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+	end)
+	if not success or not content then
+		return
+	end
+
+	local profileButton = buttonsByName["Profile"]
+	if not profileButton then
+		return
+	end
+
+	-- Clear the placeholder glyph - the avatar image reads fine on its own,
+	-- same as the Store/Settings uploaded icons, so drop the colored circle.
+	for _, child in profileButton:GetChildren() do
+		if child:IsA("TextLabel") or child:IsA("UIPadding") then
+			child:Destroy()
+		end
+	end
+	profileButton.BackgroundTransparency = 1
+
+	local icon = Instance.new("ImageLabel")
+	icon.Size = UDim2.new(1, 0, 1, 0)
+	icon.BackgroundTransparency = 1
+	icon.Image = content
+	icon.Parent = profileButton
+
+	local iconCorner = Instance.new("UICorner")
+	iconCorner.CornerRadius = UDim.new(1, 0)
+	iconCorner.Parent = icon
+end)
