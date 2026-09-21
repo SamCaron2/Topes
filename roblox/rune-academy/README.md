@@ -183,25 +183,26 @@ design notes.
   checking it, per direct correction to the original "walk up and it
   auto-unlocks for free" design. Restricted to the bridge's own width so
   it never touches someone just walking near the starting island's edge
-  elsewhere. Off to one side near the island's -X edge (`ARCANE_DUST_AREA_X`,
-  15 studs in from the edge - moved there per direct request, after an
-  earlier dead-center placement) sits `ArcaneDustPad` - a flat gold
-  cylinder (Neon material, rotated flat) with a small floating "Stand for
-  Arcane Dust" `BillboardGui` label - kept small and given a `MaxDistance`
-  (20 studs) so it only shows up close instead of being readable from
-  across the map, per direct request - the second wizard resource, entirely
-  separate from Mana (no Rebirth Shop interaction, not reset by
-  rebirthing). No pickup nodes to walk past, per direct request - standing
-  on the pad's radius grants Arcane Dust immediately, then again every
-  `ArcaneDustSpawnHandler` interval for as long as you stay; step off and
-  the timer (`arcaneDustNextGrant`, keyed per player) resets, so it's
-  "stand here to farm," not "walk past to collect once." 15 studs further
-  along that same edge sits `ArcaneDustUpgradeBoard` (24 studs wide,
-  un-rotated - thin along X, wide along Z, running parallel to the edge
-  like the starting island's kiosk row - facing inward toward the
-  island's center, "Right" instead of the row's "Left") with its own
-  2-column UI (`ArcaneDustUpgradeBoardClient`) - "More Arcane Dust" and
-  "Grant Speed" (how often the pad pays out).
+  elsewhere. `ArcaneDustUpgradeBoard` sits near the island's -X edge
+  (`ARCANE_DUST_AREA_X`, 15 studs in from the edge), un-rotated - thin
+  along X, wide along Z, running parallel to the edge like the starting
+  island's kiosk row - facing inward toward the island's center, "Right"
+  instead of the row's "Left". `ArcaneDustPad` - a flat gold cylinder
+  (Neon material, rotated flat) with a small floating "Stand for Arcane
+  Dust" `BillboardGui` label, kept small and given a `MaxDistance` (20
+  studs) so it only shows up close instead of being readable from across
+  the map - sits `ARCANE_DUST_PAD_FRONT_OFFSET` (12) studs in front of the
+  board, along its +X facing direction, at the same Z - directly facing
+  the board, not off to the side along the edge like an earlier layout
+  had it. The second wizard resource, entirely separate from Mana (no
+  Rebirth Shop interaction, not reset by rebirthing). No pickup nodes to
+  walk past, per direct request - standing on the pad's radius grants
+  Arcane Dust immediately, then again every `ArcaneDustSpawnHandler`
+  interval for as long as you stay; step off and the timer
+  (`arcaneDustNextGrant`, keyed per player) resets, so it's "stand here to
+  farm," not "walk past to collect once." The board's own 2-column UI
+  (`ArcaneDustUpgradeBoardClient`) has "More Arcane Dust" and "Grant
+  Speed" (how often the pad pays out).
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -343,19 +344,28 @@ design notes.
   Arcane Dust has no uploaded image yet, so its icon falls back to a
   colored circle with a safe Unicode glyph (✦, not emoji) - same
   placeholder treatment as the side menu's Runes/Profile icons - `createCounterRow`
-  takes either an `imageId` or a `symbol` for exactly this reason. The
-  Rebirths row starts hidden and only appears once the `RebirthsUpdated`
-  event fires with a value above 0 - the server only ever fires it once a
-  player has actually rebirthed, so it stays hidden until Rebirths are
-  unlocked.
+  takes either an `imageId` or a `symbol` for exactly this reason. Both
+  the Arcane Dust and Rebirths rows start hidden and only appear once
+  their `Updated` event fires with a value above 0 - Arcane Dust the
+  first time you actually stand on `ArcaneDustPad`, Rebirths only once
+  you've actually rebirthed - so neither counter shows up before it's
+  relevant. `reflowLayout` re-stacks whichever rows are currently visible
+  with no gap in between, since the two collapsible rows aren't always
+  both present.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
-  Mana counter's placement, laid out 2x2: Store/Runes/Profile/Settings.
+  Mana counter's placement, laid out 2x2 on a high-opacity dark
+  `SideMenuPanel` (not just a transparent background) behind the whole
+  grid, so the icons read as one solid unit: Store/Runes/Profile/Settings.
   Store and Settings show their uploaded icon image directly (background
   transparent, no colored circle behind it - the art reads fine on its
   own); Runes/Profile don't have real art yet, so they keep the original
   colored-circle-plus-placeholder-symbol look (safe basic Unicode glyphs -
   ★/☺ - not emoji) until they do. Each item also gets a bold `FredokaOne`
-  name label with a heavy stroke underneath for a "cool logo" look.
+  name label with a heavy stroke underneath for a "cool logo" look. A
+  small round `SideMenuToggle` tab sits fixed just above the panel and
+  tweens it fully off-screen to the right (and back) on click, so the
+  whole menu can be collapsed/hidden - the tab itself never moves, so it
+  stays reachable even while the panel's hidden.
   Hovering tweens the icon up to 1.15x size (centered growth, not
   top-anchored, so it doesn't push
   into the label) to show what's highlighted. Not wired to any panel yet -

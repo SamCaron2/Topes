@@ -1,9 +1,10 @@
--- Right-side icon menu: Store, Runes, Profile, Settings, laid out 2x2. Store
--- and Settings use uploaded icon images; Runes and Profile still use
--- placeholder symbol icons (safe basic Unicode glyphs, not emoji, so they
--- render reliably) until they get real art too. Hovering grows the icon
--- slightly to show what's highlighted. No panels wired up yet - just needs
--- to exist on screen.
+-- Right-side icon menu: Store, Runes, Profile, Settings, laid out 2x2 on a
+-- high-opacity dark panel, with a small toggle tab above it to slide the
+-- whole thing off-screen and hide it. Store and Settings use uploaded icon
+-- images; Runes and Profile still use placeholder symbol icons (safe basic
+-- Unicode glyphs, not emoji, so they render reliably) until they get real
+-- art too. Hovering grows the icon slightly to show what's highlighted. No
+-- panels wired up yet - just needs to exist on screen.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -28,15 +29,68 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local CELL_HEIGHT = BUTTON_SIZE + 36 -- room for the button, the gap, and the label below it
+local PANEL_PADDING = 16
+local PANEL_WIDTH = BUTTON_SIZE * 2 + GRID_GAP + PANEL_PADDING * 2
+local PANEL_HEIGHT = CELL_HEIGHT * 2 + GRID_GAP + PANEL_PADDING * 2
+local PANEL_EDGE_OFFSET = 20
 
--- Vertically centered on the right edge, mirroring the Mana counter's
--- placement on the left.
+-- A high-opacity dark panel behind the whole grid (not just transparent
+-- background), per direct request, so the icons read as one solid unit
+-- instead of floating loose over the world.
+local panel = Instance.new("Frame")
+panel.Name = "SideMenuPanel"
+panel.AnchorPoint = Vector2.new(1, 0.5)
+panel.Position = UDim2.new(1, -PANEL_EDGE_OFFSET, 0.5, 0)
+panel.Size = UDim2.new(0, PANEL_WIDTH, 0, PANEL_HEIGHT)
+panel.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+panel.BackgroundTransparency = 0.1
+panel.BorderSizePixel = 0
+panel.Parent = screenGui
+
+local panelCorner = Instance.new("UICorner")
+panelCorner.CornerRadius = UDim.new(0, 14)
+panelCorner.Parent = panel
+
 local container = Instance.new("Frame")
-container.AnchorPoint = Vector2.new(1, 0.5)
-container.Position = UDim2.new(1, -20, 0.5, 0)
+container.AnchorPoint = Vector2.new(0.5, 0.5)
+container.Position = UDim2.new(0.5, 0, 0.5, 0)
 container.Size = UDim2.new(0, BUTTON_SIZE * 2 + GRID_GAP, 0, CELL_HEIGHT * 2 + GRID_GAP)
 container.BackgroundTransparency = 1
-container.Parent = screenGui
+container.Parent = panel
+
+-- A small fixed tab above the panel - always in the same spot regardless
+-- of collapsed state - that tweens the whole panel off-screen to the
+-- right (and back), per direct request to be able to hide the menu.
+local COLLAPSE_TWEEN_INFO = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local EXPANDED_POSITION = panel.Position
+-- Shifted right by its own full width (plus the edge gap it started with),
+-- guaranteeing the whole panel clears the screen's right edge.
+local COLLAPSED_POSITION = UDim2.new(1, PANEL_WIDTH, 0.5, 0)
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "SideMenuToggle"
+toggleButton.AnchorPoint = Vector2.new(1, 1)
+toggleButton.Position = UDim2.new(1, -PANEL_EDGE_OFFSET, 0.5, -(PANEL_HEIGHT / 2) - 10)
+toggleButton.Size = UDim2.new(0, 36, 0, 36)
+toggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+toggleButton.BackgroundTransparency = 0.1
+toggleButton.AutoButtonColor = false
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextScaled = true
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Text = "\u{25B6}" -- ▶ - click collapses the panel this direction
+toggleButton.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(1, 0)
+toggleCorner.Parent = toggleButton
+
+local collapsed = false
+toggleButton.MouseButton1Click:Connect(function()
+	collapsed = not collapsed
+	TweenService:Create(panel, COLLAPSE_TWEEN_INFO, { Position = collapsed and COLLAPSED_POSITION or EXPANDED_POSITION }):Play()
+	toggleButton.Text = collapsed and "\u{25C0}" or "\u{25B6}" -- ◀ once collapsed (click to bring it back)
+end)
 
 local layout = Instance.new("UIGridLayout")
 layout.SortOrder = Enum.SortOrder.LayoutOrder

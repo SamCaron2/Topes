@@ -1,10 +1,12 @@
 -- Middle-left Mana counter (icon + amount, no word, no background pill),
 -- an Arcane Dust counter below that, then a Rebirths counter below that -
--- Rebirths hidden until the player has at least one (the server only fires
--- RebirthsUpdated once they do), so it only appears once Rebirths are
--- actually unlocked. Styled after a typical incremental-game HUD: icon
--- sitting right next to a bold number colored to match the icon, nothing
--- else around it.
+-- both Arcane Dust and Rebirths start hidden until the player has at least
+-- one of each (the server only fires their Updated event once they do),
+-- so Arcane Dust only shows up after first stepping on ArcaneDustPad, and
+-- Rebirths only once actually unlocked - reflowLayout keeps the visible
+-- rows stacked with no gap either way. Styled after a typical
+-- incremental-game HUD: icon sitting right next to a bold number colored
+-- to match the icon, nothing else around it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -117,28 +119,55 @@ end
 -- Middle-left of the screen. Text colors echo each icon's own palette -
 -- violet for the Mana potion (matching the Mana nodes' own purple glow),
 -- gold for Arcane Dust (matching its nodes' color), pink-red for the
--- Rebirths arrows (matching the Rebirth board's red theme).
+-- Rebirths arrows (matching the Rebirth board's red theme). Created all at
+-- yOffset 0 - reflowLayout below assigns real positions based on which
+-- rows are currently visible, so a hidden Arcane Dust row (not collected
+-- from yet) doesn't leave a gap before Rebirths.
 local manaRow, manaText = createCounterRow("ManaCounter", 0, Color3.fromRGB(180, 120, 255), MANA_ICON_ID, false)
 manaText.Text = "0"
 
 local arcaneDustRow, arcaneDustText =
-	createCounterRow("ArcaneDustCounter", ICON_SIZE + 14, Color3.fromRGB(255, 200, 80), nil, true, "\u{2726}")
+	createCounterRow("ArcaneDustCounter", 0, Color3.fromRGB(255, 200, 80), nil, true, "\u{2726}")
+arcaneDustRow.Visible = false
 arcaneDustText.Text = "0"
 
-local rebirthsRow, rebirthsText =
-	createCounterRow("RebirthsCounter", (ICON_SIZE + 14) * 2, Color3.fromRGB(255, 90, 130), REBIRTHS_ICON_ID, true)
+local rebirthsRow, rebirthsText = createCounterRow("RebirthsCounter", 0, Color3.fromRGB(255, 90, 130), REBIRTHS_ICON_ID, true)
 rebirthsRow.Visible = false
 rebirthsText.Text = "0"
+
+local ROW_SPACING = ICON_SIZE + 14
+local orderedRows = { manaRow, arcaneDustRow, rebirthsRow }
+
+local function reflowLayout()
+	local nextY = 0
+	for _, row in orderedRows do
+		if row.Visible then
+			local position = row.Position
+			row.Position = UDim2.new(position.X.Scale, position.X.Offset, position.Y.Scale, nextY)
+			nextY += ROW_SPACING
+		end
+	end
+end
+reflowLayout()
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
 	manaText.Text = NumberFormat.format(amount)
 end)
 
 arcaneDustUpdatedEvent.OnClientEvent:Connect(function(amount)
+	local wasHidden = not arcaneDustRow.Visible
+	arcaneDustRow.Visible = true
 	arcaneDustText.Text = NumberFormat.format(amount)
+	if wasHidden then
+		reflowLayout()
+	end
 end)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
+	local wasHidden = not rebirthsRow.Visible
 	rebirthsRow.Visible = true
 	rebirthsText.Text = ("%.1f"):format(amount)
+	if wasHidden then
+		reflowLayout()
+	end
 end)

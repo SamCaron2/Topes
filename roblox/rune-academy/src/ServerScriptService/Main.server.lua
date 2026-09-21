@@ -398,16 +398,18 @@ local _ = PlayerData
 
 -- Sends the Mana HUD, feet-ring, and Rebirths HUD their starting values on
 -- join (every pickup/purchase/rebirth after that comes from the same
--- events firing again). Rebirths only fires when the player already has
--- some - ManaHUDClient keeps that counter hidden until it sees a value
--- above 0, matching "only show it once Rebirths are unlocked."
+-- events firing again). Rebirths and Arcane Dust only fire when the player
+-- already has some - ManaHUDClient keeps those counters hidden until it
+-- sees a value above 0, matching "only show once unlocked/first collected."
 Players.PlayerAdded:Connect(function(player)
 	local data = PlayerData.waitForLoad(player)
 	if data then
 		manaUpdatedEvent:FireClient(player, data.mana or 0)
 		collectionRangeUpdatedEvent:FireClient(player, CollectionRangeHandler.getRadius(player))
 		xpUpdatedEvent:FireClient(player, XPHandler.getState(player))
-		arcaneDustUpdatedEvent:FireClient(player, data.arcaneDust or 0)
+		if (data.arcaneDust or 0) > 0 then
+			arcaneDustUpdatedEvent:FireClient(player, data.arcaneDust)
+		end
 		if (data.rebirths or 0) > 0 then
 			rebirthsUpdatedEvent:FireClient(player, data.rebirths)
 		end

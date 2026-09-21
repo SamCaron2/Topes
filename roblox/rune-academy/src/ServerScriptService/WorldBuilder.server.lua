@@ -578,11 +578,16 @@ end)
 -- step off and the timer resets, so it's "stand here to farm," not
 -- "walk past to collect once."
 -- Off to the side and near the edge, rather than dead center - moved there
--- per direct request, along with the board below.
+-- per direct request. The pad sits in front of the board (along the
+-- board's facing direction, +X - "in front," not off to the side along the
+-- edge like the original layout), so standing on it faces you at the board.
 local secondIslandNearEdgeZ = secondIslandCenterZ - (SECOND_ISLAND_SIZE / 2)
 local ARCANE_DUST_PAD_RADIUS = 5
-local ARCANE_DUST_AREA_X = secondIslandCenterX - (SECOND_ISLAND_SIZE / 2 - 15) -- 15 studs in from the -X edge
-local arcaneDustPadZ = secondIslandNearEdgeZ + 25
+local ARCANE_DUST_AREA_X = secondIslandCenterX - (SECOND_ISLAND_SIZE / 2 - 15) -- 15 studs in from the -X edge (the board's X)
+local ARCANE_DUST_AREA_Z = secondIslandNearEdgeZ + 25
+local ARCANE_DUST_PAD_FRONT_OFFSET = 12 -- studs in front of the board, along its +X facing direction
+local arcaneDustPadX = ARCANE_DUST_AREA_X + ARCANE_DUST_PAD_FRONT_OFFSET
+local arcaneDustPadZ = ARCANE_DUST_AREA_Z
 
 local existingArcaneDustPad = Workspace:FindFirstChild("ArcaneDustPad")
 if existingArcaneDustPad then
@@ -597,7 +602,7 @@ arcaneDustPad.Material = Enum.Material.Neon
 arcaneDustPad.Color = Color3.fromRGB(255, 200, 80)
 arcaneDustPad.Shape = Enum.PartType.Cylinder
 arcaneDustPad.Size = Vector3.new(0.6, ARCANE_DUST_PAD_RADIUS * 2, ARCANE_DUST_PAD_RADIUS * 2) -- Cylinder's round axis is local X; rotated below to lie flat
-arcaneDustPad.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
+arcaneDustPad.CFrame = CFrame.new(arcaneDustPadX, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
 arcaneDustPad.Parent = Workspace
 
 -- Small and only visible up close (MaxDistance) - per direct request, it
@@ -637,7 +642,7 @@ task.spawn(function()
 			local character = player.Character
 			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 			local onPad = rootPart
-				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(ARCANE_DUST_AREA_X, arcaneDustPadZ)).Magnitude
+				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(arcaneDustPadX, arcaneDustPadZ)).Magnitude
 					<= ARCANE_DUST_PAD_RADIUS
 
 			if onPad then
@@ -656,13 +661,14 @@ task.spawn(function()
 	end
 end)
 
--- Its upgrade board sits right along that same edge next to the pad (not
--- rotated - thin along X, wide along Z, running parallel to the edge like
--- the starting island's kiosk row does), facing inward toward the island's
--- center: "Right" (+X normal), since it's near the -X edge. A guess like
--- every other board's face here; flip to Left if it renders unreadable.
+-- Its upgrade board sits at the edge (not rotated - thin along X, wide
+-- along Z, running parallel to the edge like the starting island's kiosk
+-- row does), facing inward toward the island's center: "Right" (+X
+-- normal), since it's near the -X edge. The pad sits ARCANE_DUST_PAD_FRONT_OFFSET
+-- studs in front of it along that same +X direction, at the same Z, so
+-- standing on the pad faces you directly at the board. A guess like every
+-- other board's face here; flip to Left if it renders unreadable.
 local ARCANE_DUST_BOARD_WIDTH = 24
-local arcaneDustBoardZ = arcaneDustPadZ + 15
 
 local arcaneDustBoard = Instance.new("Part")
 arcaneDustBoard.Name = "ArcaneDustUpgradeBoard"
@@ -672,7 +678,7 @@ arcaneDustBoard.Material = Enum.Material.Glass
 arcaneDustBoard.Color = Color3.fromRGB(45, 45, 60)
 arcaneDustBoard.Transparency = 0.7
 arcaneDustBoard.Size = Vector3.new(1, 18, ARCANE_DUST_BOARD_WIDTH)
-arcaneDustBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 9, arcaneDustBoardZ)
+arcaneDustBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 9, ARCANE_DUST_AREA_Z)
 arcaneDustBoard.Parent = kiosksFolder
 
 -- ===========================================================================
