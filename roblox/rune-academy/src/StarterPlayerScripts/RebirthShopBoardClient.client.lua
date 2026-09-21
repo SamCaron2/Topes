@@ -33,7 +33,7 @@ surfaceGui.Parent = board
 
 local background = Instance.new("Frame")
 background.Size = UDim2.new(1, 0, 1, 0)
-background.BackgroundColor3 = Color3.fromRGB(120, 70, 150)
+background.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
 background.BackgroundTransparency = 0.55
 background.BorderSizePixel = 0
 background.Parent = surfaceGui
@@ -69,7 +69,7 @@ end)
 local titleBanner = Instance.new("Frame")
 titleBanner.Size = UDim2.new(0.94, 0, 0.15, 0)
 titleBanner.Position = UDim2.new(0.03, 0, 0.1, 0)
-titleBanner.BackgroundColor3 = Color3.fromRGB(70, 35, 90)
+titleBanner.BackgroundColor3 = Color3.fromRGB(90, 15, 15)
 titleBanner.BackgroundTransparency = 0.15
 titleBanner.BorderSizePixel = 0
 titleBanner.Parent = background

@@ -110,8 +110,10 @@ design notes.
   4-column Mana upgrades board), `RebirthBoard` (20 studs wide, the
   reset-for-Rebirths action board), and `RebirthShopBoard` (16 studs
   wide, sized snugly for its one active column - widen it when the next
-  2 Rebirth Shop columns get built) - each just a bare Part (Glass
-  material, 0.7 transparency, for a see-through card look - still
+  2 Rebirth Shop columns get built; rotated -90 degrees from the other
+  two since it's the last board at the end of the row, so it faces back
+  along the row instead of straight ahead) - each just a bare Part
+  (Glass material, 0.7 transparency, for a see-through card look - still
   solid, `CanCollide` stays true); `ManaUpgradeBoardClient`,
   `RebirthBoardClient`, and `RebirthShopBoardClient` build their actual
   UI (their SurfaceGui backgrounds are also 0.55 transparent, so the
@@ -240,8 +242,9 @@ design notes.
   red when you have the required 1,000+ Mana, gray otherwise). Same
   SurfaceGui-on-a-face approach as the Mana board.
 - `RebirthShopBoardClient.client.lua` — the Rebirth Shop board
-  (`Workspace.Kiosks.RebirthShopBoard`), styled in purple. Same clear
-  "Rebirths: X.X" readout + title banner template as the Mana Upgrades
+  (`Workspace.Kiosks.RebirthShopBoard`), styled in the same red as the
+  Rebirths board (not the Mana board's blue - both are Rebirth-themed).
+  Same clear "Rebirths: X.X" readout + title banner template as the Mana Upgrades
   board, then one column so far: "Mana Value Multiplier", level
   `(x/100)`, a `%.2fx > %.2fx` preview (small per-level steps need 2
   decimals to look responsive - 1 decimal would show the same value for

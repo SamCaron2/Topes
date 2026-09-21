@@ -238,7 +238,7 @@ kiosksFolder.Parent = Workspace
 -- Glass + partial transparency gives the card a see-through look (matching
 -- the reference screenshot) instead of a solid opaque slab - purely visual,
 -- CanCollide stays true so it's still a solid physical object.
-local function makeKioskCard(name: string, offsetX: number, offsetZ: number, width: number)
+local function makeKioskCard(name: string, offsetX: number, offsetZ: number, width: number, extraRotationY: number?)
 	local card = Instance.new("Part")
 	card.Name = name
 	card.Anchored = true
@@ -248,6 +248,7 @@ local function makeKioskCard(name: string, offsetX: number, offsetZ: number, wid
 	card.Transparency = 0.7
 	card.Size = Vector3.new(1, 18, width)
 	card.CFrame = CFrame.new(centerX + offsetX, groundY + 9, centerZ + offsetZ)
+		* CFrame.Angles(0, extraRotationY or 0, 0)
 	card.Parent = kiosksFolder
 	return card
 end
@@ -266,5 +267,8 @@ local rebirthBoardOffsetZ = (MANA_BOARD_WIDTH / 2) + BOARD_GAP + (REBIRTH_BOARD_
 makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH)
 
 -- Further along the same direction, just past the Rebirth board's own edge.
+-- Rotated -90 degrees so it faces back along the row (toward the other two
+-- boards) instead of straight ahead like they do - the natural direction to
+-- face when it's the last board at the end of the line.
 local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (REBIRTH_SHOP_BOARD_WIDTH / 2)
-makeKioskCard("RebirthShopBoard", half + 6, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH)
+makeKioskCard("RebirthShopBoard", half + 6, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH, math.rad(-90))
