@@ -107,10 +107,10 @@ design notes.
   higher level) adds nodes right away. Also places two separate physical
   kiosk boards past the platform's edge - `ManaUpgradeBoard` (42 studs
   wide, the 4-column upgrades board) and `RebirthBoard` (20 studs wide,
-  just past its edge) - each just a bare Part (Glass material, 0.5
+  just past its edge) - each just a bare Part (Glass material, 0.7
   transparency, for a see-through card look - still solid, `CanCollide`
   stays true); `ManaUpgradeBoardClient` and `RebirthBoardClient` build
-  their actual UI (their SurfaceGui backgrounds are also partly
+  their actual UI (their SurfaceGui backgrounds are also 0.55
   transparent, so the glass shows through behind the UI, not just
   around its edges). Grows one piece at a
   time as the new vision gets specified — rerunning it (every server
@@ -188,9 +188,11 @@ design notes.
   far away a Mana node will still get auto-collected.
 - `ManaUpgradeBoardClient.client.lua` — the 3D upgrade board standing
   just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`).
-  Styled like a typical incremental-game upgrades board: a "Mana
-  Upgrades" title banner across the top (with a clear gap below it
-  before the columns start), then 4 columns filling the board
+  Styled like a typical incremental-game upgrades board: a small clear
+  "Mana: <amount>" readout pill (white, ~75% transparent, live off
+  `ManaUpdated`) above a "Mana Upgrades" title banner - this readout is
+  the template to reuse on every future currency board - then 4 columns
+  filling the board
   edge-to-edge, built through one shared `createUpgradeColumn` helper
   so every upgrade looks and behaves alike — "More Mana", "Mana Spawn
   Speed", "Walking Speed", and "Collection Range", each with a

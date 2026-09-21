@@ -1,7 +1,9 @@
--- Builds the whole Mana upgrades board: a "Mana Upgrades" title banner
--- across the top, then 4 upgrade columns left-to-right below it filling the
--- board edge-to-edge - "More Mana", "Mana Spawn Speed", "Walking Speed",
--- and "Collection Range". Painted directly onto the board's face with a
+-- Builds the whole Mana upgrades board: a small clear "Mana: <amount>"
+-- readout above a "Mana Upgrades" title banner, then 4 upgrade columns
+-- left-to-right below filling the board edge-to-edge - "More Mana", "Mana
+-- Spawn Speed", "Walking Speed", and "Collection Range". The clear readout
+-- is the template for every future currency board (Rebirths, etc.) - keep
+-- that look consistent. Painted directly onto the board's face with a
 -- SurfaceGui, not a BillboardGui - a Billboard always turns to face the
 -- camera, which made an earlier version look like it was sliding around as
 -- you walked past; a SurfaceGui is flat against one physical face,
@@ -35,7 +37,7 @@ local TEXT_STROKE_TRANSPARENCY = 0.4 -- a subtle black outline behind every labe
 local COLUMN_WIDTH = 0.205
 local COLUMN_GAP = 0.04
 local COLUMN_START_X = 0.03
-local COLUMN_TOP_Y = 0.26 -- clear gap below the title banner
+local COLUMN_TOP_Y = 0.33 -- clear gap below the title banner
 
 -- The board isn't rotated (its local axes match world axes), and it sits
 -- east of the platform, so the face pointing back at the player is the -X
@@ -51,14 +53,43 @@ surfaceGui.Parent = board
 local background = Instance.new("Frame")
 background.Size = UDim2.new(1, 0, 1, 0)
 background.BackgroundColor3 = Color3.fromRGB(70, 150, 220)
-background.BackgroundTransparency = 0.35 -- lets the card's glass show through behind it
+background.BackgroundTransparency = 0.55 -- lets the card's glass show through behind it
 background.BorderSizePixel = 0
 background.Parent = surfaceGui
+
+-- Small clear "currency readout" pill above the title, matching the live
+-- Mana amount shown in the corner HUD. This is the template for every
+-- future currency board (Rebirths, etc.) going forward - keep this look.
+local currencyReadout = Instance.new("Frame")
+currencyReadout.Size = UDim2.new(0.5, 0, 0.06, 0)
+currencyReadout.Position = UDim2.new(0.25, 0, 0.02, 0)
+currencyReadout.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+currencyReadout.BackgroundTransparency = 0.75
+currencyReadout.BorderSizePixel = 0
+currencyReadout.Parent = background
+
+local currencyReadoutCorner = Instance.new("UICorner")
+currencyReadoutCorner.CornerRadius = UDim.new(0.3, 0)
+currencyReadoutCorner.Parent = currencyReadout
+
+local currencyReadoutText = Instance.new("TextLabel")
+currencyReadoutText.Size = UDim2.new(1, 0, 1, 0)
+currencyReadoutText.BackgroundTransparency = 1
+currencyReadoutText.Font = Enum.Font.GothamBold
+currencyReadoutText.TextScaled = true
+currencyReadoutText.TextColor3 = Color3.fromRGB(255, 255, 255)
+currencyReadoutText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+currencyReadoutText.Text = "Mana: -"
+currencyReadoutText.Parent = currencyReadout
+
+manaUpdatedEvent.OnClientEvent:Connect(function(amount)
+	currencyReadoutText.Text = ("Mana: %d"):format(amount)
+end)
 
 -- Title banner across the top, matching the reference's "<Currency> Upgrades" pill.
 local titleBanner = Instance.new("Frame")
 titleBanner.Size = UDim2.new(0.94, 0, 0.15, 0)
-titleBanner.Position = UDim2.new(0.03, 0, 0.03, 0)
+titleBanner.Position = UDim2.new(0.03, 0, 0.1, 0)
 titleBanner.BackgroundColor3 = Color3.fromRGB(35, 70, 110)
 titleBanner.BackgroundTransparency = 0.15
 titleBanner.BorderSizePixel = 0
