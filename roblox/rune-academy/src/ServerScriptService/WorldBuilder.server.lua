@@ -276,4 +276,4 @@ makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH
 -- extends along Z - use half of that, not half its width, to sit its edge
 -- flush against the Rebirth board's edge instead of leaving a big gap.
 local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (CARD_THICKNESS / 2)
-makeKioskCard("RebirthShopBoard", half + 6, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH, math.rad(-90))
+makeKioskCard("RebirthShopBoard", half + -5, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH, math.rad(-90))
