@@ -1,7 +1,7 @@
 -- Builds the 4 leaderboard sign boards on the Leaderboard island: Playtime,
--- Robux Spent, Total Mana, Runes Opened. Each is a plain white sign - no
--- Buy/Max buttons, nothing interactive - showing the top 5 players for that
--- stat, pulled from the server's GetLeaderboard remote (which reads
+-- Robux Spent, Total Mana, Runes Opened. Each is a clear glass-look sign -
+-- no Buy/Max buttons, nothing interactive - showing the top 5 players for
+-- that stat, pulled from the server's GetLeaderboard remote (which reads
 -- LeaderboardHandler's OrderedDataStores) and refreshed periodically.
 -- Same SurfaceGui-on-a-physical-face approach as every other board here,
 -- for the same reason - a BillboardGui would visibly slide around as the
@@ -58,10 +58,13 @@ local function buildBoard(config)
 	surfaceGui.PixelsPerStud = 36
 	surfaceGui.Parent = board
 
+	-- Clear/glass, matching the look of every other board's background -
+	-- lets the Glass card show through behind it instead of reading as a
+	-- solid opaque sign.
 	local background = Instance.new("Frame")
 	background.Size = UDim2.new(1, 0, 1, 0)
 	background.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-	background.BackgroundTransparency = 0.15
+	background.BackgroundTransparency = 0.55
 	background.BorderSizePixel = 0
 	background.Parent = surfaceGui
 
@@ -69,6 +72,7 @@ local function buildBoard(config)
 	titleBanner.Size = UDim2.new(0.9, 0, 0.14, 0)
 	titleBanner.Position = UDim2.new(0.05, 0, 0.04, 0)
 	titleBanner.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+	titleBanner.BackgroundTransparency = 0.15
 	titleBanner.BorderSizePixel = 0
 	titleBanner.Parent = background
 
@@ -97,7 +101,8 @@ local function buildBoard(config)
 		row.Font = Enum.Font.Gotham
 		row.TextScaled = true
 		row.TextXAlignment = Enum.TextXAlignment.Left
-		row.TextColor3 = Color3.fromRGB(30, 30, 40)
+		row.TextColor3 = Color3.fromRGB(255, 255, 255)
+		row.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 		row.Text = ("%d. -"):format(i)
 		row.Parent = background
 		rowLabels[i] = row

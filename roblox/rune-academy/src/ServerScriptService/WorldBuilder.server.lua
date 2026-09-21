@@ -463,12 +463,10 @@ end
 -- Edge decoration - flowers, trees, bushes, purely visual dressing since
 -- there's no kiosk content on this island yet. Built from several
 -- overlapping/stacked parts per piece instead of one plain shape each, for a
--- fuller, less "primitive" look.
-local decorFolder = Instance.new("Folder")
-decorFolder.Name = "SecondIslandDecor"
-decorFolder.Parent = Workspace
-
-local function makeTree(x: number, z: number)
+-- fuller, less "primitive" look. Takes a folder so both SecondIsland and
+-- LeaderboardIsland can scatter their own ring of these into their own
+-- decor folder.
+local function makeTree(folder: Folder, x: number, z: number)
 	local trunk = Instance.new("Part")
 	trunk.Name = "TreeTrunk"
 	trunk.Anchored = true
@@ -478,7 +476,7 @@ local function makeTree(x: number, z: number)
 	trunk.Shape = Enum.PartType.Cylinder
 	trunk.Size = Vector3.new(7, 2, 2) -- Cylinder's round axis is local X; rotated below to stand upright
 	trunk.CFrame = CFrame.new(x, ISLAND_TOP_Y + 3.5, z) * CFrame.Angles(0, 0, math.rad(90))
-	trunk.Parent = decorFolder
+	trunk.Parent = folder
 
 	-- Three overlapping canopy clumps instead of one perfect sphere, for a
 	-- fuller, rounder silhouette closer to a real tree.
@@ -497,11 +495,11 @@ local function makeTree(x: number, z: number)
 		leaves.Shape = Enum.PartType.Ball
 		leaves.Size = Vector3.new(clump.size, clump.size, clump.size)
 		leaves.CFrame = CFrame.new(x + clump.offset.X, ISLAND_TOP_Y + clump.offset.Y, z + clump.offset.Z)
-		leaves.Parent = decorFolder
+		leaves.Parent = folder
 	end
 end
 
-local function makeBush(x: number, z: number)
+local function makeBush(folder: Folder, x: number, z: number)
 	-- Three overlapping bumps (one bigger, two smaller) instead of one flat
 	-- squashed ball - bigger overall and reads as an actual bush cluster.
 	local bumps = {
@@ -520,7 +518,7 @@ local function makeBush(x: number, z: number)
 		part.Size = Vector3.new(bump.size, height, bump.size)
 		part.Shape = Enum.PartType.Ball
 		part.CFrame = CFrame.new(x + bump.offset.X, ISLAND_TOP_Y + height / 2, z + bump.offset.Z)
-		part.Parent = decorFolder
+		part.Parent = folder
 	end
 end
 
@@ -533,7 +531,7 @@ local FLOWER_COLORS = {
 
 -- A thin green stem topped with a colored bloom, instead of a single flat
 -- dot, so it actually reads as a flower rather than a pebble.
-local function makeFlower(x: number, z: number)
+local function makeFlower(folder: Folder, x: number, z: number)
 	local stem = Instance.new("Part")
 	stem.Name = "FlowerStem"
 	stem.Anchored = true
@@ -543,7 +541,7 @@ local function makeFlower(x: number, z: number)
 	stem.Shape = Enum.PartType.Cylinder
 	stem.Size = Vector3.new(1.4, 0.25, 0.25)
 	stem.CFrame = CFrame.new(x, ISLAND_TOP_Y + 0.7, z) * CFrame.Angles(0, 0, math.rad(90))
-	stem.Parent = decorFolder
+	stem.Parent = folder
 
 	local bloom = Instance.new("Part")
 	bloom.Name = "FlowerBloom"
@@ -554,36 +552,48 @@ local function makeFlower(x: number, z: number)
 	bloom.Shape = Enum.PartType.Ball
 	bloom.Size = Vector3.new(1.2, 1.2, 1.2)
 	bloom.CFrame = CFrame.new(x, ISLAND_TOP_Y + 1.5, z)
-	bloom.Parent = decorFolder
+	bloom.Parent = folder
 end
 
--- Rings the perimeter at a fixed inset, cycling tree/bush/flower/flower so
--- flowers show up more often as small accents between the bigger anchors.
--- Skips the near edge's middle stretch so the bridge entrance stays clear.
--- Each spot gets a small random jitter so the ring reads as staggered/
--- natural instead of a perfectly straight line.
 local DECOR_INSET = 8
 local DECOR_STEP = 12
 local DECOR_JITTER = 3
-local decorHalf = SECOND_ISLAND_SIZE / 2 - DECOR_INSET
+local DECOR_KINDS = { makeTree, makeBush, makeFlower, makeFlower }
 
-local decorKinds = { makeTree, makeBush, makeFlower, makeFlower }
-local decorIndex = 0
-local function placeNextDecor(x: number, z: number)
-	decorIndex += 1
-	local jitterX = (math.random() * 2 - 1) * DECOR_JITTER
-	local jitterZ = (math.random() * 2 - 1) * DECOR_JITTER
-	decorKinds[(decorIndex - 1) % #decorKinds + 1](x + jitterX, z + jitterZ)
-end
-
-for offset = -decorHalf, decorHalf, DECOR_STEP do
-	placeNextDecor(secondIslandCenterX + offset, secondIslandCenterZ + decorHalf) -- far edge
-	if math.abs(offset) > BRIDGE_WIDTH / 2 then -- near edge, minus the bridge's entrance gap
-		placeNextDecor(secondIslandCenterX + offset, secondIslandCenterZ - decorHalf)
+-- Rings one island's perimeter at a fixed inset, cycling tree/bush/flower/
+-- flower so flowers show up more often as small accents between the bigger
+-- anchors. Skips the middle stretch of whichever edge faces the bridge
+-- (nearEdgeSign -1 = that edge is at centerZ - half, i.e. SecondIsland,
+-- whose bridge approaches from -Z; +1 = centerZ + half, i.e.
+-- LeaderboardIsland, whose bridge approaches from +Z) so the entrance
+-- stays clear. Each spot gets a small random jitter so the ring reads as
+-- staggered/natural instead of a perfectly straight line.
+local function scatterIslandDecor(folder: Folder, centerX: number, centerZ: number, size: number, nearEdgeSign: number)
+	local half = size / 2 - DECOR_INSET
+	local decorIndex = 0
+	local function placeNextDecor(x: number, z: number)
+		decorIndex += 1
+		local jitterX = (math.random() * 2 - 1) * DECOR_JITTER
+		local jitterZ = (math.random() * 2 - 1) * DECOR_JITTER
+		DECOR_KINDS[(decorIndex - 1) % #DECOR_KINDS + 1](folder, x + jitterX, z + jitterZ)
 	end
-	placeNextDecor(secondIslandCenterX + decorHalf, secondIslandCenterZ + offset) -- far X edge
-	placeNextDecor(secondIslandCenterX - decorHalf, secondIslandCenterZ + offset) -- near X edge
+
+	for offset = -half, half, DECOR_STEP do
+		placeNextDecor(centerX + offset, centerZ - nearEdgeSign * half) -- far edge, always a full row
+		if math.abs(offset) > BRIDGE_WIDTH / 2 then -- near edge, minus the bridge's entrance gap
+			placeNextDecor(centerX + offset, centerZ + nearEdgeSign * half)
+		end
+		placeNextDecor(centerX + half, centerZ + offset) -- far X edge
+		placeNextDecor(centerX - half, centerZ + offset) -- near X edge
+	end
 end
+
+local secondIslandDecorFolder = Instance.new("Folder")
+secondIslandDecorFolder.Name = "SecondIslandDecor"
+secondIslandDecorFolder.Parent = Workspace
+
+-- SecondIsland's bridge approaches from -Z, so that's the edge to skip.
+scatterIslandDecor(secondIslandDecorFolder, secondIslandCenterX, secondIslandCenterZ, SECOND_ISLAND_SIZE, -1)
 
 -- Enforces the lock, and doubles as the "unlock" action: a player who
 -- reaches the gate while meeting the requirement gets a permanent
@@ -642,7 +652,7 @@ local LEADERBOARD_ISLAND_SIZE = 80
 local LEADERBOARD_BOARD_WIDTH = 16
 local LEADERBOARD_BOARD_GAP = 4
 
-for _, name in { "LeaderboardIsland", "LeaderboardBridge" } do
+for _, name in { "LeaderboardIsland", "LeaderboardBridge", "LeaderboardDecor" } do
 	local existingPart = Workspace:FindFirstChild(name)
 	if existingPart then
 		existingPart:Destroy()
@@ -711,12 +721,13 @@ for postOffsetZ = 0, BRIDGE_LENGTH, BRIDGE_POST_SPACING do
 	end
 end
 
--- 4 boards in a row near the island's near edge (the side facing the
--- bridge/starting island), thin along Z so their wide face - not their
--- thin edge - points back at a player crossing the bridge (coming from
--- +Z), same Glass-card look as the main kiosks. LeaderboardBoardClient
--- finds each by name and builds its SurfaceGui UI.
-local leaderboardBoardZ = leaderboardIslandCenterZ + LEADERBOARD_ISLAND_SIZE / 2 - 10
+-- 4 boards in a row set well back from the island's near edge (the side
+-- facing the bridge/starting island) - not just past the entrance - thin
+-- along Z so their wide face, not their thin edge, points back at a player
+-- crossing the bridge (coming from +Z), same Glass-card look as the main
+-- kiosks. LeaderboardBoardClient finds each by name and builds its
+-- SurfaceGui UI.
+local leaderboardBoardZ = leaderboardIslandCenterZ + LEADERBOARD_ISLAND_SIZE / 2 - 22
 
 local function makeLeaderboardBoard(name: string, xOffset: number)
 	local boardPart = Instance.new("Part")
@@ -746,3 +757,11 @@ local leaderboardBoardStartX = -totalBoardsWidth / 2 + LEADERBOARD_BOARD_WIDTH /
 for index, name in LEADERBOARD_BOARD_NAMES do
 	makeLeaderboardBoard(name, leaderboardBoardStartX + (index - 1) * (LEADERBOARD_BOARD_WIDTH + LEADERBOARD_BOARD_GAP))
 end
+
+-- Same tree/bush/flower ring as SecondIsland, around this island's edge too.
+local leaderboardDecorFolder = Instance.new("Folder")
+leaderboardDecorFolder.Name = "LeaderboardDecor"
+leaderboardDecorFolder.Parent = Workspace
+
+-- LeaderboardIsland's bridge approaches from +Z, so that's the edge to skip.
+scatterIslandDecor(leaderboardDecorFolder, leaderboardIslandCenterX, leaderboardIslandCenterZ, LEADERBOARD_ISLAND_SIZE, 1)

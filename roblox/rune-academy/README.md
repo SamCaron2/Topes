@@ -177,7 +177,11 @@ design notes.
   rather than a perfectly straight line. Each piece is also built from
   several overlapping/stacked parts (three canopy clumps per tree, three
   bumps per bush, a stem + bloom per flower) instead of one plain shape, for
-  a fuller look than a single sphere or dot. The exact direction/size
+  a fuller look than a single sphere or dot. This scattering logic lives in
+  a shared `scatterIslandDecor(folder, centerX, centerZ, size, nearEdgeSign)`
+  function - `nearEdgeSign` just flips which edge is the one to skip, so
+  the same function rings both SecondIsland and LeaderboardIsland despite
+  their bridges approaching from opposite directions. The exact direction/size
   (`BRIDGE_LENGTH`/`BRIDGE_WIDTH`/`SECOND_ISLAND_SIZE`/
   `SECOND_ISLAND_OFFSET_X`) is a best guess from a screenshot, same "nudge
   the numbers after testing" situation as the kiosk board offsets above if
@@ -189,14 +193,19 @@ design notes.
   in +Z from the starting island's far edge - this is the one direction
   left unused). `LeaderboardBridge` reuses the exact same deck/rail/post
   look and the same `BRIDGE_*` constants as `IslandBridge`, just with no
-  gate - this one is never locked, per direct request. 4 plain white sign
-  boards (`LeaderboardPlaytimeBoard`/`LeaderboardRobuxBoard`/
-  `LeaderboardManaBoard`/`LeaderboardRunesBoard`) sit in a row near the
-  island's near edge, same Glass-card physical style as the main kiosks
-  but thin along Z instead of X so their wide face points back at a player
-  crossing the bridge from +Z; `LeaderboardBoardClient` builds each one's
-  UI, pulling its top-5 list from the new `GetLeaderboard` remote
-  (`LeaderboardHandler`).
+  gate - this one is never locked, per direct request. 4 sign boards
+  (`LeaderboardPlaytimeBoard`/`LeaderboardRobuxBoard`/
+  `LeaderboardManaBoard`/`LeaderboardRunesBoard`) sit in a row set well
+  back from the island's near edge (not just past the entrance), same
+  Glass-card physical style as the main kiosks but thin along Z instead of
+  X so their wide face points back at a player crossing the bridge from
+  +Z; `LeaderboardBoardClient` builds each one's UI with a clear/see-through
+  background (matching every other board's look, not an opaque sign),
+  pulling its top-5 list from the new `GetLeaderboard` remote
+  (`LeaderboardHandler`). Ringed with the same tree/bush/flower decoration
+  as `SecondIsland` (see `scatterIslandDecor` below), inset from its own
+  edge and skipping the bridge's landing spot on its near (+Z) side instead
+  of the -Z side `SecondIsland` skips.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
   its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
   so the very first purchase (from level 1) always costs 10 Mana no
@@ -362,16 +371,18 @@ design notes.
   `xpToNextLevel` comes back nil at level 50). Fetches its initial state
   via `GetXPState` on load, then just renders whatever `XPUpdated` sends
   after that — all the leveling logic lives server-side in `XPHandler`.
-- `LeaderboardBoardClient.client.lua` — builds the 4 plain white sign
-  boards on `LeaderboardIsland` (Playtime/Robux Spent/Total Mana/Runes
-  Opened), each just a title banner over a top-5 list ("N. Name - value"),
-  no Buy/Max buttons or anything interactive. Each stat gets its own value
-  formatter - Playtime as "Xh Ym", Robux as "R$<amount>", Mana/Runes
-  through the shared `NumberFormat`. Pulls its list from the `GetLeaderboard`
-  remote on load and every `REFRESH_INTERVAL` (20s) after that; empty rows
-  show "-" until that stat's `OrderedDataStore` actually has entries (e.g.
-  in Studio without API access enabled). Same SurfaceGui-on-a-face
-  approach as every other board here.
+- `LeaderboardBoardClient.client.lua` — builds the 4 sign boards on
+  `LeaderboardIsland` (Playtime/Robux Spent/Total Mana/Runes Opened), each
+  just a title banner over a top-5 list ("N. Name - value") on a clear,
+  ~55% transparent background (matching every other board's glass look,
+  not a solid opaque sign) with white stroked text for legibility against
+  it, no Buy/Max buttons or anything interactive. Each stat gets its own
+  value formatter - Playtime as "Xh Ym", Robux as "R$<amount>", Mana/Runes
+  through the shared `NumberFormat`. Pulls its list from the
+  `GetLeaderboard` remote on load and every `REFRESH_INTERVAL` (20s) after
+  that; empty rows show "-" until that stat's `OrderedDataStore` actually
+  has entries (e.g. in Studio without API access enabled). Same
+  SurfaceGui-on-a-face approach as every other board here.
 
 ## Manual steps required before everything works
 
