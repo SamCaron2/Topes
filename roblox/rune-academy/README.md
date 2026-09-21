@@ -129,26 +129,40 @@ design notes.
   many nodes exist at once (3 at level 1, up to 10 at level 10, taking
   the max across everyone online) — a `TOP_UP_INTERVAL` poll spawns more
   as needed, not just on pickup, so a purchase (or another player's
-  higher level) adds nodes right away. Also places three separate
-  physical kiosk boards past the platform's edge, each just outside the
-  previous one's far edge - `ManaUpgradeBoard` (42 studs wide, the
-  4-column Mana upgrades board), `RebirthBoard` (20 studs wide, the
-  reset-for-Rebirths action board), and `RebirthShopBoard` (32 studs
+  higher level) adds nodes right away.
+  A second, smaller `ArcaneDustZone` (18x18, gold-colored ball nodes
+  instead of Mana's purple cubes) sits just west of the Mana platform's
+  border, in the one strip of the starting island nothing else used yet -
+  the second wizard resource, entirely separate from Mana. Same
+  range-based auto-collect mechanic, own respawn/node-count loop
+  (`ArcaneDustSpawnHandler`, smaller node counts since it's a smaller
+  zone), sharing the same `CollectionRangeHandler` radius as Mana (it's a
+  player-wide stat, not Mana-specific) - `ManaRingClient`'s feet-ring now
+  shows in either zone for that reason.
+  Also places physical kiosk boards past the platform's edge, each just
+  outside the previous one's far edge - `ManaUpgradeBoard` (42 studs wide,
+  the 4-column Mana upgrades board), `RebirthBoard` (20 studs wide, the
+  reset-for-Rebirths action board), `RebirthShopBoard` (32 studs
   wide, fitting its 3 columns edge-to-edge; rotated -90 degrees from the other
   two since it's the last board at the end of the row, so it faces back
   along the row instead of straight ahead - that rotation also swaps
   which of its dimensions runs along the row, so its offset uses half
   its thickness there instead of half its width, to sit flush against
-  the Rebirth board's edge) - each just a bare Part
+  the Rebirth board's edge), and `ArcaneDustUpgradeBoard` (24 studs wide,
+  its 2-column board, on the opposite side of the platform west of
+  `ArcaneDustZone` - un-rotated like `ManaUpgradeBoard`, but since players
+  approach from the east instead of the west, its readable face is
+  `Right` instead of `Left`) - each just a bare Part
   (Glass material, 0.7 transparency, for a see-through card look - still
   solid, `CanCollide` stays true); `ManaUpgradeBoardClient`,
-  `RebirthBoardClient`, and `RebirthShopBoardClient` build their actual
-  UI (their SurfaceGui backgrounds are also 0.55 transparent, so the
-  glass shows through behind the UI, not just around its edges). Grows
+  `RebirthBoardClient`, `RebirthShopBoardClient`, and
+  `ArcaneDustUpgradeBoardClient` build their actual UI (their SurfaceGui
+  backgrounds are also transparent, so the glass shows through behind the
+  UI, not just around its edges). Grows
   one piece at a time as the new vision gets specified — rerunning it
-  (every server start) rebuilds the `StartingIsland`, `ManaZone`, and
-  `Kiosks` from scratch, so editing this file and reconnecting Rojo is
-  how you iterate on world layout.
+  (every server start) rebuilds the `StartingIsland`, `ManaZone`,
+  `ArcaneDustZone`, and `Kiosks` from scratch, so editing this file and
+  reconnecting Rojo is how you iterate on world layout.
   The first of those future areas is now built too: a `SecondIsland` (same
   120x120 footprint as the starting island) straight out along +Z from it -
   the direction the kiosk row reads as being on your left when facing it -
@@ -235,6 +249,17 @@ design notes.
   latter maxed across everyone online) — the upgrade is per-player even
   though the nodes themselves are shared world objects, same as how
   "Mana Per Pickup" already works.
+- `ArcaneDustHandler.lua` — the second wizard resource, entirely separate
+  from Mana (no Rebirth Shop multiplier, doesn't interact with Rebirths at
+  all, not reset by rebirthing). Mirrors `ManaHandler`'s exact shape and
+  yield curve for consistency - its own "More Arcane Dust" upgrade (level
+  1-100), its own `arcaneDust` currency and `arcaneDustYieldLevel` field.
+- `ArcaneDustSpawnHandler.lua` — mirrors `ManaSpawnHandler`: the "Arcane
+  Dust Spawn Speed" upgrade (level 1-10, respawn delay 2.0s → 0.2s), but a
+  smaller node-count curve (2 → 6, vs Mana's 3 → 10) since its collection
+  zone is much smaller. Costed on its own curve (`currentLevel * 10`,
+  paid in Arcane Dust - not Mana's shared `UpgradeCost`, a different
+  currency entirely).
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -284,19 +309,25 @@ design notes.
   successful pickup from `WorldBuilder`'s collection loop and returns the
   resulting state so it can be pushed to the client via `XPUpdated`.
 - `ManaHUDClient.client.lua` — a Mana counter, middle-left of the screen,
-  updated live off the `ManaUpdated` RemoteEvent, plus a Rebirths counter
-  right below it. Styled after a typical incremental-game HUD, not the
-  original dark rounded pill: no background at all, just the icon sitting
-  a small fixed gap (`ICON_TEXT_GAP`) from a bold, left-aligned number -
-  no "Mana"/"Rebirths" word, the icon says it - colored to echo the icon's
-  own palette (violet for Mana, matching the Mana nodes' own glow; pink-red
-  for Rebirths, matching the Rebirth board's red theme). The Rebirths icon
-  keeps a small round white circle behind it for contrast; the Mana icon
-  has none, per direct request, since its sparkles poke outside a round
-  silhouette and looked bad boxed into one. The Rebirths row starts hidden
-  and only appears once the `RebirthsUpdated` event fires with a value
-  above 0 - the server only ever fires it once a player has actually
-  rebirthed, so it stays hidden until Rebirths are unlocked.
+  updated live off the `ManaUpdated` RemoteEvent, an Arcane Dust counter
+  below that, then a Rebirths counter below that. Styled after a typical
+  incremental-game HUD, not the original dark rounded pill: no background
+  at all, just the icon sitting a small fixed gap (`ICON_TEXT_GAP`) from a
+  bold, left-aligned number - no "Mana"/"Arcane Dust"/"Rebirths" word, the
+  icon says it - colored to echo the icon's own palette (violet for Mana,
+  matching the Mana nodes' own glow; gold for Arcane Dust, matching its
+  nodes; pink-red for Rebirths, matching the Rebirth board's red theme).
+  The Rebirths icon keeps a small round white circle behind it for
+  contrast; the Mana icon has none, per direct request, since its
+  sparkles poke outside a round silhouette and looked bad boxed into one.
+  Arcane Dust has no uploaded image yet, so its icon falls back to a
+  colored circle with a safe Unicode glyph (✦, not emoji) - same
+  placeholder treatment as the side menu's Runes/Profile icons - `createCounterRow`
+  takes either an `imageId` or a `symbol` for exactly this reason. The
+  Rebirths row starts hidden and only appears once the `RebirthsUpdated`
+  event fires with a value above 0 - the server only ever fires it once a
+  player has actually rebirthed, so it stays hidden until Rebirths are
+  unlocked.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
   Mana counter's placement, laid out 2x2: Store/Runes/Profile/Settings.
   Store and Settings show their uploaded icon image directly (background
@@ -310,12 +341,14 @@ design notes.
   into the label) to show what's highlighted. Not wired to any panel yet -
   it only needed to exist on screen for now.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
-  feet, visible only while standing inside the `ManaZone` platform
-  bounds (read off attributes `WorldBuilder` sets on that folder:
-  `CenterX`/`CenterZ`/`Size`/`GroundY`). Its radius IS the "Collection
-  Range" upgrade's real pickup radius, kept live via the
+  feet, visible while standing inside either collection zone -
+  `ManaZone` or `ArcaneDustZone` (read off attributes `WorldBuilder` sets
+  on each folder: `CenterX`/`CenterZ`/`Size`/`GroundY`, checked via a
+  shared `findZoneGroundY` helper so this works the same in both). Its
+  radius IS the "Collection Range" upgrade's real pickup radius - a
+  single stat shared by both zones - kept live via the
   `CollectionRangeUpdated` event, so the ring always shows exactly how
-  far away a Mana node will still get auto-collected.
+  far away a node will still get auto-collected.
 - `ManaUpgradeBoardClient.client.lua` — the 3D upgrade board standing
   just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`).
   Styled like a typical incremental-game upgrades board: a small clear
@@ -342,6 +375,14 @@ design notes.
   `refresh()` function; all 4 are re-run whenever `PlayerRebirthed`
   fires, so the board never keeps showing stale pre-rebirth
   levels/costs after a rebirth resets them server-side.
+- `ArcaneDustUpgradeBoardClient.client.lua` — the Arcane Dust upgrade
+  board (`Workspace.Kiosks.ArcaneDustUpgradeBoard`), a gold-themed
+  version of `ManaUpgradeBoardClient` with just 2 columns instead of 4 -
+  "More Arcane Dust" and "Dust Spawn Speed" - same `createUpgradeColumn`
+  pattern, clear readout, and Buy/Max → "Maxed" behavior, just costed and
+  gated in Arcane Dust instead of Mana. No `PlayerRebirthed` hookup -
+  Arcane Dust is entirely separate from Mana/Rebirths, so rebirthing
+  never resets it.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner
@@ -406,9 +447,10 @@ design notes.
 ## One-time cleanup if Studio still shows old world parts
 
 Nothing server-side generates or removes world parts anymore except what
-`WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`, `Kiosks`,
-`SecondIsland`, `IslandBridge`, `SecondIslandGate`, `SecondIslandDecor`,
-`LeaderboardIsland`, `LeaderboardBridge`, all rebuilt from scratch on every
+`WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`,
+`ArcaneDustZone`, `Kiosks`, `SecondIsland`, `IslandBridge`,
+`SecondIslandGate`, `SecondIslandDecor`, `LeaderboardIsland`,
+`LeaderboardBridge`, `LeaderboardDecor`, all rebuilt from scratch on every
 server start). If your saved `.rbxl`
 still has leftover parts from before the reset (e.g. a
 saved-while-in-Play-mode `GeneratedWorld` folder or similar), delete them

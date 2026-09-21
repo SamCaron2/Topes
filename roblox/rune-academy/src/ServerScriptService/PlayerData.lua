@@ -82,6 +82,10 @@ local function defaultData()
 
 		totalManaEarned = 0, -- lifetime Mana ever collected, NOT reset by rebirthing (unlike the live `mana` balance above) - feeds the "Total Mana" leaderboard
 
+		arcaneDust = 0, -- second wizard resource, collected from ArcaneDustNodes; entirely separate from Mana/Rebirths, NOT reset by rebirthing
+		arcaneDustYieldLevel = 1, -- "More Arcane Dust" upgrade level, 1-100
+		arcaneDustSpawnSpeedLevel = 1, -- "Arcane Dust Spawn Speed" upgrade level, 1-10
+
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,

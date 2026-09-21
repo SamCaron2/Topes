@@ -8,6 +8,8 @@ local Players = game:GetService("Players")
 
 local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
+local ArcaneDustHandler = require(script.Parent.ArcaneDustHandler)
+local ArcaneDustSpawnHandler = require(script.Parent.ArcaneDustSpawnHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local XPHandler = require(script.Parent.XPHandler)
 local PlayerData = require(script.Parent.PlayerData)
@@ -26,6 +28,7 @@ local FALL_KILL_MARGIN = 30 -- studs below the island surface before a fallen pl
 local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
 local manaUpdatedEvent = remotesFolder:WaitForChild("ManaUpdated")
 local xpUpdatedEvent = remotesFolder:WaitForChild("XPUpdated")
+local arcaneDustUpdatedEvent = remotesFolder:WaitForChild("ArcaneDustUpdated")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
 -- island here and lifting spawn onto its surface lifts the whole build with
@@ -234,6 +237,142 @@ task.spawn(function()
 	end
 end)
 
+-- ===========================================================================
+-- Arcane Dust: the second wizard resource, entirely separate from Mana (no
+-- shared currency, no Rebirth Shop interaction). A smaller collection zone
+-- west of the Mana platform (the one strip of the starting island nothing
+-- else uses yet), same range-based auto-collect mechanic as Mana, just its
+-- own node type/color and its own smaller node-count/respawn curve
+-- (ArcaneDustSpawnHandler).
+local ARCANE_DUST_ZONE_SIZE = 18
+local ARCANE_DUST_NODE_SIZE = Vector3.new(1.6, 1.6, 1.6)
+local ARCANE_DUST_NODE_MARGIN = 2
+local ARCANE_DUST_ZONE_OFFSET_X = -(MANA_ZONE_SIZE / 2) - 2 - (ARCANE_DUST_ZONE_SIZE / 2) -- 2-stud gap west of the Mana platform's border
+
+local existingArcaneDustZone = Workspace:FindFirstChild("ArcaneDustZone")
+if existingArcaneDustZone then
+	existingArcaneDustZone:Destroy()
+end
+
+local arcaneDustZoneCenterX = centerX + ARCANE_DUST_ZONE_OFFSET_X
+local arcaneDustZoneCenterZ = centerZ
+
+local arcaneDustZone = Instance.new("Folder")
+arcaneDustZone.Name = "ArcaneDustZone"
+arcaneDustZone:SetAttribute("CenterX", arcaneDustZoneCenterX)
+arcaneDustZone:SetAttribute("CenterZ", arcaneDustZoneCenterZ)
+arcaneDustZone:SetAttribute("Size", ARCANE_DUST_ZONE_SIZE)
+arcaneDustZone:SetAttribute("GroundY", groundY)
+arcaneDustZone.Parent = Workspace
+
+local function makeArcaneDustBorderPart(name, sizeX, sizeZ, offsetX, offsetZ)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Anchored = true
+	part.CanCollide = false
+	part.Material = Enum.Material.Neon
+	part.Color = Color3.fromRGB(255, 200, 80)
+	part.Size = Vector3.new(sizeX, BORDER_HEIGHT, sizeZ)
+	part.CFrame = CFrame.new(arcaneDustZoneCenterX + offsetX, groundY + BORDER_HEIGHT / 2, arcaneDustZoneCenterZ + offsetZ)
+	part.Parent = arcaneDustZone
+	return part
+end
+
+local arcaneDustHalf = ARCANE_DUST_ZONE_SIZE / 2
+makeArcaneDustBorderPart("BorderNorth", ARCANE_DUST_ZONE_SIZE, BORDER_THICKNESS, 0, -arcaneDustHalf + BORDER_THICKNESS / 2)
+makeArcaneDustBorderPart("BorderSouth", ARCANE_DUST_ZONE_SIZE, BORDER_THICKNESS, 0, arcaneDustHalf - BORDER_THICKNESS / 2)
+makeArcaneDustBorderPart("BorderEast", BORDER_THICKNESS, ARCANE_DUST_ZONE_SIZE, arcaneDustHalf - BORDER_THICKNESS / 2, 0)
+makeArcaneDustBorderPart("BorderWest", BORDER_THICKNESS, ARCANE_DUST_ZONE_SIZE, -arcaneDustHalf + BORDER_THICKNESS / 2, 0)
+
+local ARCANE_DUST_TOP_UP_INTERVAL = 2
+
+local function randomPointInArcaneDustZone()
+	local innerHalf = ARCANE_DUST_ZONE_SIZE / 2 - ARCANE_DUST_NODE_MARGIN
+	local offsetX = (math.random() * 2 - 1) * innerHalf
+	local offsetZ = (math.random() * 2 - 1) * innerHalf
+	return arcaneDustZoneCenterX + offsetX, arcaneDustZoneCenterZ + offsetZ
+end
+
+local function spawnArcaneDustNode()
+	local x, z = randomPointInArcaneDustZone()
+
+	local node = Instance.new("Part")
+	node.Name = "ArcaneDustNode"
+	node.Anchored = true
+	node.CanCollide = false
+	node.Material = Enum.Material.Neon
+	node.Color = Color3.fromRGB(255, 200, 80)
+	node.Shape = Enum.PartType.Ball
+	node.Size = ARCANE_DUST_NODE_SIZE
+	node.CFrame = CFrame.new(x, groundY + ARCANE_DUST_NODE_SIZE.Y / 2, z)
+	node.Parent = arcaneDustZone
+end
+
+local function collectArcaneDustNode(node: BasePart, player: Player)
+	node:Destroy()
+	local newAmount = ArcaneDustHandler.collect(player)
+	if newAmount then
+		arcaneDustUpdatedEvent:FireClient(player, newAmount)
+	end
+
+	task.delay(ArcaneDustSpawnHandler.getRespawnSeconds(player), spawnArcaneDustNode)
+end
+
+task.spawn(function()
+	while true do
+		task.wait(COLLECT_CHECK_INTERVAL)
+		for _, node in arcaneDustZone:GetChildren() do
+			if node.Name == "ArcaneDustNode" and node.Parent then
+				for _, player in Players:GetPlayers() do
+					local character = player.Character
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+					if rootPart then
+						local radius = CollectionRangeHandler.getRadius(player)
+						if (rootPart.Position - node.Position).Magnitude <= radius then
+							collectArcaneDustNode(node, player)
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
+local function getTargetArcaneDustNodeCount(): number
+	local target = ArcaneDustSpawnHandler.getBaseNodeCount()
+	for _, player in Players:GetPlayers() do
+		target = math.max(target, ArcaneDustSpawnHandler.getNodeCount(player))
+	end
+	return target
+end
+
+local function countLiveArcaneDustNodes(): number
+	local count = 0
+	for _, child in arcaneDustZone:GetChildren() do
+		if child.Name == "ArcaneDustNode" then
+			count += 1
+		end
+	end
+	return count
+end
+
+local function topUpArcaneDustNodes()
+	local missing = getTargetArcaneDustNodeCount() - countLiveArcaneDustNodes()
+	for _ = 1, missing do
+		spawnArcaneDustNode()
+	end
+end
+
+topUpArcaneDustNodes()
+
+task.spawn(function()
+	while true do
+		task.wait(ARCANE_DUST_TOP_UP_INTERVAL)
+		topUpArcaneDustNodes()
+	end
+end)
+
 -- Upgrade cards live outside the platform, a few studs past the border.
 -- ManaUpgradeBoardClient finds this part by name and builds its SurfaceGui UI.
 local kiosksFolder = Workspace:FindFirstChild("Kiosks")
@@ -288,6 +427,16 @@ makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH
 -- flush against the Rebirth board's edge instead of leaving a big gap.
 local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (CARD_THICKNESS / 2)
 makeKioskCard("RebirthShopBoard", half + -10, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH, math.rad(-90))
+
+-- Arcane Dust's own upgrade board, west of its zone (the opposite side of
+-- the platform from the Mana/Rebirth row) - not rotated, same as the Mana
+-- board, but since the player approaches from the east (the zone side)
+-- instead of the west, the readable face is the opposite one: "Right"
+-- (+X), not "Left". A guess like every other board's face here; flip to
+-- Left if it renders unreadable from the zone side.
+local ARCANE_DUST_BOARD_WIDTH = 24
+local arcaneDustBoardOffsetX = -half - 2 - ARCANE_DUST_ZONE_SIZE - BOARD_GAP - (CARD_THICKNESS / 2)
+makeKioskCard("ArcaneDustUpgradeBoard", arcaneDustBoardOffsetX, 0, ARCANE_DUST_BOARD_WIDTH)
 
 -- ===========================================================================
 -- Second island: the next part of the obby. Straight out from the starting

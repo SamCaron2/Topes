@@ -1,9 +1,11 @@
--- Small ring under the player's feet, shown only while standing inside the
--- Mana collection platform. Built from thin Neon segments (no image assets),
--- same no-asset-outline style as the platform's square border. Its radius
--- IS the "Collection Range" upgrade's real pickup radius (kept live via the
--- CollectionRangeUpdated event) - the ring shows exactly how far away a
--- Mana node will still get auto-collected.
+-- Small ring under the player's feet, shown while standing inside either
+-- collection zone - the Mana platform or the Arcane Dust zone, since
+-- "Collection Range" is a single shared stat that applies to both. Built
+-- from thin Neon segments (no image assets), same no-asset-outline style as
+-- the platforms' square borders. Its radius IS the "Collection Range"
+-- upgrade's real pickup radius (kept live via the CollectionRangeUpdated
+-- event) - the ring shows exactly how far away a node will still get
+-- auto-collected, in either zone.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -49,27 +51,38 @@ local function setVisible(show: boolean)
 	ringModel.Parent = show and Workspace or nil
 end
 
+-- Returns the ground Y of whichever collection zone (by folder name) the
+-- given position is currently inside, or nil if it's in neither.
+local function findZoneGroundY(pos: Vector3): number?
+	for _, zoneName in { "ManaZone", "ArcaneDustZone" } do
+		local zone = Workspace:FindFirstChild(zoneName)
+		if zone then
+			local centerX = zone:GetAttribute("CenterX")
+			local centerZ = zone:GetAttribute("CenterZ")
+			local size = zone:GetAttribute("Size")
+			local groundY = zone:GetAttribute("GroundY")
+			if centerX and centerZ and size and groundY then
+				local half = size / 2
+				if math.abs(pos.X - centerX) <= half and math.abs(pos.Z - centerZ) <= half then
+					return groundY
+				end
+			end
+		end
+	end
+	return nil
+end
+
 RunService.Heartbeat:Connect(function()
 	local character = player.Character
 	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-	local zone = Workspace:FindFirstChild("ManaZone")
-	if not rootPart or not zone then
-		setVisible(false)
-		return
-	end
-
-	local centerX = zone:GetAttribute("CenterX")
-	local centerZ = zone:GetAttribute("CenterZ")
-	local size = zone:GetAttribute("Size")
-	local groundY = zone:GetAttribute("GroundY")
-	if not (centerX and centerZ and size and groundY) then
+	if not rootPart then
 		setVisible(false)
 		return
 	end
 
 	local pos = rootPart.Position
-	local half = size / 2
-	local inZone = math.abs(pos.X - centerX) <= half and math.abs(pos.Z - centerZ) <= half
+	local groundY = findZoneGroundY(pos)
+	local inZone = groundY ~= nil
 
 	setVisible(inZone)
 	if not inZone then

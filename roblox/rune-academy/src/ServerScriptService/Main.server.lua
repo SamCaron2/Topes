@@ -8,6 +8,8 @@ local Players = game:GetService("Players")
 local PlayerData = require(script.Parent.PlayerData)
 local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
+local ArcaneDustHandler = require(script.Parent.ArcaneDustHandler)
+local ArcaneDustSpawnHandler = require(script.Parent.ArcaneDustSpawnHandler)
 local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local RebirthHandler = require(script.Parent.RebirthHandler)
@@ -75,6 +77,11 @@ local playerRebirthedEvent = newRemoteEvent("PlayerRebirthed") -- server -> clie
 local getXPStateFunction = newRemoteFunction("GetXPState")
 local xpUpdatedEvent = newRemoteEvent("XPUpdated") -- server -> client, fired on join and every Mana pickup (XP/level bar)
 local getLeaderboardFunction = newRemoteFunction("GetLeaderboard") -- args: statKey ("playtime"|"robux"|"mana"|"runes")
+local arcaneDustUpdatedEvent = newRemoteEvent("ArcaneDustUpdated") -- server -> client, fired on join and every pickup/purchase
+local getArcaneDustYieldStateFunction = newRemoteFunction("GetArcaneDustYieldState")
+local buyArcaneDustYieldUpgradeFunction = newRemoteFunction("BuyArcaneDustYieldUpgrade")
+local getArcaneDustSpawnStateFunction = newRemoteFunction("GetArcaneDustSpawnState")
+local buyArcaneDustSpawnUpgradeFunction = newRemoteFunction("BuyArcaneDustSpawnUpgrade")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -231,6 +238,36 @@ buyManaSpawnUpgradeFunction.OnServerInvoke = function(player, mode)
 	return success, err, newState
 end
 
+getArcaneDustYieldStateFunction.OnServerInvoke = function(player)
+	return ArcaneDustHandler.getYieldUpgradeState(player)
+end
+
+buyArcaneDustYieldUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = ArcaneDustHandler.buyYieldUpgrade(player, mode)
+	if success then
+		arcaneDustUpdatedEvent:FireClient(player, newState.arcaneDust)
+	end
+	return success, err, newState
+end
+
+getArcaneDustSpawnStateFunction.OnServerInvoke = function(player)
+	return ArcaneDustSpawnHandler.getUpgradeState(player)
+end
+
+buyArcaneDustSpawnUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = ArcaneDustSpawnHandler.buyUpgrade(player, mode)
+	if success then
+		arcaneDustUpdatedEvent:FireClient(player, newState.arcaneDust)
+	end
+	return success, err, newState
+end
+
 getWalkSpeedStateFunction.OnServerInvoke = function(player)
 	return WalkSpeedHandler.getUpgradeState(player)
 end
@@ -351,6 +388,7 @@ Players.PlayerAdded:Connect(function(player)
 		manaUpdatedEvent:FireClient(player, data.mana or 0)
 		collectionRangeUpdatedEvent:FireClient(player, CollectionRangeHandler.getRadius(player))
 		xpUpdatedEvent:FireClient(player, XPHandler.getState(player))
+		arcaneDustUpdatedEvent:FireClient(player, data.arcaneDust or 0)
 		if (data.rebirths or 0) > 0 then
 			rebirthsUpdatedEvent:FireClient(player, data.rebirths)
 		end
