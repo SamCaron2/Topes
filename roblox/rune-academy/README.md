@@ -133,21 +133,31 @@ design notes.
   The first of those future areas is now built too: a `SecondIsland` (same
   120x120 footprint as the starting island) straight out along +Z from it -
   the direction the kiosk row reads as being on your left when facing it -
-  connected by a 12-stud-wide, 30-stud-long `IslandBridge`. A translucent
-  red `SecondIslandGate` sits at the bridge's near end (`ForceField`
-  material, `CanCollide` false - purely visual) with a static SurfaceGui
-  reading the unlock requirement. The actual lock is enforced by a
-  `GATE_CHECK_INTERVAL` (0.25s) poll, same pattern as the fall-kill check:
-  anyone without 40,000,000 Mana, 40,000 Rebirths, and Level 25 (checked
-  straight off `PlayerData`) gets teleported back onto the starting island
-  the moment they step onto the bridge's own width - it never touches
-  someone just walking near the starting island's edge elsewhere. No
-  upgrade kiosks on `SecondIsland` yet, just a ring of procedurally placed
-  trees/bushes/flowers (`SecondIslandDecor`) around its edge, inset from the
-  border and skipping the bridge's landing spot. The exact direction/size
-  (`BRIDGE_LENGTH`/`BRIDGE_WIDTH`/`SECOND_ISLAND_SIZE`) is a best guess from
-  a screenshot, same "nudge the numbers after testing" situation as the
-  kiosk board offsets above if it's not quite lined up.
+  shifted `SECOND_ISLAND_OFFSET_X` (-25 studs, i.e. right, away from
+  `RebirthShopBoard`) so it doesn't crowd that board. `IslandBridge` is a
+  small folder of parts instead of one flat slab - a thin `BridgeDeck`
+  (WoodPlanks) with two `BridgeRail` cylinders along its edges and
+  `BridgePost` supports every `BRIDGE_POST_SPACING` studs, for a rope-bridge
+  look. A translucent red `SecondIslandGate` sits at the bridge's near end
+  (`ForceField` material, `CanCollide` false - purely visual) with a static
+  SurfaceGui: a "🔒 LOCKED" title banner (same look as the kiosk boards'
+  banners) plus one clean line per requirement instead of one cramped
+  multi-line label. The actual lock is enforced by a `GATE_CHECK_INTERVAL`
+  (0.25s) poll, same pattern as the fall-kill check: anyone without
+  40,000,000 Mana, 40,000 Rebirths, and Level 25 (checked straight off
+  `PlayerData`) gets teleported back onto the starting island the moment
+  they step onto the bridge's own width - it never touches someone just
+  walking near the starting island's edge elsewhere. No upgrade kiosks on
+  `SecondIsland` yet, just a ring of procedurally placed trees/bushes/
+  flowers (`SecondIslandDecor`) around its edge, inset from the border and
+  skipping the bridge's landing spot - each built from several
+  overlapping/stacked parts (three canopy clumps per tree, three bumps per
+  bush, a stem + bloom per flower) instead of one plain shape, for a
+  fuller look than a single sphere or dot. The exact direction/size
+  (`BRIDGE_LENGTH`/`BRIDGE_WIDTH`/`SECOND_ISLAND_SIZE`/
+  `SECOND_ISLAND_OFFSET_X`) is a best guess from a screenshot, same "nudge
+  the numbers after testing" situation as the kiosk board offsets above if
+  it's not quite lined up.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
   its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
   so the very first purchase (from level 1) always costs 10 Mana no

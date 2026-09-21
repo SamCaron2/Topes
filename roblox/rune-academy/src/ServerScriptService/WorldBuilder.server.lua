@@ -301,6 +301,13 @@ makeKioskCard("RebirthShopBoard", half + -10, rebirthShopBoardOffsetZ, REBIRTH_S
 local SECOND_ISLAND_SIZE = ISLAND_SIZE -- "around the same size as this starting one"
 local BRIDGE_LENGTH = 30 -- gap of void the bridge spans
 local BRIDGE_WIDTH = 12
+local BRIDGE_THICKNESS = 1
+local BRIDGE_RAIL_HEIGHT = 3
+local BRIDGE_POST_SPACING = 10
+-- Shifts the whole second-island complex right (from the POV of a player
+-- facing +Z, right is -X) so it clears the RebirthShopBoard instead of
+-- crowding it - nudge this further if it's still too close.
+local SECOND_ISLAND_OFFSET_X = -25
 
 local SECOND_ISLAND_MANA_REQUIREMENT = 40000000
 local SECOND_ISLAND_REBIRTHS_REQUIREMENT = 40000
@@ -313,9 +320,11 @@ for _, name in { "SecondIsland", "IslandBridge", "SecondIslandGate", "SecondIsla
 	end
 end
 
--- Same axis SpawnLocation/StartingIsland already use, just further along Z.
+-- Same Z axis SpawnLocation/StartingIsland already use, just further along
+-- it and shifted over in X.
 local islandEdgeZ = islandCenterZ + ISLAND_SIZE / 2
 local secondIslandCenterZ = islandEdgeZ + BRIDGE_LENGTH + SECOND_ISLAND_SIZE / 2
+local secondIslandCenterX = islandCenterX + SECOND_ISLAND_OFFSET_X
 
 local secondIsland = Instance.new("Part")
 secondIsland.Name = "SecondIsland"
@@ -324,18 +333,56 @@ secondIsland.CanCollide = true
 secondIsland.Material = Enum.Material.Grass
 secondIsland.Color = Color3.fromRGB(90, 170, 60)
 secondIsland.Size = Vector3.new(SECOND_ISLAND_SIZE, ISLAND_THICKNESS, SECOND_ISLAND_SIZE)
-secondIsland.CFrame = CFrame.new(islandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, secondIslandCenterZ)
+secondIsland.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, secondIslandCenterZ)
 secondIsland.Parent = Workspace
 
-local bridge = Instance.new("Part")
-bridge.Name = "IslandBridge"
-bridge.Anchored = true
-bridge.CanCollide = true
-bridge.Material = Enum.Material.WoodPlanks
-bridge.Color = Color3.fromRGB(130, 95, 60)
-bridge.Size = Vector3.new(BRIDGE_WIDTH, ISLAND_THICKNESS, BRIDGE_LENGTH)
-bridge.CFrame = CFrame.new(islandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, islandEdgeZ + BRIDGE_LENGTH / 2)
-bridge.Parent = Workspace
+-- A rope-bridge look instead of a single flat slab: a thin plank deck with
+-- wooden rails along both edges, held up by posts at regular intervals.
+local bridgeFolder = Instance.new("Folder")
+bridgeFolder.Name = "IslandBridge"
+bridgeFolder.Parent = Workspace
+
+local bridgeCenterZ = islandEdgeZ + BRIDGE_LENGTH / 2
+
+local deck = Instance.new("Part")
+deck.Name = "BridgeDeck"
+deck.Anchored = true
+deck.CanCollide = true
+deck.Material = Enum.Material.WoodPlanks
+deck.Color = Color3.fromRGB(150, 110, 70)
+deck.Size = Vector3.new(BRIDGE_WIDTH, BRIDGE_THICKNESS, BRIDGE_LENGTH)
+deck.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y - BRIDGE_THICKNESS / 2, bridgeCenterZ)
+deck.Parent = bridgeFolder
+
+local function makeBridgeRail(xOffset: number)
+	local rail = Instance.new("Part")
+	rail.Name = "BridgeRail"
+	rail.Anchored = true
+	rail.CanCollide = false
+	rail.Material = Enum.Material.Wood
+	rail.Color = Color3.fromRGB(110, 80, 50)
+	rail.Shape = Enum.PartType.Cylinder
+	rail.Size = Vector3.new(BRIDGE_LENGTH, 0.6, 0.6) -- Cylinder's round axis is local X; rotated below to run along Z
+	rail.CFrame = CFrame.new(secondIslandCenterX + xOffset, ISLAND_TOP_Y + BRIDGE_RAIL_HEIGHT, bridgeCenterZ)
+		* CFrame.Angles(0, math.rad(90), 0)
+	rail.Parent = bridgeFolder
+end
+makeBridgeRail(BRIDGE_WIDTH / 2)
+makeBridgeRail(-BRIDGE_WIDTH / 2)
+
+for postZ = 0, BRIDGE_LENGTH, BRIDGE_POST_SPACING do
+	for _, xOffset in { BRIDGE_WIDTH / 2, -BRIDGE_WIDTH / 2 } do
+		local post = Instance.new("Part")
+		post.Name = "BridgePost"
+		post.Anchored = true
+		post.CanCollide = false
+		post.Material = Enum.Material.Wood
+		post.Color = Color3.fromRGB(110, 80, 50)
+		post.Size = Vector3.new(0.6, BRIDGE_RAIL_HEIGHT, 0.6)
+		post.CFrame = CFrame.new(secondIslandCenterX + xOffset, ISLAND_TOP_Y + BRIDGE_RAIL_HEIGHT / 2, islandEdgeZ + postZ)
+		post.Parent = bridgeFolder
+	end
+end
 
 -- Purely visual (CanCollide false, so it can never physically trap anyone on
 -- either side) - the position-check loop further down is what actually
@@ -349,7 +396,7 @@ gate.Material = Enum.Material.ForceField
 gate.Color = Color3.fromRGB(255, 60, 60)
 gate.Transparency = 0.5
 gate.Size = Vector3.new(BRIDGE_WIDTH, 14, 1)
-gate.CFrame = CFrame.new(islandCenterX, ISLAND_TOP_Y + 7, islandEdgeZ + 0.5)
+gate.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y + 7, islandEdgeZ + 0.5)
 gate.Parent = Workspace
 
 -- Faces back toward the starting island, i.e. the -Z direction players
@@ -370,20 +417,53 @@ gateBackground.BackgroundTransparency = 0.35
 gateBackground.BorderSizePixel = 0
 gateBackground.Parent = gateGui
 
-local gateText = Instance.new("TextLabel")
-gateText.Size = UDim2.new(0.9, 0, 0.9, 0)
-gateText.Position = UDim2.new(0.05, 0, 0.05, 0)
-gateText.BackgroundTransparency = 1
-gateText.Font = Enum.Font.GothamBold
-gateText.TextScaled = true
-gateText.TextWrapped = true
-gateText.TextColor3 = Color3.fromRGB(255, 210, 210)
-gateText.TextStrokeTransparency = 0.4
-gateText.Text = "LOCKED\n40,000,000 Mana\n40,000 Rebirths\nLevel 25"
-gateText.Parent = gateBackground
+-- Title banner (matching the kiosk boards' banner look) plus one clean row
+-- per requirement, instead of a single cramped multi-line label.
+local gateTitleBanner = Instance.new("Frame")
+gateTitleBanner.Size = UDim2.new(0.94, 0, 0.2, 0)
+gateTitleBanner.Position = UDim2.new(0.03, 0, 0.06, 0)
+gateTitleBanner.BackgroundColor3 = Color3.fromRGB(90, 15, 15)
+gateTitleBanner.BackgroundTransparency = 0.15
+gateTitleBanner.BorderSizePixel = 0
+gateTitleBanner.Parent = gateBackground
+
+local gateTitleCorner = Instance.new("UICorner")
+gateTitleCorner.CornerRadius = UDim.new(0.25, 0)
+gateTitleCorner.Parent = gateTitleBanner
+
+local gateTitleText = Instance.new("TextLabel")
+gateTitleText.Size = UDim2.new(1, 0, 1, 0)
+gateTitleText.BackgroundTransparency = 1
+gateTitleText.Font = Enum.Font.GothamBold
+gateTitleText.TextScaled = true
+gateTitleText.TextColor3 = Color3.fromRGB(255, 220, 90)
+gateTitleText.TextStrokeTransparency = 0.4
+gateTitleText.Text = "🔒 LOCKED"
+gateTitleText.Parent = gateTitleBanner
+
+local GATE_REQUIREMENT_LINES = {
+	"40,000,000 Mana",
+	"40,000 Rebirths",
+	"Level 25",
+}
+
+for i, line in GATE_REQUIREMENT_LINES do
+	local lineLabel = Instance.new("TextLabel")
+	lineLabel.Size = UDim2.new(0.9, 0, 0.14, 0)
+	lineLabel.Position = UDim2.new(0.05, 0, 0.35 + (i - 1) * 0.19, 0)
+	lineLabel.BackgroundTransparency = 1
+	lineLabel.Font = Enum.Font.GothamBold
+	lineLabel.TextScaled = true
+	lineLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	lineLabel.TextStrokeTransparency = 0.4
+	lineLabel.Text = line
+	lineLabel.Parent = gateBackground
+end
 
 -- Edge decoration - flowers, trees, bushes, purely visual dressing since
--- there's no kiosk content on this island yet.
+-- there's no kiosk content on this island yet. Built from several
+-- overlapping/stacked parts per piece instead of one plain shape each, for a
+-- fuller, less "primitive" look.
 local decorFolder = Instance.new("Folder")
 decorFolder.Name = "SecondIslandDecor"
 decorFolder.Parent = Workspace
@@ -396,33 +476,52 @@ local function makeTree(x: number, z: number)
 	trunk.Material = Enum.Material.Wood
 	trunk.Color = Color3.fromRGB(90, 60, 35)
 	trunk.Shape = Enum.PartType.Cylinder
-	trunk.Size = Vector3.new(5, 1.5, 1.5) -- Cylinder's round axis is local X; rotated below to stand upright
-	trunk.CFrame = CFrame.new(x, ISLAND_TOP_Y + 2.5, z) * CFrame.Angles(0, 0, math.rad(90))
+	trunk.Size = Vector3.new(7, 2, 2) -- Cylinder's round axis is local X; rotated below to stand upright
+	trunk.CFrame = CFrame.new(x, ISLAND_TOP_Y + 3.5, z) * CFrame.Angles(0, 0, math.rad(90))
 	trunk.Parent = decorFolder
 
-	local leaves = Instance.new("Part")
-	leaves.Name = "TreeLeaves"
-	leaves.Anchored = true
-	leaves.CanCollide = false
-	leaves.Material = Enum.Material.Grass
-	leaves.Color = Color3.fromRGB(50, 140, 60)
-	leaves.Shape = Enum.PartType.Ball
-	leaves.Size = Vector3.new(7, 7, 7)
-	leaves.CFrame = CFrame.new(x, ISLAND_TOP_Y + 7, z)
-	leaves.Parent = decorFolder
+	-- Three overlapping canopy clumps instead of one perfect sphere, for a
+	-- fuller, rounder silhouette closer to a real tree.
+	local canopyClumps = {
+		{ offset = Vector3.new(0, 9, 0), size = 6.5 },
+		{ offset = Vector3.new(1.6, 7.5, 1), size = 5 },
+		{ offset = Vector3.new(-1.6, 7.5, -1), size = 5 },
+	}
+	for _, clump in canopyClumps do
+		local leaves = Instance.new("Part")
+		leaves.Name = "TreeLeaves"
+		leaves.Anchored = true
+		leaves.CanCollide = false
+		leaves.Material = Enum.Material.Grass
+		leaves.Color = Color3.fromRGB(45, 130, 55)
+		leaves.Shape = Enum.PartType.Ball
+		leaves.Size = Vector3.new(clump.size, clump.size, clump.size)
+		leaves.CFrame = CFrame.new(x + clump.offset.X, ISLAND_TOP_Y + clump.offset.Y, z + clump.offset.Z)
+		leaves.Parent = decorFolder
+	end
 end
 
 local function makeBush(x: number, z: number)
-	local bush = Instance.new("Part")
-	bush.Name = "Bush"
-	bush.Anchored = true
-	bush.CanCollide = false
-	bush.Material = Enum.Material.Grass
-	bush.Color = Color3.fromRGB(60, 130, 55)
-	bush.Shape = Enum.PartType.Ball
-	bush.Size = Vector3.new(3, 2.2, 3)
-	bush.CFrame = CFrame.new(x, ISLAND_TOP_Y + 1.1, z)
-	bush.Parent = decorFolder
+	-- Three overlapping bumps (one bigger, two smaller) instead of one flat
+	-- squashed ball - bigger overall and reads as an actual bush cluster.
+	local bumps = {
+		{ offset = Vector3.new(0, 0, 0), size = 4.5 },
+		{ offset = Vector3.new(1.4, 0.2, 0.9), size = 3.4 },
+		{ offset = Vector3.new(-1.3, 0.1, -1), size = 3.4 },
+	}
+	for _, bump in bumps do
+		local part = Instance.new("Part")
+		part.Name = "Bush"
+		part.Anchored = true
+		part.CanCollide = false
+		part.Material = Enum.Material.Grass
+		part.Color = Color3.fromRGB(55, 125, 55)
+		local height = bump.size * 0.8
+		part.Size = Vector3.new(bump.size, height, bump.size)
+		part.Shape = Enum.PartType.Ball
+		part.CFrame = CFrame.new(x + bump.offset.X, ISLAND_TOP_Y + height / 2, z + bump.offset.Z)
+		part.Parent = decorFolder
+	end
 end
 
 local FLOWER_COLORS = {
@@ -432,17 +531,30 @@ local FLOWER_COLORS = {
 	Color3.fromRGB(255, 255, 255),
 }
 
+-- A thin green stem topped with a colored bloom, instead of a single flat
+-- dot, so it actually reads as a flower rather than a pebble.
 local function makeFlower(x: number, z: number)
-	local flower = Instance.new("Part")
-	flower.Name = "Flower"
-	flower.Anchored = true
-	flower.CanCollide = false
-	flower.Material = Enum.Material.Neon
-	flower.Color = FLOWER_COLORS[math.random(#FLOWER_COLORS)]
-	flower.Shape = Enum.PartType.Ball
-	flower.Size = Vector3.new(0.8, 0.8, 0.8)
-	flower.CFrame = CFrame.new(x, ISLAND_TOP_Y + 0.4, z)
-	flower.Parent = decorFolder
+	local stem = Instance.new("Part")
+	stem.Name = "FlowerStem"
+	stem.Anchored = true
+	stem.CanCollide = false
+	stem.Material = Enum.Material.Grass
+	stem.Color = Color3.fromRGB(60, 140, 60)
+	stem.Shape = Enum.PartType.Cylinder
+	stem.Size = Vector3.new(1.4, 0.25, 0.25)
+	stem.CFrame = CFrame.new(x, ISLAND_TOP_Y + 0.7, z) * CFrame.Angles(0, 0, math.rad(90))
+	stem.Parent = decorFolder
+
+	local bloom = Instance.new("Part")
+	bloom.Name = "FlowerBloom"
+	bloom.Anchored = true
+	bloom.CanCollide = false
+	bloom.Material = Enum.Material.Neon
+	bloom.Color = FLOWER_COLORS[math.random(#FLOWER_COLORS)]
+	bloom.Shape = Enum.PartType.Ball
+	bloom.Size = Vector3.new(1.2, 1.2, 1.2)
+	bloom.CFrame = CFrame.new(x, ISLAND_TOP_Y + 1.5, z)
+	bloom.Parent = decorFolder
 end
 
 -- Rings the perimeter at a fixed inset, cycling tree/bush/flower/flower so
@@ -460,12 +572,12 @@ local function placeNextDecor(x: number, z: number)
 end
 
 for offset = -decorHalf, decorHalf, DECOR_STEP do
-	placeNextDecor(islandCenterX + offset, secondIslandCenterZ + decorHalf) -- far edge
+	placeNextDecor(secondIslandCenterX + offset, secondIslandCenterZ + decorHalf) -- far edge
 	if math.abs(offset) > BRIDGE_WIDTH / 2 then -- near edge, minus the bridge's entrance gap
-		placeNextDecor(islandCenterX + offset, secondIslandCenterZ - decorHalf)
+		placeNextDecor(secondIslandCenterX + offset, secondIslandCenterZ - decorHalf)
 	end
-	placeNextDecor(islandCenterX + decorHalf, secondIslandCenterZ + offset) -- far X edge
-	placeNextDecor(islandCenterX - decorHalf, secondIslandCenterZ + offset) -- near X edge
+	placeNextDecor(secondIslandCenterX + decorHalf, secondIslandCenterZ + offset) -- far X edge
+	placeNextDecor(secondIslandCenterX - decorHalf, secondIslandCenterZ + offset) -- near X edge
 end
 
 -- Enforces the lock: an under-leveled player who steps onto the bridge gets
@@ -491,8 +603,13 @@ task.spawn(function()
 		for _, player in Players:GetPlayers() do
 			local character = player.Character
 			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-			if rootPart and rootPart.Position.Z >= GATE_Z and math.abs(rootPart.Position.X - islandCenterX) <= BRIDGE_WIDTH / 2 and not meetsSecondIslandRequirement(player) then
-				rootPart.CFrame = CFrame.new(islandCenterX, groundY + 3, GATE_Z - 5)
+			if
+				rootPart
+				and rootPart.Position.Z >= GATE_Z
+				and math.abs(rootPart.Position.X - secondIslandCenterX) <= BRIDGE_WIDTH / 2
+				and not meetsSecondIslandRequirement(player)
+			then
+				rootPart.CFrame = CFrame.new(secondIslandCenterX, groundY + 3, GATE_Z - 5)
 			end
 		end
 	end
