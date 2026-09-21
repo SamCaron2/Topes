@@ -1,5 +1,6 @@
--- Builds the whole Mana upgrades board: a small clear "Mana: <amount>"
--- readout above a "Mana Upgrades" title banner, then 4 upgrade columns
+-- Builds the whole Mana upgrades board: a small clear icon + amount readout
+-- (no "Mana" word, the icon says it) above a "Mana Upgrades" title banner,
+-- then 4 upgrade columns
 -- left-to-right below filling the board edge-to-edge - "More Mana", "Mana
 -- Spawn Speed", "Walking Speed", and "Collection Range". The clear readout
 -- is the template for every future currency board (Rebirths, etc.) - keep
@@ -30,28 +31,24 @@ local board = Workspace:WaitForChild("Kiosks"):WaitForChild("ManaUpgradeBoard")
 
 local MANA_ICON_ID = "rbxassetid://119417928367783"
 
--- A small round white badge overlapping the readout pill's left edge -
--- same look as the corner HUD's currency icons, so boards and HUD match.
+-- Overlaps the readout pill's left edge - no circle backdrop for the Mana
+-- icon specifically (its sparkles poke outside a round silhouette, so a
+-- white circle behind it looked bad), unlike the Rebirths icon elsewhere.
 local function addReadoutIcon(parent: Frame, imageId: string)
-	local badge = Instance.new("Frame")
-	badge.AnchorPoint = Vector2.new(0, 0.5)
-	badge.Position = UDim2.new(0, -22, 0.5, 0)
-	badge.Size = UDim2.new(0, 40, 0, 40)
-	badge.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	badge.BorderSizePixel = 0
-	badge.ZIndex = 2
-	badge.Parent = parent
-
-	local badgeCorner = Instance.new("UICorner")
-	badgeCorner.CornerRadius = UDim.new(1, 0)
-	badgeCorner.Parent = badge
+	local holder = Instance.new("Frame")
+	holder.AnchorPoint = Vector2.new(0, 0.5)
+	holder.Position = UDim2.new(0, -22, 0.5, 0)
+	holder.Size = UDim2.new(0, 40, 0, 40)
+	holder.BackgroundTransparency = 1
+	holder.ZIndex = 2
+	holder.Parent = parent
 
 	local icon = Instance.new("ImageLabel")
 	icon.Size = UDim2.new(1, 0, 1, 0)
 	icon.BackgroundTransparency = 1
 	icon.Image = imageId
 	icon.ZIndex = 3
-	icon.Parent = badge
+	icon.Parent = holder
 
 	local iconPadding = Instance.new("UIPadding")
 	iconPadding.PaddingTop = UDim.new(0.12, 0)
@@ -119,13 +116,13 @@ currencyReadoutText.Font = Enum.Font.GothamBold
 currencyReadoutText.TextScaled = true
 currencyReadoutText.TextColor3 = Color3.fromRGB(255, 255, 255)
 currencyReadoutText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-currencyReadoutText.Text = "Mana: -"
+currencyReadoutText.Text = "-"
 currencyReadoutText.Parent = currencyReadout
 
 addReadoutIcon(currencyReadout, MANA_ICON_ID)
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
-	currencyReadoutText.Text = "Mana: " .. NumberFormat.format(amount)
+	currencyReadoutText.Text = NumberFormat.format(amount)
 end)
 
 -- Title banner across the top, matching the reference's "<Currency> Upgrades" pill.

@@ -1,7 +1,8 @@
 -- Builds the Rebirth Shop board: permanent upgrades bought with Rebirths
 -- that survive rebirthing (unlike the Mana Upgrades board's 4 columns,
--- which reset every rebirth) - a small clear "Rebirths: <amount>" readout
--- above a "Rebirth Upgrades" title banner (same template as the Mana
+-- which reset every rebirth) - a small clear icon + amount readout (no
+-- "Rebirths" word, the icon says it) above a "Rebirth Upgrades" title
+-- banner (same template as the Mana
 -- Upgrades board), then 3 columns left-to-right filling the board
 -- edge-to-edge: "Mana Value Multiplier", "Rebirth Multiplier", and
 -- "XP Multiplier". Same createUpgradeColumn pattern as the Mana Upgrades
@@ -108,13 +109,13 @@ currencyReadoutText.Font = Enum.Font.GothamBold
 currencyReadoutText.TextScaled = true
 currencyReadoutText.TextColor3 = Color3.fromRGB(255, 255, 255)
 currencyReadoutText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-currencyReadoutText.Text = "Rebirths: -"
+currencyReadoutText.Text = "-"
 currencyReadoutText.Parent = currencyReadout
 
 addReadoutIcon(currencyReadout, REBIRTHS_ICON_ID)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
-	currencyReadoutText.Text = ("Rebirths: %.1f"):format(amount)
+	currencyReadoutText.Text = ("%.1f"):format(amount)
 end)
 
 local titleBanner = Instance.new("Frame")

@@ -1,7 +1,7 @@
--- Middle-left "Mana: <amount>" counter, plus a "Rebirths: <amount>" counter
--- right below it - hidden until the player has at least one Rebirth (the
--- server only fires RebirthsUpdated once they do), so it only appears once
--- Rebirths are actually unlocked.
+-- Middle-left Mana counter (icon + amount, no word), plus a Rebirths
+-- counter right below it - hidden until the player has at least one
+-- Rebirth (the server only fires RebirthsUpdated once they do), so it only
+-- appears once Rebirths are actually unlocked.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,29 +21,33 @@ screenGui.Name = "ManaHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- A small round white badge overlapping the pill's left edge, holding the
--- currency's icon - a white backdrop keeps every icon's own colors legible
--- against the dark pill instead of blending in.
-local function addIconBadge(parent: GuiObject, imageId: string)
-	local badge = Instance.new("Frame")
-	badge.AnchorPoint = Vector2.new(0, 0.5)
-	badge.Position = UDim2.new(0, -16, 0.5, 0)
-	badge.Size = UDim2.new(0, 44, 0, 44)
-	badge.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	badge.BorderSizePixel = 0
-	badge.ZIndex = 2
-	badge.Parent = parent
+-- The icon overlapping the pill's left edge. The Rebirths icon (a mostly
+-- round arrows glyph) gets a white circle backdrop for contrast against the
+-- dark pill; the Mana icon (a potion with sparkles poking outside a round
+-- silhouette) looks better with no backdrop at all, per direct request.
+local function addIcon(parent: GuiObject, imageId: string, useCircleBadge: boolean)
+	local holder = Instance.new("Frame")
+	holder.AnchorPoint = Vector2.new(0, 0.5)
+	holder.Position = UDim2.new(0, -16, 0.5, 0)
+	holder.Size = UDim2.new(0, 44, 0, 44)
+	holder.BackgroundTransparency = useCircleBadge and 0 or 1
+	holder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	holder.BorderSizePixel = 0
+	holder.ZIndex = 2
+	holder.Parent = parent
 
-	local badgeCorner = Instance.new("UICorner")
-	badgeCorner.CornerRadius = UDim.new(1, 0)
-	badgeCorner.Parent = badge
+	if useCircleBadge then
+		local holderCorner = Instance.new("UICorner")
+		holderCorner.CornerRadius = UDim.new(1, 0)
+		holderCorner.Parent = holder
+	end
 
 	local icon = Instance.new("ImageLabel")
 	icon.Size = UDim2.new(1, 0, 1, 0)
 	icon.BackgroundTransparency = 1
 	icon.Image = imageId
 	icon.ZIndex = 3
-	icon.Parent = badge
+	icon.Parent = holder
 
 	local iconPadding = Instance.new("UIPadding")
 	iconPadding.PaddingTop = UDim.new(0.12, 0)
@@ -54,11 +58,11 @@ local function addIconBadge(parent: GuiObject, imageId: string)
 end
 
 -- Builds an empty pill (background only) plus a child TextLabel reserved to
--- the right of the icon badge. UIPadding on a TextLabel does NOT inset its
--- own rendered Text (padding only repositions child Instances), so the only
--- way to keep text from running under the badge is a separate child label
--- with its own Size/Position actually carving out that space.
-local function createCounterPill(name: string, yOffset: number, textColor: Color3, imageId: string)
+-- the right of the icon. UIPadding on a TextLabel does NOT inset its own
+-- rendered Text (padding only repositions child Instances), so the only way
+-- to keep text from running under the icon is a separate child label with
+-- its own Size/Position actually carving out that space.
+local function createCounterPill(name: string, yOffset: number, textColor: Color3, imageId: string, useCircleBadge: boolean)
 	local pill = Instance.new("Frame")
 	pill.Name = name
 	pill.AnchorPoint = Vector2.new(0, 0.5)
@@ -85,24 +89,25 @@ local function createCounterPill(name: string, yOffset: number, textColor: Color
 	text.TextXAlignment = Enum.TextXAlignment.Center
 	text.Parent = pill
 
-	addIconBadge(pill, imageId)
+	addIcon(pill, imageId, useCircleBadge)
 
 	return pill, text
 end
 
 -- Middle-left of the screen: vertically centered, flush against the left edge.
-local manaPill, manaText = createCounterPill("ManaCounter", 0, Color3.fromRGB(255, 255, 255), MANA_ICON_ID)
-manaText.Text = "Mana: 0"
+local manaPill, manaText = createCounterPill("ManaCounter", 0, Color3.fromRGB(255, 255, 255), MANA_ICON_ID, false)
+manaText.Text = "0"
 
-local rebirthsPill, rebirthsText = createCounterPill("RebirthsCounter", 60, Color3.fromRGB(255, 90, 90), REBIRTHS_ICON_ID)
+local rebirthsPill, rebirthsText =
+	createCounterPill("RebirthsCounter", 60, Color3.fromRGB(255, 90, 90), REBIRTHS_ICON_ID, true)
 rebirthsPill.Visible = false
-rebirthsText.Text = "Rebirths: 0"
+rebirthsText.Text = "0"
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
-	manaText.Text = "Mana: " .. NumberFormat.format(amount)
+	manaText.Text = NumberFormat.format(amount)
 end)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
 	rebirthsPill.Visible = true
-	rebirthsText.Text = ("Rebirths: %.1f"):format(amount)
+	rebirthsText.Text = ("%.1f"):format(amount)
 end)

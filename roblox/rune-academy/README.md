@@ -240,15 +240,20 @@ design notes.
   first level-up as specified. `grantXpForPickup` is called once per
   successful pickup from `WorldBuilder`'s collection loop and returns the
   resulting state so it can be pushed to the client via `XPUpdated`.
-- `ManaHUDClient.client.lua` — a "Mana: <amount>" text label, middle-left
-  of the screen, updated live off the `ManaUpdated` RemoteEvent, plus a
-  red "Rebirths: X.X" label right below it. Each pill has a small round
-  white `addIconBadge` icon (the uploaded potion/rebirth-arrows images)
-  overlapping its left edge, with the label's own `UIPadding` shifting its
-  text right so it doesn't run under the badge. The Rebirths label starts
-  hidden and only appears once the `RebirthsUpdated` event fires with a
-  value above 0 - the server only ever fires it once a player has
-  actually rebirthed, so it stays hidden until Rebirths are unlocked.
+- `ManaHUDClient.client.lua` — a Mana counter, middle-left of the screen,
+  updated live off the `ManaUpdated` RemoteEvent, plus a red Rebirths
+  counter right below it - just the icon and the number now, no "Mana"/
+  "Rebirths" word (the icon says it). Each pill's icon overlaps its left
+  edge, with the label given its own reserved `Size`/`Position` region so
+  the text never runs under it (UIPadding on a TextLabel doesn't inset its
+  own rendered Text, only child Instances, so that has to be done this
+  way instead). The Rebirths icon keeps a small round white circle behind
+  it for contrast; the Mana icon has none, per direct request, since its
+  sparkles poke outside a round silhouette and looked bad boxed into one.
+  The Rebirths pill starts hidden and only appears once the
+  `RebirthsUpdated` event fires with a value above 0 - the server only
+  ever fires it once a player has actually rebirthed, so it stays hidden
+  until Rebirths are unlocked.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
   Mana counter's placement, laid out 2x2: Store/Runes/Profile/Settings.
   Store and Settings show their uploaded icon image directly (background
@@ -271,11 +276,10 @@ design notes.
 - `ManaUpgradeBoardClient.client.lua` — the 3D upgrade board standing
   just outside the platform (`Workspace.Kiosks.ManaUpgradeBoard`).
   Styled like a typical incremental-game upgrades board: a small clear
-  "Mana: <amount>" readout pill (white, ~75% transparent, live off
-  `ManaUpdated`, with the same uploaded Mana icon badge as the corner HUD
-  overlapping its left edge) above a "Mana Upgrades" title banner - this
-  readout is the template to reuse on every future currency board - then
-  4 columns filling the board
+  readout pill (white, ~75% transparent, live off `ManaUpdated`) showing
+  just the Mana icon and the amount - no "Mana" word - above a "Mana
+  Upgrades" title banner - this readout is the template to reuse on every
+  future currency board - then 4 columns filling the board
   edge-to-edge, built through one shared `createUpgradeColumn` helper
   so every upgrade looks and behaves alike — "More Mana", "Mana Spawn
   Speed", "Walking Speed", and "Collection Range", each with a
@@ -308,9 +312,10 @@ design notes.
 - `RebirthShopBoardClient.client.lua` — the Rebirth Shop board
   (`Workspace.Kiosks.RebirthShopBoard`), styled in the same red as the
   Rebirths board (not the Mana board's blue - both are Rebirth-themed).
-  Same clear "Rebirths: X.X" readout (with the same uploaded Rebirths icon
-  badge as the corner HUD) + title banner template as the Mana Upgrades
-  board, then 3 columns filling the board edge-to-edge through the same
+  Same clear readout (with the same uploaded Rebirths icon badge as the
+  corner HUD, just the icon and the amount - no "Rebirths" word) + title
+  banner template as the Mana Upgrades board, then 3 columns filling the
+  board edge-to-edge through the same
   `createUpgradeColumn` pattern as the Mana Upgrades board, just
   costed and gated in Rebirths instead of Mana: "Mana Value Multiplier"
   (`(x/100)`), "Rebirth Multiplier" (`(x/100)`), and "XP Multiplier"
