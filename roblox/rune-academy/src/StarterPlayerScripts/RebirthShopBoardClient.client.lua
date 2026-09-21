@@ -241,10 +241,10 @@ local function render(state)
 
 	levelLabel.Text = ("(%d/%d)"):format(state.level, state.maxLevel)
 	if state.nextLevelCost then
-		detailLabel.Text = ("%.2fx > %.2fx"):format(state.multiplier, state.nextMultiplier)
+		detailLabel.Text = ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
 		costLabel.Text = ("Cost: %d Rebirths"):format(state.nextLevelCost)
 	else
-		detailLabel.Text = ("%.2fx (MAX)"):format(state.multiplier)
+		detailLabel.Text = ("%.1fx (MAX)"):format(state.multiplier)
 		costLabel.Text = "Cost: -"
 	end
 

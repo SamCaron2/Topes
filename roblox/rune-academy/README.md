@@ -180,7 +180,7 @@ design notes.
   point of rebirthing, so each run collects Mana faster than the last.
 - `RebirthShopHandler.lua` — permanent upgrades bought with Rebirths
   instead of Mana, that survive rebirthing. Currently one: "Mana Value
-  Multiplier" (level 1-100, linear 1x → 2x, first purchase costs 1
+  Multiplier" (level 1-100, linear 1x → 200x, first purchase costs 1
   Rebirth, cost climbs by 1 Rebirth per level after - its own curve, not
   `UpgradeCost`). `getManaValueMultiplier(player)` is read by
   `ManaHandler` to scale every pickup. Two more columns are planned for
@@ -249,11 +249,9 @@ design notes.
   Rebirths board (not the Mana board's blue - both are Rebirth-themed).
   Same clear "Rebirths: X.X" readout + title banner template as the Mana Upgrades
   board, then one column so far: "Mana Value Multiplier", level
-  `(x/100)`, a `%.2fx > %.2fx` preview (small per-level steps need 2
-  decimals to look responsive - 1 decimal would show the same value for
-  several levels in a row), cost in Rebirths, and the same Buy/Max ->
-  single "Maxed" button behavior as the Mana board's columns. Two more
-  columns are planned for this same board later.
+  `(x/100)`, a `%.1fx > %.1fx` preview, cost in Rebirths, and the same
+  Buy/Max -> single "Maxed" button behavior as the Mana board's columns.
+  Two more columns are planned for this same board later.
 
 ## Manual steps required before everything works
 

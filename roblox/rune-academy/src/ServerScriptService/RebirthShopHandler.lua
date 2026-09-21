@@ -2,15 +2,15 @@
 -- Rebirths, NOT reset when you rebirth (unlike the Mana-side upgrades,
 -- which DO reset - see RebirthHandler.rebirth) - that's the whole point,
 -- so each rebirth run collects Mana faster than the last. Currently just
--- one column: "Mana Value Multiplier" (level 1-100, linear 1x -> 2x, first
--- purchase costs 1 Rebirth, cost climbs by 1 Rebirth per level after). Two
--- more columns are planned for this same board later.
+-- one column: "Mana Value Multiplier" (level 1-100, linear 1x -> 200x,
+-- first purchase costs 1 Rebirth, cost climbs by 1 Rebirth per level
+-- after). Two more columns are planned for this same board later.
 
 local PlayerData = require(script.Parent.PlayerData)
 
 local MAX_MULTIPLIER_LEVEL = 100
 local MIN_MULTIPLIER = 1
-local MAX_MULTIPLIER = 2
+local MAX_MULTIPLIER = 200
 
 local function multiplierForLevel(level: number): number
 	local t = (level - 1) / (MAX_MULTIPLIER_LEVEL - 1)

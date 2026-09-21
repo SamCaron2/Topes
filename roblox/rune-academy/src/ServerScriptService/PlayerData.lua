@@ -126,6 +126,11 @@ function PlayerData.load(player: Player)
 	if not data.firstJoinedAt then
 		data.firstJoinedAt = os.time()
 	end
+
+	-- TEMP: testing only - grants 10,000 Mana on every join. Remove this line
+	-- once you're done testing.
+	data.mana = 10000
+
 	sessions[player] = data
 
 	local leaderstats = Instance.new("Folder")
