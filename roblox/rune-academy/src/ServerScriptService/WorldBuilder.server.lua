@@ -653,8 +653,11 @@ end)
 -- again every ArcaneDustSpawnHandler interval for as long as you stay -
 -- step off and the timer resets, so it's "stand here to farm," not
 -- "walk past to collect once."
+-- Off to the side and near the edge, rather than dead center - moved there
+-- per direct request, along with the board below.
 local secondIslandNearEdgeZ = secondIslandCenterZ - (SECOND_ISLAND_SIZE / 2)
 local ARCANE_DUST_PAD_RADIUS = 5
+local ARCANE_DUST_AREA_X = secondIslandCenterX - (SECOND_ISLAND_SIZE / 2 - 15) -- 15 studs in from the -X edge
 local arcaneDustPadZ = secondIslandNearEdgeZ + 25
 
 local existingArcaneDustPad = Workspace:FindFirstChild("ArcaneDustPad")
@@ -670,7 +673,7 @@ arcaneDustPad.Material = Enum.Material.Neon
 arcaneDustPad.Color = Color3.fromRGB(255, 200, 80)
 arcaneDustPad.Shape = Enum.PartType.Cylinder
 arcaneDustPad.Size = Vector3.new(0.6, ARCANE_DUST_PAD_RADIUS * 2, ARCANE_DUST_PAD_RADIUS * 2) -- Cylinder's round axis is local X; rotated below to lie flat
-arcaneDustPad.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
+arcaneDustPad.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
 arcaneDustPad.Parent = Workspace
 
 local padLabelGui = Instance.new("BillboardGui")
@@ -707,7 +710,7 @@ task.spawn(function()
 			local character = player.Character
 			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 			local onPad = rootPart
-				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(secondIslandCenterX, arcaneDustPadZ)).Magnitude
+				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(ARCANE_DUST_AREA_X, arcaneDustPadZ)).Magnitude
 					<= ARCANE_DUST_PAD_RADIUS
 
 			if onPad then
@@ -726,9 +729,11 @@ task.spawn(function()
 	end
 end)
 
--- Its upgrade board, further onto the island past the pad, facing back
--- toward the entrance (-Z normal, "Front") like SecondIslandGate does -
--- same guess-now-flip-if-wrong situation as every other board's face here.
+-- Its upgrade board sits right along that same edge next to the pad (not
+-- rotated - thin along X, wide along Z, running parallel to the edge like
+-- the starting island's kiosk row does), facing inward toward the island's
+-- center: "Right" (+X normal), since it's near the -X edge. A guess like
+-- every other board's face here; flip to Left if it renders unreadable.
 local ARCANE_DUST_BOARD_WIDTH = 24
 local arcaneDustBoardZ = arcaneDustPadZ + 15
 
@@ -739,8 +744,8 @@ arcaneDustBoard.CanCollide = true
 arcaneDustBoard.Material = Enum.Material.Glass
 arcaneDustBoard.Color = Color3.fromRGB(45, 45, 60)
 arcaneDustBoard.Transparency = 0.7
-arcaneDustBoard.Size = Vector3.new(ARCANE_DUST_BOARD_WIDTH, 18, 1)
-arcaneDustBoard.CFrame = CFrame.new(secondIslandCenterX, ISLAND_TOP_Y + 9, arcaneDustBoardZ)
+arcaneDustBoard.Size = Vector3.new(1, 18, ARCANE_DUST_BOARD_WIDTH)
+arcaneDustBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 9, arcaneDustBoardZ)
 arcaneDustBoard.Parent = kiosksFolder
 
 -- ===========================================================================

@@ -35,14 +35,13 @@ local COLUMN_GAP = 0.04
 local COLUMN_START_X = 0.03
 local COLUMN_TOP_Y = 0.33
 
--- Un-rotated, facing back toward the bridge entrance (the -Z direction
--- players approach from, having crossed onto SecondIsland and continued
--- past the pad) - "Front" in Roblox's NormalId naming, same reasoning as
--- SecondIslandGate's face. A guess like every other board's face here;
--- flip to Back if it renders unreadable from the approach side.
+-- Sits near SecondIsland's -X edge, un-rotated (thin along X, wide along Z,
+-- running parallel to the edge), facing inward toward the island's center -
+-- "Right" (+X) in Roblox's NormalId naming. A guess like every other
+-- board's face here; flip to Left if it renders unreadable from that side.
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "ArcaneDustUpgradeBoardGui"
-surfaceGui.Face = Enum.NormalId.Front
+surfaceGui.Face = Enum.NormalId.Right
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36

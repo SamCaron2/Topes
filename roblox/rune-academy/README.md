@@ -170,18 +170,22 @@ design notes.
   only has to walk up to the gate once; falling short teleports them back
   onto the starting island instead. Restricted to the bridge's own width so
   it never touches someone just walking near the starting island's edge
-  elsewhere. Past the gate, 25 studs onto the island, sits `ArcaneDustPad`
-  - a flat gold cylinder (Neon material, rotated flat) with a floating
-  "Stand for Arcane Dust" `BillboardGui` label - the second wizard
-  resource, entirely separate from Mana (no Rebirth Shop interaction, not
-  reset by rebirthing). No pickup nodes to walk past, per direct request -
-  standing on the pad's radius grants Arcane Dust immediately, then again
-  every `ArcaneDustSpawnHandler` interval for as long as you stay; step off
-  and the timer (`arcaneDustNextGrant`, keyed per player) resets, so it's
+  elsewhere. Off to one side near the island's -X edge (`ARCANE_DUST_AREA_X`,
+  15 studs in from the edge - moved there per direct request, after an
+  earlier dead-center placement) sits `ArcaneDustPad` - a flat gold
+  cylinder (Neon material, rotated flat) with a floating "Stand for Arcane
+  Dust" `BillboardGui` label - the second wizard resource, entirely
+  separate from Mana (no Rebirth Shop interaction, not reset by
+  rebirthing). No pickup nodes to walk past, per direct request - standing
+  on the pad's radius grants Arcane Dust immediately, then again every
+  `ArcaneDustSpawnHandler` interval for as long as you stay; step off and
+  the timer (`arcaneDustNextGrant`, keyed per player) resets, so it's
   "stand here to farm," not "walk past to collect once." 15 studs further
-  onto the island sits `ArcaneDustUpgradeBoard` (24 studs wide, un-rotated,
-  facing back toward the entrance like `SecondIslandGate` does) with its
-  own 2-column UI (`ArcaneDustUpgradeBoardClient`) - "More Arcane Dust" and
+  along that same edge sits `ArcaneDustUpgradeBoard` (24 studs wide,
+  un-rotated - thin along X, wide along Z, running parallel to the edge
+  like the starting island's kiosk row - facing inward toward the
+  island's center, "Right" instead of the row's "Left") with its own
+  2-column UI (`ArcaneDustUpgradeBoardClient`) - "More Arcane Dust" and
   "Grant Speed" (how often the pad pays out).
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
@@ -380,11 +384,11 @@ design notes.
   gold-themed version of `ManaUpgradeBoardClient` with just 2 columns
   instead of 4 - "More Arcane Dust" and "Grant Speed" - same
   `createUpgradeColumn` pattern, clear readout, and Buy/Max → "Maxed"
-  behavior, just costed and gated in Arcane Dust instead of Mana. Faces
-  `Front` (back toward the bridge entrance), unlike the starting island's
-  boards, since a player reaches it by crossing `SecondIslandGate` and
-  continuing onward rather than approaching from the platform side.
-  No `PlayerRebirthed` hookup - Arcane Dust is entirely separate from
+  behavior, just costed and gated in Arcane Dust instead of Mana. Sits
+  near SecondIsland's -X edge facing inward - "Right" instead of the
+  starting island kiosk row's "Left" - since it's positioned off to the
+  side near an edge rather than in the middle of the island. No
+  `PlayerRebirthed` hookup - Arcane Dust is entirely separate from
   Mana/Rebirths, so rebirthing never resets it.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
