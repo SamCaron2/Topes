@@ -171,9 +171,12 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	costLabel.Text = "Cost: -"
 	costLabel.Parent = column
 
+	-- Y=0.7 instead of the Mana board's 0.82 - this board's bottom edge sits
+	-- right at ground level (the board Part's own height puts its bottom at
+	-- ISLAND_TOP_Y), so buttons at 0.82 read as touching the floor.
 	local buyButton = Instance.new("TextButton")
 	buyButton.Size = UDim2.new(0.46, 0, 0.16, 0)
-	buyButton.Position = UDim2.new(0, 0, 0.82, 0)
+	buyButton.Position = UDim2.new(0, 0, 0.7, 0)
 	buyButton.BackgroundColor3 = COLOR_CAN_BUY
 	buyButton.Font = Enum.Font.GothamBold
 	buyButton.TextScaled = true
@@ -195,7 +198,7 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 
 	local maxButton = Instance.new("TextButton")
 	maxButton.Size = UDim2.new(0.46, 0, 0.16, 0)
-	maxButton.Position = UDim2.new(0.54, 0, 0.82, 0)
+	maxButton.Position = UDim2.new(0.54, 0, 0.7, 0)
 	maxButton.BackgroundColor3 = COLOR_MAX_ACTIVE
 	maxButton.Font = Enum.Font.GothamBold
 	maxButton.TextScaled = true
@@ -218,7 +221,7 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	local BUY_SIZE = buyButton.Size
 	local BUY_POSITION = buyButton.Position
 	local MAXED_SIZE = UDim2.new(1, 0, 0.16, 0)
-	local MAXED_POSITION = UDim2.new(0, 0, 0.82, 0)
+	local MAXED_POSITION = UDim2.new(0, 0, 0.7, 0)
 
 	local currentArcaneDust = 0
 	local nextLevelCost = nil -- nil once maxed

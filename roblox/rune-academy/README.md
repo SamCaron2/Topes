@@ -274,8 +274,9 @@ design notes.
   yield curve for consistency - its own "More Arcane Dust" upgrade (level
   1-100), its own `arcaneDust` currency and `arcaneDustYieldLevel` field.
 - `ArcaneDustSpawnHandler.lua` — the "Grant Speed" upgrade for
-  `ArcaneDustPad` (level 1-10, its grant interval going 2.0s → 0.2s while
-  you stand on the pad) - shaped like `ManaSpawnHandler` (same lerp curve,
+  `ArcaneDustPad` (level 1-10, its grant interval going 1.5s → 0.5s while
+  you stand on the pad - lowered from an original 2.0s → 0.2s per direct
+  request, 2.0s felt too slow to start) - shaped like `ManaSpawnHandler` (same lerp curve,
   same `getRespawnSeconds`/`getUpgradeState`/`buyUpgrade` API), even though
   there's no node count to raise here since Arcane Dust has no pickup
   nodes, just the one pad. Costed on its own curve (`currentLevel * 10`,
@@ -409,12 +410,15 @@ design notes.
   gold-themed version of `ManaUpgradeBoardClient` with just 2 columns
   instead of 4 - "More Arcane Dust" and "Grant Speed" - same
   `createUpgradeColumn` pattern, clear readout, and Buy/Max → "Maxed"
-  behavior, just costed and gated in Arcane Dust instead of Mana. Sits
-  near SecondIsland's -X edge facing inward - "Right" instead of the
-  starting island kiosk row's "Left" - since it's positioned off to the
-  side near an edge rather than in the middle of the island. No
-  `PlayerRebirthed` hookup - Arcane Dust is entirely separate from
-  Mana/Rebirths, so rebirthing never resets it.
+  behavior, just costed and gated in Arcane Dust instead of Mana - and its
+  Buy/Max buttons sit at Y=0.7 instead of the Mana board's 0.82, since
+  this board's bottom edge sits right at ground level (its height puts
+  the bottom of the Part at `ISLAND_TOP_Y`), so 0.82 read as the buttons
+  touching the floor. Sits near SecondIsland's -X edge facing inward -
+  "Right" instead of the starting island kiosk row's "Left" - since it's
+  positioned off to the side near an edge rather than in the middle of
+  the island. No `PlayerRebirthed` hookup - Arcane Dust is entirely
+  separate from Mana/Rebirths, so rebirthing never resets it.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner

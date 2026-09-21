@@ -1,15 +1,15 @@
--- Server-authoritative "Arcane Dust Spawn Speed" upgrade: shortens how long
--- it takes a new ArcaneDustNode to respawn after the buying player collects
--- one, AND raises how many Arcane Dust nodes exist at once (2 at level 1, up
--- to 6 at level 10 - a smaller zone than Mana's, so lower node counts).
--- Mirrors ManaSpawnHandler's shape; costed on its own curve (currentLevel *
--- 10, paid in Arcane Dust, not Mana's shared UpgradeCost).
+-- Server-authoritative "Arcane Dust Spawn Speed" upgrade (shown to players
+-- as "Grant Speed" - how often ArcaneDustPad pays out while you stand on
+-- it): 1.5s at level 1 down to 0.5s at level 10, per direct request (2.0s
+-- felt too slow to start). Mirrors ManaSpawnHandler's shape; costed on its
+-- own curve (currentLevel * 10, paid in Arcane Dust, not Mana's shared
+-- UpgradeCost).
 
 local PlayerData = require(script.Parent.PlayerData)
 
 local MAX_SPEED_LEVEL = 10
-local BASE_RESPAWN_SECONDS = 2.0
-local FASTEST_RESPAWN_SECONDS = 0.2
+local BASE_RESPAWN_SECONDS = 1.5
+local FASTEST_RESPAWN_SECONDS = 0.5
 local BASE_NODE_COUNT = 2
 local MAX_NODE_COUNT = 6
 
