@@ -78,6 +78,8 @@ local function defaultData()
 		level = 1, -- XP level, 1-50 - a separate progression track, NOT reset by rebirthing
 		xp = 0, -- current XP progress toward the next level
 
+		secondIslandUnlocked = false, -- true once the player has reached SecondIslandGate while meeting its requirement; permanent, doesn't consume Mana/Rebirths
+
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,
@@ -133,9 +135,12 @@ function PlayerData.load(player: Player)
 		data.firstJoinedAt = os.time()
 	end
 
-	-- TEMP: testing only - grants 10,000,000 Mana on every join. Remove this
-	-- line once you're done testing.
-	data.mana = 10000000
+	-- TEMP: testing only - grants Mana/Rebirths/Level on every join so
+	-- SecondIsland's gate is immediately reachable. Remove these lines once
+	-- you're done testing.
+	data.mana = 80000000
+	data.rebirths = 80000
+	data.level = 50
 
 	sessions[player] = data
 

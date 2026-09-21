@@ -560,15 +560,20 @@ end
 -- Rings the perimeter at a fixed inset, cycling tree/bush/flower/flower so
 -- flowers show up more often as small accents between the bigger anchors.
 -- Skips the near edge's middle stretch so the bridge entrance stays clear.
+-- Each spot gets a small random jitter so the ring reads as staggered/
+-- natural instead of a perfectly straight line.
 local DECOR_INSET = 8
 local DECOR_STEP = 12
+local DECOR_JITTER = 3
 local decorHalf = SECOND_ISLAND_SIZE / 2 - DECOR_INSET
 
 local decorKinds = { makeTree, makeBush, makeFlower, makeFlower }
 local decorIndex = 0
 local function placeNextDecor(x: number, z: number)
 	decorIndex += 1
-	decorKinds[(decorIndex - 1) % #decorKinds + 1](x, z)
+	local jitterX = (math.random() * 2 - 1) * DECOR_JITTER
+	local jitterZ = (math.random() * 2 - 1) * DECOR_JITTER
+	decorKinds[(decorIndex - 1) % #decorKinds + 1](x + jitterX, z + jitterZ)
 end
 
 for offset = -decorHalf, decorHalf, DECOR_STEP do
@@ -580,10 +585,15 @@ for offset = -decorHalf, decorHalf, DECOR_STEP do
 	placeNextDecor(secondIslandCenterX - decorHalf, secondIslandCenterZ + offset) -- near X edge
 end
 
--- Enforces the lock: an under-leveled player who steps onto the bridge gets
--- pushed back onto the starting island, same poll-loop pattern as the
--- fall-kill check above. Restricted to the bridge's own width so it never
--- catches someone just walking near the starting island's edge elsewhere.
+-- Enforces the lock, and doubles as the "unlock" action: a player who
+-- reaches the gate while meeting the requirement gets a permanent
+-- secondIslandUnlocked flag (never touches their Mana/Rebirths - it's a
+-- one-time threshold check, not a toll), so they only ever have to walk up
+-- to it once. Anyone who reaches it without meeting the requirement, or
+-- without having unlocked it previously, gets pushed back onto the
+-- starting island - same poll-loop pattern as the fall-kill check above.
+-- Restricted to the bridge's own width so it never catches someone just
+-- walking near the starting island's edge elsewhere.
 local function meetsSecondIslandRequirement(player: Player): boolean
 	local data = PlayerData.get(player)
 	if not data then
@@ -607,9 +617,15 @@ task.spawn(function()
 				rootPart
 				and rootPart.Position.Z >= GATE_Z
 				and math.abs(rootPart.Position.X - secondIslandCenterX) <= BRIDGE_WIDTH / 2
-				and not meetsSecondIslandRequirement(player)
 			then
-				rootPart.CFrame = CFrame.new(secondIslandCenterX, groundY + 3, GATE_Z - 5)
+				local data = PlayerData.get(player)
+				if data and not data.secondIslandUnlocked then
+					if meetsSecondIslandRequirement(player) then
+						data.secondIslandUnlocked = true
+					else
+						rootPart.CFrame = CFrame.new(secondIslandCenterX, groundY + 3, GATE_Z - 5)
+					end
+				end
 			end
 		end
 	end

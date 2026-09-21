@@ -142,18 +142,23 @@ design notes.
   (`ForceField` material, `CanCollide` false - purely visual) with a static
   SurfaceGui: a "🔒 LOCKED" title banner (same look as the kiosk boards'
   banners) plus one clean line per requirement instead of one cramped
-  multi-line label. The actual lock is enforced by a `GATE_CHECK_INTERVAL`
-  (0.25s) poll, same pattern as the fall-kill check: anyone without
-  40,000,000 Mana, 40,000 Rebirths, and Level 25 (checked straight off
-  `PlayerData`) gets teleported back onto the starting island the moment
-  they step onto the bridge's own width - it never touches someone just
-  walking near the starting island's edge elsewhere. No upgrade kiosks on
-  `SecondIsland` yet, just a ring of procedurally placed trees/bushes/
-  flowers (`SecondIslandDecor`) around its edge, inset from the border and
-  skipping the bridge's landing spot - each built from several
-  overlapping/stacked parts (three canopy clumps per tree, three bumps per
-  bush, a stem + bloom per flower) instead of one plain shape, for a
-  fuller look than a single sphere or dot. The exact direction/size
+  multi-line label. The lock is enforced (and "unlocked") by a
+  `GATE_CHECK_INTERVAL` (0.25s) poll, same pattern as the fall-kill check:
+  reaching the gate without the permanent `secondIslandUnlocked` flag set
+  checks 40,000,000 Mana, 40,000 Rebirths, and Level 25 straight off
+  `PlayerData` - meeting it flips that flag permanently (never touches
+  Mana/Rebirths, it's a one-time threshold check, not a toll) so the player
+  only has to walk up to the gate once; falling short teleports them back
+  onto the starting island instead. Restricted to the bridge's own width so
+  it never touches someone just walking near the starting island's edge
+  elsewhere. No upgrade kiosks on `SecondIsland` yet, just a ring of
+  procedurally placed trees/bushes/flowers (`SecondIslandDecor`) around its
+  edge, inset from the border, skipping the bridge's landing spot, and each
+  given a small random `DECOR_JITTER` offset so the ring reads as staggered
+  rather than a perfectly straight line. Each piece is also built from
+  several overlapping/stacked parts (three canopy clumps per tree, three
+  bumps per bush, a stem + bloom per flower) instead of one plain shape, for
+  a fuller look than a single sphere or dot. The exact direction/size
   (`BRIDGE_LENGTH`/`BRIDGE_WIDTH`/`SECOND_ISLAND_SIZE`/
   `SECOND_ISLAND_OFFSET_X`) is a best guess from a screenshot, same "nudge
   the numbers after testing" situation as the kiosk board offsets above if
