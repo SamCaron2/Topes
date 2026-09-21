@@ -51,6 +51,7 @@ surfaceGui.Parent = board
 local background = Instance.new("Frame")
 background.Size = UDim2.new(1, 0, 1, 0)
 background.BackgroundColor3 = Color3.fromRGB(70, 150, 220)
+background.BackgroundTransparency = 0.35 -- lets the card's glass show through behind it
 background.BorderSizePixel = 0
 background.Parent = surfaceGui
 

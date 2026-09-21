@@ -107,8 +107,12 @@ design notes.
   higher level) adds nodes right away. Also places two separate physical
   kiosk boards past the platform's edge - `ManaUpgradeBoard` (42 studs
   wide, the 4-column upgrades board) and `RebirthBoard` (20 studs wide,
-  just past its edge) - each just a bare Part; `ManaUpgradeBoardClient`
-  and `RebirthBoardClient` build their actual UI. Grows one piece at a
+  just past its edge) - each just a bare Part (Glass material, 0.5
+  transparency, for a see-through card look - still solid, `CanCollide`
+  stays true); `ManaUpgradeBoardClient` and `RebirthBoardClient` build
+  their actual UI (their SurfaceGui backgrounds are also partly
+  transparent, so the glass shows through behind the UI, not just
+  around its edges). Grows one piece at a
   time as the new vision gets specified — rerunning it (every server
   start) rebuilds the `StartingIsland`, `ManaZone`, and `Kiosks` from
   scratch, so editing this file and reconnecting Rojo is how you

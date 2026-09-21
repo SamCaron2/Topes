@@ -235,13 +235,17 @@ kiosksFolder.Parent = Workspace
 
 -- Thin along X (the approach direction), wide along Z, so its wide face -
 -- not its thin edge - points back at the platform, toward the player.
+-- Glass + partial transparency gives the card a see-through look (matching
+-- the reference screenshot) instead of a solid opaque slab - purely visual,
+-- CanCollide stays true so it's still a solid physical object.
 local function makeKioskCard(name: string, offsetX: number, offsetZ: number, width: number)
 	local card = Instance.new("Part")
 	card.Name = name
 	card.Anchored = true
 	card.CanCollide = true
-	card.Material = Enum.Material.SmoothPlastic
+	card.Material = Enum.Material.Glass
 	card.Color = Color3.fromRGB(45, 45, 60)
+	card.Transparency = 0.5
 	card.Size = Vector3.new(1, 18, width)
 	card.CFrame = CFrame.new(centerX + offsetX, groundY + 9, centerZ + offsetZ)
 	card.Parent = kiosksFolder
