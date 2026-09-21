@@ -7,9 +7,8 @@
 --    currentLevel Rebirths (unchanged from when it was the only column).
 --  - "Rebirth Multiplier": level 1-100, NON-linear (quadratic) 1x -> 50x,
 --    scales how many Rebirths a rebirth actually grants (RebirthHandler).
---  - "XP Multiplier": level 1-25, NON-linear (quadratic) 1x -> 5x (a
---    placeholder range - no target was given, easy to retune), scales XP
---    per pickup (XPHandler). Cost also non-linear per direct request -
+--  - "XP Multiplier": level 1-25, NON-linear (quadratic) 1x -> 50x, scales
+--    XP per pickup (XPHandler). Cost also non-linear per direct request -
 --    "periodically cost more," not a flat per-level increase.
 --
 -- Rebirth Multiplier and XP Multiplier are deliberately NOT linear, unlike
@@ -111,7 +110,7 @@ RebirthShopHandler.getXpMultiplier, RebirthShopHandler.getXpMultiplierState, Reb
 	fieldName = "xpMultiplierLevel",
 	maxLevel = 25,
 	multiplierForLevel = function(level)
-		return 1 + 4 * ((level - 1) / 24) ^ 2
+		return 1 + 49 * ((level - 1) / 24) ^ 2
 	end,
 	costForLevel = function(currentLevel)
 		return math.ceil(currentLevel ^ 1.6)

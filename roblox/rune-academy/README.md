@@ -196,7 +196,7 @@ design notes.
   Multiplier" (level 1-100, non-linear/quadratic 1x → 50x, cost =
   `ceil(level^1.5)` Rebirths - read by `RebirthHandler` to scale how many
   Rebirths a rebirth actually grants), and "XP Multiplier" (level 1-25,
-  non-linear/quadratic 1x → 5x, cost = `ceil(level^1.6)` Rebirths - read
+  non-linear/quadratic 1x → 50x, cost = `ceil(level^1.6)` Rebirths - read
   by `XPHandler` to scale XP per pickup). Rebirth Multiplier and XP
   Multiplier are deliberately non-linear on both their multiplier and
   cost curves per direct request, unlike Mana Value Multiplier's linear
