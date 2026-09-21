@@ -257,6 +257,7 @@ local MANA_BOARD_WIDTH = 42
 local REBIRTH_BOARD_WIDTH = 20
 local REBIRTH_SHOP_BOARD_WIDTH = 16 -- snug for its one active column; widen when more are added
 local BOARD_GAP = 4 -- studs between separate boards
+local CARD_THICKNESS = 1 -- matches makeKioskCard's Size.X below
 
 makeKioskCard("ManaUpgradeBoard", half + 6, 0, MANA_BOARD_WIDTH)
 
@@ -269,6 +270,10 @@ makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH
 -- Further along the same direction, just past the Rebirth board's own edge.
 -- Rotated -90 degrees so it faces back along the row (toward the other two
 -- boards) instead of straight ahead like they do - the natural direction to
--- face when it's the last board at the end of the line.
-local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (REBIRTH_SHOP_BOARD_WIDTH / 2)
+-- face when it's the last board at the end of the line. That same rotation
+-- swaps which of its dimensions runs along the row: its 16-stud width now
+-- extends along X (depth) instead of Z, so only its 1-stud THICKNESS
+-- extends along Z - use half of that, not half its width, to sit its edge
+-- flush against the Rebirth board's edge instead of leaving a big gap.
+local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (CARD_THICKNESS / 2)
 makeKioskCard("RebirthShopBoard", half + 6, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH, math.rad(-90))

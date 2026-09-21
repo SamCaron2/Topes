@@ -112,7 +112,10 @@ design notes.
   wide, sized snugly for its one active column - widen it when the next
   2 Rebirth Shop columns get built; rotated -90 degrees from the other
   two since it's the last board at the end of the row, so it faces back
-  along the row instead of straight ahead) - each just a bare Part
+  along the row instead of straight ahead - that rotation also swaps
+  which of its dimensions runs along the row, so its offset uses half
+  its thickness there instead of half its width, to sit flush against
+  the Rebirth board's edge) - each just a bare Part
   (Glass material, 0.7 transparency, for a see-through card look - still
   solid, `CanCollide` stays true); `ManaUpgradeBoardClient`,
   `RebirthBoardClient`, and `RebirthShopBoardClient` build their actual
