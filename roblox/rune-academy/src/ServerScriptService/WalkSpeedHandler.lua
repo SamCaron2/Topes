@@ -45,6 +45,13 @@ local function applyWalkSpeed(player: Player)
 	humanoid.WalkSpeed = walkSpeedForLevel(data.walkSpeedLevel or 1)
 end
 
+-- Exposed so RebirthHandler can re-apply Humanoid.WalkSpeed right after
+-- resetting walkSpeedLevel back to 1 on rebirth - PlayerData changing alone
+-- doesn't touch the live Humanoid.
+function WalkSpeedHandler.applyCurrentSpeed(player: Player)
+	applyWalkSpeed(player)
+end
+
 function WalkSpeedHandler.getUpgradeState(player: Player)
 	local data = PlayerData.get(player)
 	if not data then

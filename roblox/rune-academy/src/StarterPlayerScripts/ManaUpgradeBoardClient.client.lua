@@ -22,6 +22,7 @@ local buyWalkSpeedUpgradeFunction = remotes:WaitForChild("BuyWalkSpeedUpgrade")
 local getCollectionRangeStateFunction = remotes:WaitForChild("GetCollectionRangeState")
 local buyCollectionRangeUpgradeFunction = remotes:WaitForChild("BuyCollectionRangeUpgrade")
 local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
+local playerRebirthedEvent = remotes:WaitForChild("PlayerRebirthed")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("ManaUpgradeBoard")
 
@@ -112,6 +113,8 @@ titleText.Parent = titleBanner
 -- Builds one upgrade column (icon, name, level, detail line, cost, Buy/Max)
 -- at the given horizontal slot and wires it to a get-state/buy remote pair.
 -- Shared by every upgrade on this board so they all look and behave alike.
+-- Returns a refresh() function so the caller can re-fetch this column's
+-- state on demand (used after a rebirth resets all 4 columns' levels).
 local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3, getStateRemote, buyRemote, formatDetail)
 	local column = Instance.new("Frame")
 	column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
@@ -294,32 +297,48 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 			render(newState)
 		end
 	end)
+
+	local function refresh()
+		render(getStateRemote:InvokeServer())
+	end
+
+	return refresh
 end
 
-createUpgradeColumn(1, "More Mana", Color3.fromRGB(150, 80, 255), getManaYieldStateFunction, buyManaYieldUpgradeFunction, function(state)
-	if state.nextLevelCost then
-		return ("+%d > +%d"):format(state.amountPerPickup, state.nextAmountPerPickup)
-	end
-	return ("+%d (MAX)"):format(state.amountPerPickup)
-end)
+local columnRefreshFunctions = {
+	createUpgradeColumn(1, "More Mana", Color3.fromRGB(150, 80, 255), getManaYieldStateFunction, buyManaYieldUpgradeFunction, function(state)
+		if state.nextLevelCost then
+			return ("+%d > +%d"):format(state.amountPerPickup, state.nextAmountPerPickup)
+		end
+		return ("+%d (MAX)"):format(state.amountPerPickup)
+	end),
 
-createUpgradeColumn(2, "Mana Spawn Speed", Color3.fromRGB(80, 220, 255), getManaSpawnStateFunction, buyManaSpawnUpgradeFunction, function(state)
-	if state.nextLevelCost then
-		return ("%.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
-	end
-	return ("%.1fs (MAX)"):format(state.respawnSeconds)
-end)
+	createUpgradeColumn(2, "Mana Spawn Speed", Color3.fromRGB(80, 220, 255), getManaSpawnStateFunction, buyManaSpawnUpgradeFunction, function(state)
+		if state.nextLevelCost then
+			return ("%.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
+		end
+		return ("%.1fs (MAX)"):format(state.respawnSeconds)
+	end),
 
-createUpgradeColumn(3, "Walking Speed", Color3.fromRGB(255, 200, 60), getWalkSpeedStateFunction, buyWalkSpeedUpgradeFunction, function(state)
-	if state.nextLevelCost then
-		return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
-	end
-	return ("%.1fx (MAX)"):format(state.multiplier)
-end)
+	createUpgradeColumn(3, "Walking Speed", Color3.fromRGB(255, 200, 60), getWalkSpeedStateFunction, buyWalkSpeedUpgradeFunction, function(state)
+		if state.nextLevelCost then
+			return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
+		end
+		return ("%.1fx (MAX)"):format(state.multiplier)
+	end),
 
-createUpgradeColumn(4, "Collection Range", Color3.fromRGB(90, 220, 140), getCollectionRangeStateFunction, buyCollectionRangeUpgradeFunction, function(state)
-	if state.nextLevelCost then
-		return ("%.0f > %.0f"):format(state.radius, state.nextRadius)
+	createUpgradeColumn(4, "Collection Range", Color3.fromRGB(90, 220, 140), getCollectionRangeStateFunction, buyCollectionRangeUpgradeFunction, function(state)
+		if state.nextLevelCost then
+			return ("%.0f > %.0f"):format(state.radius, state.nextRadius)
+		end
+		return ("%.0f (MAX)"):format(state.radius)
+	end),
+}
+
+-- Rebirthing resets all 4 of these upgrades server-side; re-fetch every
+-- column so the board doesn't keep showing stale pre-rebirth levels/costs.
+playerRebirthedEvent.OnClientEvent:Connect(function()
+	for _, refresh in columnRefreshFunctions do
+		refresh()
 	end
-	return ("%.0f (MAX)"):format(state.radius)
 end)

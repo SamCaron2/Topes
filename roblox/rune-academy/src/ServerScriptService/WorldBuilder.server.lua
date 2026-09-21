@@ -254,6 +254,7 @@ end
 
 local MANA_BOARD_WIDTH = 42
 local REBIRTH_BOARD_WIDTH = 20
+local REBIRTH_SHOP_BOARD_WIDTH = 16 -- snug for its one active column; widen when more are added
 local BOARD_GAP = 4 -- studs between separate boards
 
 makeKioskCard("ManaUpgradeBoard", half + 6, 0, MANA_BOARD_WIDTH)
@@ -263,3 +264,7 @@ makeKioskCard("ManaUpgradeBoard", half + 6, 0, MANA_BOARD_WIDTH)
 -- Left-face SurfaceGui coordinate math suggested - confirmed by testing.)
 local rebirthBoardOffsetZ = (MANA_BOARD_WIDTH / 2) + BOARD_GAP + (REBIRTH_BOARD_WIDTH / 2)
 makeKioskCard("RebirthBoard", half + 6, rebirthBoardOffsetZ, REBIRTH_BOARD_WIDTH)
+
+-- Further along the same direction, just past the Rebirth board's own edge.
+local rebirthShopBoardOffsetZ = rebirthBoardOffsetZ + (REBIRTH_BOARD_WIDTH / 2) + BOARD_GAP + (REBIRTH_SHOP_BOARD_WIDTH / 2)
+makeKioskCard("RebirthShopBoard", half + 6, rebirthShopBoardOffsetZ, REBIRTH_SHOP_BOARD_WIDTH)

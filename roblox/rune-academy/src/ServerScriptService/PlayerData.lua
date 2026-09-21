@@ -61,12 +61,17 @@ local function defaultData()
 
 	return {
 		zones = defaultZoneState(),
+		-- Mana + the 4 fields below all get reset to these same defaults by
+		-- RebirthHandler.rebirth() - keep that function's reset list in sync
+		-- if any of these are renamed or a new Mana-side upgrade is added.
 		mana = 0, -- collected from ManaNodes on the ground; not a Zone/ResourceEngine currency yet
 		manaYieldLevel = 1, -- "Mana Per Pickup" upgrade level, 1-100, +1 Mana per pickup per level
 		manaSpawnSpeedLevel = 1, -- "Mana Spawn Speed" upgrade level, 1-10, faster ManaNode respawns per level
 		walkSpeedLevel = 1, -- "Walking Speed" upgrade level, 1-10, 1x-3x Humanoid.WalkSpeed
 		collectionRangeLevel = 1, -- "Collection Range" upgrade level, 1-12, grows the auto-collect radius
+
 		rebirths = 0, -- permanent currency from resetting Mana; fractional (1000 Mana = 1.0 Rebirth exactly)
+		manaValueMultiplierLevel = 1, -- Rebirth Shop: "Mana Value Multiplier", 1-100, 1x-2x - NOT reset by rebirthing
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,

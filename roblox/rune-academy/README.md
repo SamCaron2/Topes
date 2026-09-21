@@ -104,19 +104,22 @@ design notes.
   many nodes exist at once (3 at level 1, up to 10 at level 10, taking
   the max across everyone online) — a `TOP_UP_INTERVAL` poll spawns more
   as needed, not just on pickup, so a purchase (or another player's
-  higher level) adds nodes right away. Also places two separate physical
-  kiosk boards past the platform's edge - `ManaUpgradeBoard` (42 studs
-  wide, the 4-column upgrades board) and `RebirthBoard` (20 studs wide,
-  just past its edge) - each just a bare Part (Glass material, 0.7
-  transparency, for a see-through card look - still solid, `CanCollide`
-  stays true); `ManaUpgradeBoardClient` and `RebirthBoardClient` build
-  their actual UI (their SurfaceGui backgrounds are also 0.55
-  transparent, so the glass shows through behind the UI, not just
-  around its edges). Grows one piece at a
-  time as the new vision gets specified — rerunning it (every server
-  start) rebuilds the `StartingIsland`, `ManaZone`, and `Kiosks` from
-  scratch, so editing this file and reconnecting Rojo is how you
-  iterate on world layout.
+  higher level) adds nodes right away. Also places three separate
+  physical kiosk boards past the platform's edge, each just outside the
+  previous one's far edge - `ManaUpgradeBoard` (42 studs wide, the
+  4-column Mana upgrades board), `RebirthBoard` (20 studs wide, the
+  reset-for-Rebirths action board), and `RebirthShopBoard` (16 studs
+  wide, sized snugly for its one active column - widen it when the next
+  2 Rebirth Shop columns get built) - each just a bare Part (Glass
+  material, 0.7 transparency, for a see-through card look - still
+  solid, `CanCollide` stays true); `ManaUpgradeBoardClient`,
+  `RebirthBoardClient`, and `RebirthShopBoardClient` build their actual
+  UI (their SurfaceGui backgrounds are also 0.55 transparent, so the
+  glass shows through behind the UI, not just around its edges). Grows
+  one piece at a time as the new vision gets specified — rerunning it
+  (every server start) rebuilds the `StartingIsland`, `ManaZone`, and
+  `Kiosks` from scratch, so editing this file and reconnecting Rojo is
+  how you iterate on world layout.
 - `UpgradeCost.lua` — the one shared cost curve every Mana upgrade costs
   its levels through (`costForLevel(currentLevel) = currentLevel * 10`),
   so the very first purchase (from level 1) always costs 10 Mana no
@@ -131,11 +134,14 @@ design notes.
   (`amountForLevel(currentLevel) * 10`), so cost scales with the payoff
   instead of a flat level*10 making high levels feel cheap relative to
   what they gave (level 1 still costs 10, but level 9 - to reach level
-  10's +25/pickup - now costs 210 instead of 90). `buyYieldUpgrade`
-  takes an optional `"max"` mode that buys as
-  many levels in a row as currently affordable. Deliberately kept
-  separate from `ResourceEngine`/`GameConfig.Zones` for now — a fresh,
-  much simpler mechanic until the new vision needs more.
+  10's +25/pickup - now costs 210 instead of 90). Every pickup is also
+  scaled by `RebirthShopHandler`'s permanent "Mana Value Multiplier"
+  (1x-2x, survives rebirthing) - `amountPerPickup`/`nextAmountPerPickup`
+  in the returned state already include it, so the board always shows
+  the real effective yield. `buyYieldUpgrade` takes an optional `"max"`
+  mode that buys as many levels in a row as currently affordable.
+  Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones`
+  for now — a fresh, much simpler mechanic until the new vision needs more.
 - `ManaSpawnHandler.lua` — the "Mana Spawn Speed" upgrade (level 1-10,
   same `UpgradeCost` curve as every other Mana upgrade). Two effects per
   level, both linear: respawn delay 2.0s → 0.2s, and live node count 3 →
@@ -160,8 +166,20 @@ design notes.
 - `RebirthHandler.lua` — Rebirths, a second currency: resetting your
   Mana grants Rebirths at 1,000 Mana = 1 Rebirth, fractional (5,400
   Mana gives exactly 5.4 Rebirths, not floored). Requires at least 1,000
-  Mana to rebirth at all. Only resets Mana for now - spending Rebirths
-  on anything is future work, not built yet.
+  Mana to rebirth at all. Also resets all 4 Mana-side upgrade levels
+  (Mana Per Pickup, Mana Spawn Speed, Walking Speed, Collection Range)
+  back to 1 - re-applies `Humanoid.WalkSpeed` immediately via
+  `WalkSpeedHandler.applyCurrentSpeed` since changing `PlayerData` alone
+  doesn't touch the live Humanoid. Rebirth Shop upgrades
+  (`RebirthShopHandler`) are deliberately NOT reset - they're the whole
+  point of rebirthing, so each run collects Mana faster than the last.
+- `RebirthShopHandler.lua` — permanent upgrades bought with Rebirths
+  instead of Mana, that survive rebirthing. Currently one: "Mana Value
+  Multiplier" (level 1-100, linear 1x → 2x, first purchase costs 1
+  Rebirth, cost climbs by 1 Rebirth per level after - its own curve, not
+  `UpgradeCost`). `getManaValueMultiplier(player)` is read by
+  `ManaHandler` to scale every pickup. Two more columns are planned for
+  this same board later.
 - `ManaHUDClient.client.lua` — a plain "Mana: <amount>" text label,
   middle-left of the screen, updated live off the `ManaUpdated`
   RemoteEvent (no icon yet), plus a red "Rebirths: X.X" label right
@@ -208,15 +226,28 @@ design notes.
   off the same `ManaUpdated` event the HUD counter uses. Once a column
   hits its max level, Max is hidden and Buy expands to a single
   full-width gray "Maxed" button instead of showing two redundant
-  maxed-out buttons.
+  maxed-out buttons. Each `createUpgradeColumn` call returns a
+  `refresh()` function; all 4 are re-run whenever `PlayerRebirthed`
+  fires, so the board never keeps showing stale pre-rebirth
+  levels/costs after a rebirth resets them server-side.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Explains the
-  mechanic, shows "Your Rebirths: X.X", a live "Rebirth now for +X.X
-  Rebirths" preview that updates off the same `ManaUpdated` event the
-  HUD uses, and a Rebirth button (bright red when you have the
-  required 1,000+ Mana, gray otherwise). Same SurfaceGui-on-a-face
-  approach as the Mana board.
+  mechanic, shows "Your Rebirths: X.X" (kept live via `RebirthsUpdated`
+  even when Rebirths are spent elsewhere, e.g. the Rebirth Shop board),
+  a live "Rebirth now for +X.X Rebirths" preview that updates off the
+  same `ManaUpdated` event the HUD uses, and a Rebirth button (bright
+  red when you have the required 1,000+ Mana, gray otherwise). Same
+  SurfaceGui-on-a-face approach as the Mana board.
+- `RebirthShopBoardClient.client.lua` — the Rebirth Shop board
+  (`Workspace.Kiosks.RebirthShopBoard`), styled in purple. Same clear
+  "Rebirths: X.X" readout + title banner template as the Mana Upgrades
+  board, then one column so far: "Mana Value Multiplier", level
+  `(x/100)`, a `%.2fx > %.2fx` preview (small per-level steps need 2
+  decimals to look responsive - 1 decimal would show the same value for
+  several levels in a row), cost in Rebirths, and the same Buy/Max ->
+  single "Maxed" button behavior as the Mana board's columns. Two more
+  columns are planned for this same board later.
 
 ## Manual steps required before everything works
 

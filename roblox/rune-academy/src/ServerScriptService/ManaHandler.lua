@@ -5,6 +5,7 @@
 -- wired to it yet.
 
 local PlayerData = require(script.Parent.PlayerData)
+local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -30,17 +31,26 @@ end
 
 local ManaHandler = {}
 
+-- Effective yield per pickup: the base yield curve scaled by the Rebirth
+-- Shop's permanent "Mana Value Multiplier" (1x-2x, survives rebirthing -
+-- that's the whole point). Floored to keep Mana a whole number.
+local function effectiveAmountForLevel(player: Player, level: number): number
+	return math.floor(amountForLevel(level) * RebirthShopHandler.getManaValueMultiplier(player))
+end
+
 function ManaHandler.collect(player: Player): number?
 	local data = PlayerData.get(player)
 	if not data then
 		return nil
 	end
-	data.mana = (data.mana or 0) + amountForLevel(data.manaYieldLevel or 1)
+	data.mana = (data.mana or 0) + effectiveAmountForLevel(player, data.manaYieldLevel or 1)
 	return data.mana
 end
 
 -- Read-only snapshot for the kiosk UI: current level, current yield, the
--- yield one more level would give, and the Mana cost to buy it (nil once maxed).
+-- yield one more level would give, and the Mana cost to buy it (nil once
+-- maxed). amountPerPickup/nextAmountPerPickup already include the Rebirth
+-- Shop multiplier, so the board always shows the real effective yield.
 function ManaHandler.getYieldUpgradeState(player: Player)
 	local data = PlayerData.get(player)
 	if not data then
@@ -52,8 +62,8 @@ function ManaHandler.getYieldUpgradeState(player: Player)
 	return {
 		level = level,
 		maxLevel = MAX_YIELD_LEVEL,
-		amountPerPickup = amountForLevel(level),
-		nextAmountPerPickup = not maxed and amountForLevel(level + 1) or nil,
+		amountPerPickup = effectiveAmountForLevel(player, level),
+		nextAmountPerPickup = not maxed and effectiveAmountForLevel(player, level + 1) or nil,
 		nextLevelCost = not maxed and costForLevel(level) or nil,
 		mana = data.mana or 0,
 	}

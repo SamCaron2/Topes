@@ -11,6 +11,7 @@ local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
 local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local RebirthHandler = require(script.Parent.RebirthHandler)
+local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
 local ResourceEngine = require(script.Parent.ResourceEngine)
 local RuneHandler = require(script.Parent.RuneHandler)
 local ResetHandler = require(script.Parent.ResetHandler)
@@ -61,7 +62,10 @@ local buyCollectionRangeUpgradeFunction = newRemoteFunction("BuyCollectionRangeU
 local collectionRangeUpdatedEvent = newRemoteEvent("CollectionRangeUpdated") -- server -> client, fired on join and on every purchase
 local getRebirthStateFunction = newRemoteFunction("GetRebirthState")
 local performRebirthFunction = newRemoteFunction("PerformRebirth")
-local rebirthsUpdatedEvent = newRemoteEvent("RebirthsUpdated") -- server -> client, fired on join and on every rebirth
+local rebirthsUpdatedEvent = newRemoteEvent("RebirthsUpdated") -- server -> client, fired on join and whenever Rebirths changes
+local getManaValueMultiplierStateFunction = newRemoteFunction("GetManaValueMultiplierState")
+local buyManaValueMultiplierFunction = newRemoteFunction("BuyManaValueMultiplier")
+local playerRebirthedEvent = newRemoteEvent("PlayerRebirthed") -- server -> client, tells the Mana Upgrades board to re-fetch every column (levels reset)
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -257,6 +261,23 @@ performRebirthFunction.OnServerInvoke = function(player)
 	local success, err, newState = RebirthHandler.rebirth(player)
 	if success then
 		manaUpdatedEvent:FireClient(player, newState.mana)
+		rebirthsUpdatedEvent:FireClient(player, newState.rebirths)
+		collectionRangeUpdatedEvent:FireClient(player, CollectionRangeHandler.getRadius(player))
+		playerRebirthedEvent:FireClient(player)
+	end
+	return success, err, newState
+end
+
+getManaValueMultiplierStateFunction.OnServerInvoke = function(player)
+	return RebirthShopHandler.getManaValueMultiplierState(player)
+end
+
+buyManaValueMultiplierFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = RebirthShopHandler.buyManaValueMultiplier(player, mode)
+	if success then
 		rebirthsUpdatedEvent:FireClient(player, newState.rebirths)
 	end
 	return success, err, newState
