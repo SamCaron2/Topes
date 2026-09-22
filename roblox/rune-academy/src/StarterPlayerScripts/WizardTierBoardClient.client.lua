@@ -135,6 +135,9 @@ local function formatBonuses(tierInfo)
 	if tierInfo.autoMana then
 		text ..= " + Auto Mana (collects Mana passively, no pickups needed)"
 	end
+	if tierInfo.unlockName then
+		text ..= (" + unlocks the %s"):format(tierInfo.unlockName)
+	end
 	return text
 end
 

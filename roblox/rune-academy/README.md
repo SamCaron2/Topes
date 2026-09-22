@@ -213,6 +213,18 @@ design notes.
   of open room, unlike the ~10 left on the -Z/bridge side) sits
   `WizardTierBoard` (36 studs wide, bigger than the Arcane Dust board per
   direct request) - see `WizardTierHandler`/`WizardTierBoardClient` below.
+  Further along +Z past that (Tier 3's unlock, "a Fantasy ruin to the left
+  of the Tier card") sits `FantasyRuin` - a 26x26 stud decorative plaza:
+  a glowing purple rune circle (same flat-cylinder trick as
+  `ArcaneDustPad`, just bigger) under a floating gold orb, 6 broken stone
+  pillars of varying height/tilt in a ring around it, a crumbling 2-pillar
+  archway with a lintel that stops short of the far pillar instead of
+  spanning the whole gap, and 8 scattered rubble blocks. Every part starts
+  hidden (`Transparency = 1`, `CanCollide = false`) - it's shared world
+  geometry, but players can be at different Wizard Tiers simultaneously,
+  so `WizardRuinClient` reveals it LOCALLY per-player (same pattern as
+  `SecondIslandGateClient`) once `WizardTierHandler.hasUnlockedRuin`
+  reports true for them.
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -338,6 +350,16 @@ design notes.
   `Main.server.lua` calls `ManaHandler.collect` for that player every
   `AUTO_MANA_INTERVAL` (1s) - the same effective yield/multipliers a
   manual pickup gets, just automatic, no walking onto a node required.
+  Tier 3 follows the same two rules again, per direct request ("Add
+  upgrade everything else more again"): cost scales by another 20x
+  (20e9 × 20 = 400,000,000,000 Mana, matching Tier 2's own 20x Mana
+  multiplier), and its multipliers are Tier 2's × 20x/20x/5x again
+  (400×20=x8000 Mana, 400×20=x8000 Rebirths, 25×5=x125 Arcane Dust). Its
+  reward is physical instead of another passive system: `unlockName =
+  "Fantasy Ruin"` on its `TIERS` entry, checked permanently (same scan
+  pattern as `hasAutoMana`) by `hasUnlockedRuin`, which
+  `WizardRuinClient` reads to reveal `Workspace.FantasyRuin` - see
+  `WorldBuilder` and `WizardRuinClient` below.
   `getManaMultiplier`/`getRebirthMultiplier`/
   `getDustMultiplier` are read by `ManaHandler`/`RebirthHandler`/
   `ArcaneDustHandler` respectively.
@@ -493,9 +515,11 @@ design notes.
   a description box explaining the next tier's cost/reset/reward in plain
   English, and a big red "Enter" button - styled after a reference "Summer
   Tiers" board's layout (title → tier name → description → buy button),
-  minus its prev/next tier arrows since only Tiers 1-2 exist so far -
+  minus its prev/next tier arrows since only Tiers 1-3 exist so far -
   `formatBonuses` appends "+ Auto Mana (collects Mana passively, no
-  pickups needed)" whenever a tier's `autoMana` flag is set (Tier 2). Because
+  pickups needed)" whenever a tier's `autoMana` flag is set (Tier 2), and
+  "+ unlocks the <unlockName>" whenever one is set (Tier 3's Fantasy
+  Ruin). Because
   buying a tier wipes almost everything (Mana, Rebirths, Level, every
   upgrade), the button requires two clicks - the first turns it orange
   with "Click again to confirm!" for a few seconds (`CONFIRM_WINDOW_SECONDS`),
@@ -503,6 +527,15 @@ design notes.
   outright, but reasonable given how destructive a misclick here would be.
   On success, re-renders from the server's returned state (which reports
   "No further tiers yet" once there's nothing left to buy).
+- `WizardRuinClient.client.lua` — reveals `Workspace.FantasyRuin` (Tier
+  3's unlock) LOCALLY for whichever players have actually reached it: every
+  part starts hidden/no-collide server-side since it's shared world
+  geometry and different players can be at different tiers at once, so
+  this checks `GetWizardTierState().unlockedRuin` (retrying a few times if
+  `PlayerData` isn't loaded yet, same guard as `SecondIslandGateClient`)
+  and flips `Transparency`/`CanCollide` back on for that client only if
+  it's true. Also re-checks on every `PlayerWizardTiered` event, so
+  reaching Tier 3 reveals the ruin immediately without needing to rejoin.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner
@@ -585,7 +618,7 @@ design notes.
 Nothing server-side generates or removes world parts anymore except what
 `WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`,
 `Kiosks`, `SecondIsland`, `IslandBridge`, `ArcaneDustPad`,
-`SecondIslandGate`, `SecondIslandDecor`, `LeaderboardIsland`,
+`SecondIslandGate`, `SecondIslandDecor`, `FantasyRuin`, `LeaderboardIsland`,
 `LeaderboardBridge`, `LeaderboardDecor`, all rebuilt from scratch on every
 server start). If your saved `.rbxl`
 still has leftover parts from before the reset (e.g. a

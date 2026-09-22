@@ -709,6 +709,142 @@ wizardTierBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 12, wizar
 wizardTierBoard.Parent = kiosksFolder
 
 -- ===========================================================================
+-- Fantasy Ruin: Tier 3's unlock (WizardTierHandler.hasUnlockedRuin), built
+-- further along +Z past WizardTierBoard - "to the left of the Tier card,"
+-- same left/right guess as every other board here. Every part starts
+-- hidden (Transparency 1, CanCollide false) - WizardRuinClient reveals it
+-- LOCALLY (same per-player pattern as SecondIslandGate) for whichever
+-- players have actually reached Tier 3, since different players can be at
+-- different tiers at once and this is shared world geometry, not a
+-- per-player instance. Purely a decorative milestone area, not a new
+-- mechanic - broken stone pillars in an arc around a glowing rune circle,
+-- a crumbling archway, and scattered rubble.
+local RUIN_SIZE = 26 -- studs, square footprint
+local RUIN_GAP_FROM_BOARD = 6
+local ruinAreaZ = wizardTierAreaZ + (WIZARD_TIER_BOARD_WIDTH / 2 + RUIN_GAP_FROM_BOARD + RUIN_SIZE / 2)
+local ruinAreaX = ARCANE_DUST_AREA_X + 15 -- shifted inward from the boards' near-edge X so the plaza doesn't hang off the island
+
+local existingRuin = Workspace:FindFirstChild("FantasyRuin")
+if existingRuin then
+	existingRuin:Destroy()
+end
+
+local fantasyRuinFolder = Instance.new("Folder")
+fantasyRuinFolder.Name = "FantasyRuin"
+fantasyRuinFolder.Parent = Workspace
+
+local function newRuinPart(name: string, size: Vector3, cframe: CFrame, material: Enum.Material, color: Color3): Part
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Anchored = true
+	part.Material = material
+	part.Color = color
+	part.Size = size
+	part.CFrame = cframe
+	-- Hidden/no-clip by default - WizardRuinClient flips both to true LOCALLY
+	-- for players who've reached Tier 3.
+	part.Transparency = 1
+	part.CanCollide = false
+	part.Parent = fantasyRuinFolder
+	return part
+end
+
+local RUIN_STONE_COLOR = Color3.fromRGB(120, 120, 110)
+local RUIN_MOSS_COLOR = Color3.fromRGB(95, 115, 80)
+
+-- The glowing rune circle centerpiece - same flat-cylinder trick as
+-- ArcaneDustPad, just bigger, and colored to match the Wizard Tiers
+-- board's purple/gold theme instead of Arcane Dust's blue.
+newRuinPart(
+	"RuinRuneCircle",
+	Vector3.new(0.6, 20, 20),
+	CFrame.new(ruinAreaX, ISLAND_TOP_Y + 0.3, ruinAreaZ) * CFrame.Angles(0, 0, math.rad(90)),
+	Enum.Material.Neon,
+	Color3.fromRGB(180, 120, 255)
+)
+
+-- A floating glowing orb centered above the rune circle - the plaza's focal
+-- point, visible from a distance once revealed.
+local ruinOrb = Instance.new("Part")
+ruinOrb.Name = "RuinOrb"
+ruinOrb.Shape = Enum.PartType.Ball
+ruinOrb.Anchored = true
+ruinOrb.Material = Enum.Material.Neon
+ruinOrb.Color = Color3.fromRGB(255, 220, 120)
+ruinOrb.Size = Vector3.new(4, 4, 4)
+ruinOrb.CFrame = CFrame.new(ruinAreaX, ISLAND_TOP_Y + 10, ruinAreaZ)
+ruinOrb.Transparency = 1
+ruinOrb.CanCollide = false
+ruinOrb.Parent = fantasyRuinFolder
+
+-- 6 broken pillars in a ring around the rune circle, each a different
+-- height/rotation so they read as crumbling rather than a uniform circle
+-- of identical columns.
+local RUIN_PILLAR_COUNT = 6
+local RUIN_PILLAR_RADIUS = 11
+for i = 1, RUIN_PILLAR_COUNT do
+	local angle = (i - 1) / RUIN_PILLAR_COUNT * math.pi * 2
+	local pillarX = ruinAreaX + RUIN_PILLAR_RADIUS * math.cos(angle)
+	local pillarZ = ruinAreaZ + RUIN_PILLAR_RADIUS * math.sin(angle)
+	-- Heights vary (broken at different points) - a plain repeating height
+	-- would read as intact columns, not ruins.
+	local height = 6 + (i % 3) * 3
+	local tilt = (i % 2 == 0) and math.rad(4) or 0 -- every other pillar leans slightly, like it's collapsing
+	newRuinPart(
+		("RuinPillar%d"):format(i),
+		Vector3.new(3, height, 3),
+		CFrame.new(pillarX, ISLAND_TOP_Y + height / 2, pillarZ) * CFrame.Angles(tilt, angle, 0),
+		Enum.Material.Rock,
+		(i % 2 == 0) and RUIN_MOSS_COLOR or RUIN_STONE_COLOR
+	)
+end
+
+-- A crumbling archway on the far side from the boards (facing back toward
+-- them) - two pillars plus a lintel, with the lintel's far end broken off
+-- short instead of spanning the full gap, so it reads as a ruin rather
+-- than an intact doorway.
+local archZ = ruinAreaZ + RUIN_SIZE / 2 - 3
+newRuinPart(
+	"RuinArchPillarLeft",
+	Vector3.new(3, 12, 3),
+	CFrame.new(ruinAreaX - 6, ISLAND_TOP_Y + 6, archZ),
+	Enum.Material.Rock,
+	RUIN_STONE_COLOR
+)
+newRuinPart(
+	"RuinArchPillarRight",
+	Vector3.new(3, 9, 3), -- shorter than the left pillar - asymmetric, more ruined
+	CFrame.new(ruinAreaX + 6, ISLAND_TOP_Y + 4.5, archZ),
+	Enum.Material.Rock,
+	RUIN_MOSS_COLOR
+)
+newRuinPart(
+	"RuinArchLintel",
+	Vector3.new(9, 2, 3), -- only spans from the left pillar partway across, not the full 12-stud gap
+	CFrame.new(ruinAreaX - 2, ISLAND_TOP_Y + 12.5, archZ),
+	Enum.Material.Rock,
+	RUIN_STONE_COLOR
+)
+
+-- Scattered rubble blocks for detail, each a small randomly-rotated cube.
+local RUIN_RUBBLE_COUNT = 8
+for i = 1, RUIN_RUBBLE_COUNT do
+	local angle = math.random() * math.pi * 2
+	local radius = 4 + math.random() * (RUIN_SIZE / 2 - 5)
+	local rubbleX = ruinAreaX + radius * math.cos(angle)
+	local rubbleZ = ruinAreaZ + radius * math.sin(angle)
+	local rubbleSize = 1 + math.random()
+	newRuinPart(
+		("RuinRubble%d"):format(i),
+		Vector3.new(rubbleSize, rubbleSize, rubbleSize),
+		CFrame.new(rubbleX, ISLAND_TOP_Y + rubbleSize / 2, rubbleZ)
+			* CFrame.Angles(math.random() * math.pi, math.random() * math.pi, math.random() * math.pi),
+		Enum.Material.Rock,
+		(i % 2 == 0) and RUIN_MOSS_COLOR or RUIN_STONE_COLOR
+	)
+end
+
+-- ===========================================================================
 -- Leaderboard island: a third island, straight out along -Z (the opposite
 -- direction from SecondIsland, and the side that reads as "to the left" of
 -- the Mana Upgrades board when facing it - the kiosk row itself grows in

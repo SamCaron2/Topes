@@ -27,6 +27,17 @@
 -- getManaMultiplier/etc. stay simple table lookups, no compounding logic
 -- needed. Tier 2 also unlocks passive "Auto Mana" (autoMana = true) - see
 -- hasAutoMana below and the background loop in Main.server.lua.
+--
+-- Tier 3 follows the exact same two rules per direct request ("Add upgrade
+-- everything else more again"): cost scales by another 20x (20e9 * 20 =
+-- 400e9), matching the 20x Mana multiplier Tier 2 just granted, and its own
+-- multipliers are Tier 2's multiplied by the same 20x/20x/5x again
+-- (400x20=8000x Mana, 400x20=8000x Rebirths, 25x5=125x Arcane Dust). Its
+-- new reward is a physical one instead of another passive system: it
+-- unlocks the Fantasy Ruin (unlockName below), a decorative area built by
+-- WorldBuilder to the left of WizardTierBoard, hidden/no-collide by
+-- default and revealed per-player by WizardRuinClient once their tier is
+-- high enough - see hasUnlockedRuin below.
 local PlayerData = require(script.Parent.PlayerData)
 local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 
@@ -46,6 +57,14 @@ local TIERS = {
 		dustMultiplier = 25,
 		autoMana = true,
 	},
+	{
+		name = "Tier 3",
+		cost = 400e9, -- Mana - see the derivation above
+		manaMultiplier = 8000,
+		rebirthMultiplier = 8000,
+		dustMultiplier = 125,
+		unlockName = "Fantasy Ruin",
+	},
 }
 
 local WizardTierHandler = {}
@@ -59,6 +78,19 @@ function WizardTierHandler.hasAutoMana(player: Player): boolean
 	local tier = data and data.wizardTier or 0
 	for i = 1, tier do
 		if TIERS[i] and TIERS[i].autoMana then
+			return true
+		end
+	end
+	return false
+end
+
+-- Same permanent-scan pattern as hasAutoMana, for the Fantasy Ruin (Tier
+-- 3+) - read by WizardRuinClient to decide whether to reveal it.
+function WizardTierHandler.hasUnlockedRuin(player: Player): boolean
+	local data = PlayerData.get(player)
+	local tier = data and data.wizardTier or 0
+	for i = 1, tier do
+		if TIERS[i] and TIERS[i].unlockName == "Fantasy Ruin" then
 			return true
 		end
 	end
@@ -99,12 +131,14 @@ function WizardTierHandler.getState(player: Player)
 	return {
 		tier = tier,
 		mana = data.mana or 0,
+		unlockedRuin = WizardTierHandler.hasUnlockedRuin(player),
 		currentTier = currentTierInfo and {
 			name = currentTierInfo.name,
 			manaMultiplier = currentTierInfo.manaMultiplier,
 			rebirthMultiplier = currentTierInfo.rebirthMultiplier,
 			dustMultiplier = currentTierInfo.dustMultiplier,
 			autoMana = currentTierInfo.autoMana or false,
+			unlockName = currentTierInfo.unlockName,
 		} or nil,
 		nextTier = nextTierInfo and {
 			name = nextTierInfo.name,
@@ -113,6 +147,7 @@ function WizardTierHandler.getState(player: Player)
 			rebirthMultiplier = nextTierInfo.rebirthMultiplier,
 			dustMultiplier = nextTierInfo.dustMultiplier,
 			autoMana = nextTierInfo.autoMana or false,
+			unlockName = nextTierInfo.unlockName,
 		} or nil,
 	}
 end
