@@ -24,6 +24,7 @@ local LeaderboardHandler = require(script.Parent.LeaderboardHandler)
 local SecondIslandHandler = require(script.Parent.SecondIslandHandler)
 local ManaBoostHandler = require(script.Parent.ManaBoostHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -92,6 +93,8 @@ local buyManaBoostUpgradeFunction = newRemoteFunction("BuyManaBoostUpgrade")
 local getWizardTierStateFunction = newRemoteFunction("GetWizardTierState")
 local buyWizardTierFunction = newRemoteFunction("BuyWizardTier")
 local playerWizardTieredEvent = newRemoteEvent("PlayerWizardTiered") -- server -> client, tells the Mana/Rebirth Shop/Arcane Dust boards to re-fetch every column (levels reset)
+local getUpgradeTreeStateFunction = newRemoteFunction("GetUpgradeTreeState")
+local upgradeTreeTileBoughtEvent = newRemoteEvent("UpgradeTreeTileBought") -- server -> client, fired the instant a tile is bought (args: tileId)
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -320,6 +323,10 @@ buyWizardTierFunction.OnServerInvoke = function(player)
 		playerWizardTieredEvent:FireClient(player)
 	end
 	return success, err, newState
+end
+
+getUpgradeTreeStateFunction.OnServerInvoke = function(player)
+	return UpgradeTreeHandler.getState(player)
 end
 
 getSecondIslandStateFunction.OnServerInvoke = function(player)

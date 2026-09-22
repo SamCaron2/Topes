@@ -13,6 +13,7 @@ local ArcaneDustSpawnHandler = require(script.Parent.ArcaneDustSpawnHandler)
 local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local XPHandler = require(script.Parent.XPHandler)
 local PlayerData = require(script.Parent.PlayerData)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -29,6 +30,7 @@ local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
 local manaUpdatedEvent = remotesFolder:WaitForChild("ManaUpdated")
 local xpUpdatedEvent = remotesFolder:WaitForChild("XPUpdated")
 local arcaneDustUpdatedEvent = remotesFolder:WaitForChild("ArcaneDustUpdated")
+local upgradeTreeTileBoughtEvent = remotesFolder:WaitForChild("UpgradeTreeTileBought")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
 -- island here and lifting spawn onto its surface lifts the whole build with
@@ -843,6 +845,65 @@ for i = 1, RUIN_RUBBLE_COUNT do
 		(i % 2 == 0) and RUIN_MOSS_COLOR or RUIN_STONE_COLOR
 	)
 end
+
+-- ===========================================================================
+-- Upgrade Tree: walk-over tiles (UpgradeTreeHandler), only reachable once a
+-- player has reached Tier 3 - the tile itself is always solid/visible (a
+-- plain paving stone; nothing to hide, since walking onto it before Tier 3
+-- just silently no-ops server-side), but the colored info card floating
+-- above it only renders per-player once they're actually unlocked
+-- (UpgradeTreeClient). Positioned in the open grass between ArcaneDustPad
+-- and the tree line, per direct request ("here is where I want them to
+-- begin being placed") - a best guess from a screenshot like every other
+-- placement here; nudge UPGRADE_TREE_TILE_1_X/Z if it's off. Only Tile 1
+-- exists so far ("lets just start with one tho") - the planned layout
+-- widens into a 1-2-3-2-1 diamond of tiles later.
+local UPGRADE_TREE_TILE_SIZE = 6
+local UPGRADE_TREE_TILE_1_X = arcaneDustPadX - 5
+local UPGRADE_TREE_TILE_1_Z = arcaneDustPadZ - 15
+
+local existingUpgradeTree = Workspace:FindFirstChild("UpgradeTreeTiles")
+if existingUpgradeTree then
+	existingUpgradeTree:Destroy()
+end
+
+local upgradeTreeFolder = Instance.new("Folder")
+upgradeTreeFolder.Name = "UpgradeTreeTiles"
+upgradeTreeFolder.Parent = Workspace
+
+local upgradeTreeTile1 = Instance.new("Part")
+upgradeTreeTile1.Name = "UpgradeTreeTile1"
+upgradeTreeTile1.Anchored = true
+upgradeTreeTile1.CanCollide = true
+upgradeTreeTile1.Material = Enum.Material.Marble
+upgradeTreeTile1.Color = Color3.fromRGB(200, 200, 210)
+upgradeTreeTile1.Size = Vector3.new(UPGRADE_TREE_TILE_SIZE, 0.4, UPGRADE_TREE_TILE_SIZE)
+upgradeTreeTile1.CFrame = CFrame.new(UPGRADE_TREE_TILE_1_X, ISLAND_TOP_Y + 0.2, UPGRADE_TREE_TILE_1_Z)
+upgradeTreeTile1.Parent = upgradeTreeFolder
+
+local UPGRADE_TREE_TILE_RADIUS = UPGRADE_TREE_TILE_SIZE / 2
+local UPGRADE_TREE_CHECK_INTERVAL = 0.5
+
+task.spawn(function()
+	while true do
+		task.wait(UPGRADE_TREE_CHECK_INTERVAL)
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+			local onTile = rootPart
+				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(UPGRADE_TREE_TILE_1_X, UPGRADE_TREE_TILE_1_Z)).Magnitude
+					<= UPGRADE_TREE_TILE_RADIUS
+
+			if onTile and UpgradeTreeHandler.buyTile1(player) then
+				local data = PlayerData.get(player)
+				if data then
+					arcaneDustUpdatedEvent:FireClient(player, data.arcaneDust or 0)
+				end
+				upgradeTreeTileBoughtEvent:FireClient(player, "tile1")
+			end
+		end
+	end
+end)
 
 -- ===========================================================================
 -- Leaderboard island: a third island, straight out along -Z (the opposite

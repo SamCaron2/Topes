@@ -97,6 +97,14 @@ local function defaultData()
 		-- list in sync if any of these are renamed or a new upgrade is added.
 		wizardTier = 0, -- count of Wizard Tiers purchased so far; permanent, never reset
 
+		-- The ground upgrade tree (UpgradeTreeHandler): walk-over tiles, only
+		-- reachable once wizardTier >= 3, each a one-time purchase (not a
+		-- leveled upgrade) paid in Arcane Dust. dustTreeTile1 grants a
+		-- permanent x2 Arcane Dust multiplier once bought. Named per-tile so
+		-- the planned 1-2-3-2-1 diamond layout can add more later without
+		-- reshaping this into a table.
+		dustTreeTile1 = false,
+
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,

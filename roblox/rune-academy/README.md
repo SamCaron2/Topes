@@ -225,6 +225,13 @@ design notes.
   so `WizardRuinClient` reveals it LOCALLY per-player (same pattern as
   `SecondIslandGateClient`) once `WizardTierHandler.hasUnlockedRuin`
   reports true for them.
+  In the open grass between `ArcaneDustPad` and the tree line (a best
+  guess from a screenshot showing where to place it, same as every other
+  placement here) sits `UpgradeTreeTiles`, the start of a ground upgrade
+  tree - `UpgradeTreeTile1`, a 6x6 stud paving-stone tile, is walked over
+  instead of clicked like every other upgrade, per direct request. See
+  `UpgradeTreeHandler`/`UpgradeTreeClient` below; only Tile 1 exists so
+  far, with a planned 1-2-3-2-1 diamond of tiles to come.
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -363,6 +370,25 @@ design notes.
   `getManaMultiplier`/`getRebirthMultiplier`/
   `getDustMultiplier` are read by `ManaHandler`/`RebirthHandler`/
   `ArcaneDustHandler` respectively.
+- `UpgradeTreeHandler.lua` — the ground upgrade tree: walk-over tiles,
+  only reachable once `WizardTierHandler` reports Tier 3+, each a
+  ONE-TIME purchase (not a leveled upgrade like everything else) paid in
+  Arcane Dust. `TILES` is a numbered list from the start (even with just
+  one entry) so the planned 1-2-3-2-1 diamond layout can append more tiles
+  later without reshaping anything - each tile just needs its own
+  `dustTreeTileN` `PlayerData` field. Tile 1's cost is derived the same
+  way as the Wizard Tier costs: fully maxing the whole 3-column Arcane
+  Dust Upgrades board costs ~619,465 Dust total, so Tile 1 prices past
+  that at 1,000,000,000 Dust (also mirroring Tier 1's own 1B Mana price)
+  for a genuine next milestone, not something maxing the board alone
+  affords. Grants a permanent x2 Arcane Dust multiplier once bought -
+  `getDustMultiplier` folds every bought tile's multiplier together
+  (multiplicatively, ready for more tiles), read by `ArcaneDustHandler`
+  alongside `WizardTierHandler`'s own dust multiplier. `buyTile1` is
+  called every tick by `WorldBuilder`'s proximity loop for any player
+  standing on the tile - it silently no-ops (returns false) if not
+  unlocked, already bought, or unaffordable, so it's safe to call on
+  every check without a separate "can I buy this" query first.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -536,6 +562,18 @@ design notes.
   and flips `Transparency`/`CanCollide` back on for that client only if
   it's true. Also re-checks on every `PlayerWizardTiered` event, so
   reaching Tier 3 reveals the ruin immediately without needing to rejoin.
+- `UpgradeTreeClient.client.lua` — the floating card above
+  `UpgradeTreeTile1`, styled like the reference upgrade cards (colored
+  background, title, cost) but only exists at all once
+  `GetUpgradeTreeState().unlocked` is true - the tile itself is always
+  solid ground, so nothing floats there before Tier 3 rather than
+  spoiling what's coming. Colored per the exact rule given: red (not
+  enough Dust), yellow (affordable - walk over it to buy), green (bought) -
+  tracked live off `ArcaneDustUpdated` (afford check) and the new
+  `UpgradeTreeTileBought` event (flips to green the instant `WorldBuilder`'s
+  proximity loop actually buys it, no need to wait for the next Dust tick).
+  Re-checks on every `PlayerWizardTiered` event too, so reaching Tier 3
+  builds the card immediately without a rejoin.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner
@@ -618,7 +656,8 @@ design notes.
 Nothing server-side generates or removes world parts anymore except what
 `WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`,
 `Kiosks`, `SecondIsland`, `IslandBridge`, `ArcaneDustPad`,
-`SecondIslandGate`, `SecondIslandDecor`, `FantasyRuin`, `LeaderboardIsland`,
+`SecondIslandGate`, `SecondIslandDecor`, `FantasyRuin`, `UpgradeTreeTiles`,
+`LeaderboardIsland`,
 `LeaderboardBridge`, `LeaderboardDecor`, all rebuilt from scratch on every
 server start). If your saved `.rbxl`
 still has leftover parts from before the reset (e.g. a
