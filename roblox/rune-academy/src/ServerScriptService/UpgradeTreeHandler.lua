@@ -24,6 +24,15 @@
 -- scales with distance, which keeps the whole tree easy to read at a
 -- glance instead of needing a different multiplier value memorized per
 -- tile.
+--
+-- Per direct request ("have the cards only appear once you buy the ones
+-- before it"), each tile also lists which tile ids must ALL be bought
+-- first via `requires` - Tiles 2-3 need Tile 1, Tiles 4-6 need BOTH of
+-- Tiles 2-3, Tiles 7-8 need ALL of Tiles 4-6, and Tile 9 needs both of
+-- Tiles 7-8. isTileReachable checks this (on top of the overall Tier 3
+-- unlock) for both what the client is allowed to show a sign for and what
+-- buyTile actually allows purchasing - a tile with unmet requirements has
+-- no sign at all, same treatment as the whole tree pre-Tier-3.
 
 local PlayerData = require(script.Parent.PlayerData)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
@@ -31,15 +40,15 @@ local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UNLOCK_MIN_TIER = 3
 
 local TILES = {
-	{ id = 1, fieldName = "dustTreeTile1", cost = 1e9, kind = "dust", multiplier = 2, label = "Dust x2" },
-	{ id = 2, fieldName = "dustTreeTile2", cost = 2e9, kind = "mana", multiplier = 2, label = "Mana x2" },
-	{ id = 3, fieldName = "dustTreeTile3", cost = 2e9, kind = "xp", multiplier = 2, label = "XP x2" },
-	{ id = 4, fieldName = "dustTreeTile4", cost = 4e9, kind = "rebirth", multiplier = 2, label = "Rebirths x2" },
-	{ id = 5, fieldName = "dustTreeTile5", cost = 4e9, kind = "runeBulk", multiplier = 2, label = "Rune Bulk x2" },
-	{ id = 6, fieldName = "dustTreeTile6", cost = 4e9, kind = "dust", multiplier = 2, label = "Dust x2" },
-	{ id = 7, fieldName = "dustTreeTile7", cost = 8e9, kind = "mana", multiplier = 2, label = "Mana x2" },
-	{ id = 8, fieldName = "dustTreeTile8", cost = 8e9, kind = "rebirth", multiplier = 2, label = "Rebirths x2" },
-	{ id = 9, fieldName = "dustTreeTile9", cost = 16e9, kind = "unlock", label = "Unlocks Ether" },
+	{ id = 1, fieldName = "dustTreeTile1", cost = 1e9, kind = "dust", multiplier = 2, label = "Dust x2", requires = {} },
+	{ id = 2, fieldName = "dustTreeTile2", cost = 2e9, kind = "mana", multiplier = 2, label = "Mana x2", requires = { 1 } },
+	{ id = 3, fieldName = "dustTreeTile3", cost = 2e9, kind = "xp", multiplier = 2, label = "XP x2", requires = { 1 } },
+	{ id = 4, fieldName = "dustTreeTile4", cost = 4e9, kind = "rebirth", multiplier = 2, label = "Rebirths x2", requires = { 2, 3 } },
+	{ id = 5, fieldName = "dustTreeTile5", cost = 4e9, kind = "runeBulk", multiplier = 2, label = "Rune Bulk x2", requires = { 2, 3 } },
+	{ id = 6, fieldName = "dustTreeTile6", cost = 4e9, kind = "dust", multiplier = 2, label = "Dust x2", requires = { 2, 3 } },
+	{ id = 7, fieldName = "dustTreeTile7", cost = 8e9, kind = "mana", multiplier = 2, label = "Mana x2", requires = { 4, 5, 6 } },
+	{ id = 8, fieldName = "dustTreeTile8", cost = 8e9, kind = "rebirth", multiplier = 2, label = "Rebirths x2", requires = { 4, 5, 6 } },
+	{ id = 9, fieldName = "dustTreeTile9", cost = 16e9, kind = "unlock", label = "Unlocks Ether", requires = { 7, 8 } },
 }
 
 local UpgradeTreeHandler = {}
@@ -49,6 +58,29 @@ function UpgradeTreeHandler.isUnlocked(player: Player): boolean
 	local data = PlayerData.get(player)
 	local tier = data and data.wizardTier or 0
 	return tier >= UNLOCK_MIN_TIER
+end
+
+-- True once the whole tree is unlocked (Tier 3+) AND every tile this one
+-- requires has already been bought.
+function UpgradeTreeHandler.isTileReachable(player: Player, tileId: number): boolean
+	if not UpgradeTreeHandler.isUnlocked(player) then
+		return false
+	end
+
+	local data = PlayerData.get(player)
+	local tile = TILES[tileId]
+	if not data or not tile then
+		return false
+	end
+
+	for _, requiredId in tile.requires do
+		local requiredTile = TILES[requiredId]
+		if not (requiredTile and data[requiredTile.fieldName]) then
+			return false
+		end
+	end
+
+	return true
 end
 
 -- Folds every bought tile of a given `kind` together (multiplicatively) -
@@ -109,6 +141,7 @@ function UpgradeTreeHandler.getState(player: Player)
 			bought = data[tile.fieldName] or false,
 			cost = tile.cost,
 			label = tile.label,
+			reachable = UpgradeTreeHandler.isTileReachable(player, tile.id),
 		}
 	end
 
@@ -129,7 +162,7 @@ function UpgradeTreeHandler.buyTile(player: Player, tileId: number): boolean
 		return false
 	end
 
-	if not UpgradeTreeHandler.isUnlocked(player) then
+	if not UpgradeTreeHandler.isTileReachable(player, tileId) then
 		return false
 	end
 

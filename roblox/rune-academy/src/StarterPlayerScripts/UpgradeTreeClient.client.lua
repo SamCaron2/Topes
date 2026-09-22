@@ -3,13 +3,15 @@
 -- painted flat onto each tile's own Top face with a SurfaceGui, per direct
 -- request ("no 3D dynamic text just stuck to the ground like a sign
 -- laying down") - NOT a BillboardGui, which would float above the tile
--- and always turn to face the camera. Signs only exist at all once the
--- player has reached Tier 3 (WizardTierHandler) - every tile is always
--- solid ground, but no sign paints onto any of them before that, so it
--- doesn't spoil what's there early. Color follows the exact rule given:
--- red (can't afford yet), yellow (affordable - walk over it to buy),
--- green (bought). The actual purchase happens server-side (WorldBuilder's
--- proximity loop) - this just reflects state.
+-- and always turn to face the camera. A tile's sign only exists at all
+-- once it's actually reachable (Tier 3 AND every tile it requires is
+-- already bought, per direct request "have the cards only appear once you
+-- buy the ones before it") - every tile is always solid ground, but no
+-- sign paints onto an unreached one, so it doesn't spoil what's coming.
+-- Color follows the exact rule given: red (can't afford yet), yellow
+-- (affordable - walk over it to buy), green (bought). The actual purchase
+-- happens server-side (WorldBuilder's proximity loop) - this just reflects
+-- state.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,7 +35,6 @@ local TEXT_STROKE_TRANSPARENCY = 0.3
 local TILE_COUNT = 9
 
 local currentDust = 0
-local signsBuilt = false
 local signs = {} -- [tileId] = { background = Frame, costText = TextLabel, cost = number, bought = boolean }
 
 local function updateSign(tileId: number)
@@ -117,14 +118,6 @@ local function buildSign(tileId: number, tilePart: BasePart, tileInfo)
 	updateSign(tileId)
 end
 
-local function buildAllSigns(tiles)
-	signsBuilt = true
-	for tileId = 1, TILE_COUNT do
-		local tilePart = tilesFolder:WaitForChild(("UpgradeTreeTile%d"):format(tileId))
-		buildSign(tileId, tilePart, tiles[tileId])
-	end
-end
-
 local function render(state)
 	if not state then
 		return
@@ -136,16 +129,20 @@ local function render(state)
 		return
 	end
 
-	if not signsBuilt then
-		buildAllSigns(state.tiles)
-		return
-	end
-
-	for tileId, tileInfo in state.tiles do
+	-- Build a sign for any newly-reachable tile that doesn't have one yet
+	-- (Tile 1 revealing at Tier 3, or buying a tile revealing whatever it
+	-- unlocked next) - already-built signs just get their bought flag
+	-- refreshed instead of being rebuilt.
+	for tileId = 1, TILE_COUNT do
+		local tileInfo = state.tiles[tileId]
 		if signs[tileId] then
 			signs[tileId].bought = tileInfo.bought
+		elseif tileInfo.reachable then
+			local tilePart = tilesFolder:WaitForChild(("UpgradeTreeTile%d"):format(tileId))
+			buildSign(tileId, tilePart, tileInfo)
 		end
 	end
+
 	updateAllSigns()
 end
 
@@ -156,11 +153,11 @@ arcaneDustUpdatedEvent.OnClientEvent:Connect(function(amount)
 	updateAllSigns()
 end)
 
-upgradeTreeTileBoughtEvent.OnClientEvent:Connect(function(tileId)
-	if signs[tileId] then
-		signs[tileId].bought = true
-		updateSign(tileId)
-	end
+-- A purchase can make other tiles newly reachable (e.g. buying Tile 1
+-- reveals Tiles 2-3) - re-fetch the full state rather than just patching
+-- the bought tile, so any newly-revealed signs get built immediately.
+upgradeTreeTileBoughtEvent.OnClientEvent:Connect(function()
+	render(getUpgradeTreeStateFunction:InvokeServer())
 end)
 
 -- Reaching Tier 3 fires this too (it fires on every Wizard Tier purchase) -

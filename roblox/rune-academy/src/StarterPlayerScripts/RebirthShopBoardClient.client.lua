@@ -11,6 +11,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getManaValueMultiplierStateFunction = remotes:WaitForChild("GetManaValueMultiplierState")
 local buyManaValueMultiplierFunction = remotes:WaitForChild("BuyManaValueMultiplier")
@@ -115,7 +117,7 @@ currencyReadoutText.Parent = currencyReadout
 addReadoutIcon(currencyReadout, REBIRTHS_ICON_ID)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
-	currencyReadoutText.Text = ("%.1f"):format(amount)
+	currencyReadoutText.Text = NumberFormat.format(amount)
 end)
 
 local titleBanner = Instance.new("Frame")

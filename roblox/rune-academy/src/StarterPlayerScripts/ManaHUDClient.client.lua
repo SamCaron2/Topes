@@ -171,7 +171,7 @@ end)
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
 	local wasVisible = rebirthsRow.Visible
 	rebirthsRow.Visible = amount > 0
-	rebirthsText.Text = ("%.1f"):format(amount)
+	rebirthsText.Text = NumberFormat.format(amount)
 	if wasVisible ~= rebirthsRow.Visible then
 		reflowLayout()
 	end

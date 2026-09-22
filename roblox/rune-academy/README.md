@@ -404,7 +404,16 @@ design notes.
   `ManaHandler`/`RebirthHandler`/`ArcaneDustHandler` - Rune Bulk multiplies
   how many Runes a single pull grants even though no pull UI exists yet
   ("we can do that another time I just want it on the tile"), so it's
-  already live for whenever that screen gets built.
+  already live for whenever that screen gets built. Per direct request
+  ("have the cards only appear once you buy the ones before it"), every
+  tile also lists a `requires` array of tile ids that must ALL be bought
+  first - Tiles 2-3 need Tile 1, Tiles 4-6 need both of Tiles 2-3, Tiles
+  7-8 need all of Tiles 4-6, and Tile 9 needs both of Tiles 7-8.
+  `isTileReachable` checks this (on top of the Tier 3 unlock) and gates
+  BOTH what `buyTile` allows purchasing and what `getState` reports as
+  `reachable` per tile, so a tile with unmet requirements can't be bought
+  even by walking onto it early, and its sign never appears client-side
+  either.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -578,35 +587,43 @@ design notes.
   and flips `Transparency`/`CanCollide` back on for that client only if
   it's true. Also re-checks on every `PlayerWizardTiered` event, so
   reaching Tier 3 reveals the ruin immediately without needing to rejoin.
-- `UpgradeTreeClient.client.lua` — the info sign for every
-  `UpgradeTreeTile1`-`UpgradeTreeTile9`, styled like the reference upgrade
-  cards (colored background, title, cost) but painted flat onto each
-  tile's own Top face with a `SurfaceGui`, per direct request ("no 3D
-  dynamic text just stuck to the ground like a sign laying down") - NOT a
-  `BillboardGui`, which would float above the tile and always turn to face
-  the camera. All 9 signs only exist at all once
-  `GetUpgradeTreeState().unlocked` is true - every tile is always solid
-  ground, so no sign paints onto any of them before Tier 3 rather than
-  spoiling what's coming, and each one's title comes straight from
-  `UpgradeTreeHandler`'s own `label` for that tile. Colored per the exact
-  rule given: red (not enough Dust), yellow (affordable - walk over it to
-  buy), green (bought) - tracked live off `ArcaneDustUpdated` (afford
-  check, re-evaluated against every unbought tile's own cost at once) and
-  the `UpgradeTreeTileBought` event (now fired with a numeric tile id,
-  flips just that one sign to green the instant `WorldBuilder`'s proximity
-  loop actually buys it, no need to wait for the next Dust tick).
+- `UpgradeTreeClient.client.lua` — the info sign for whichever of
+  `UpgradeTreeTile1`-`UpgradeTreeTile9` are currently reachable, styled
+  like the reference upgrade cards (colored background, title, cost) but
+  painted flat onto each tile's own Top face with a `SurfaceGui`, per
+  direct request ("no 3D dynamic text just stuck to the ground like a sign
+  laying down") - NOT a `BillboardGui`, which would float above the tile
+  and always turn to face the camera. A tile's sign only exists once
+  `GetUpgradeTreeState()` reports it `reachable` (Tier 3 AND every tile it
+  requires already bought, per direct request "have the cards only appear
+  once you buy the ones before it") - every tile is always solid ground,
+  so no sign paints onto an unreached one, and each one's title comes
+  straight from `UpgradeTreeHandler`'s own `label` for that tile. Colored
+  per the exact rule given: red (not enough Dust), yellow (affordable -
+  walk over it to buy), green (bought) - tracked live off
+  `ArcaneDustUpdated` (afford check, re-evaluated against every unbought
+  tile's own cost at once) and the `UpgradeTreeTileBought` event, which now
+  triggers a full state re-fetch rather than just flipping one sign green,
+  since buying a tile can make other tiles newly reachable (e.g. Tile 1
+  revealing Tiles 2-3) and their signs need building too, not just the
+  bought one's color updating.
   Re-checks on every `PlayerWizardTiered` event too, so reaching Tier 3
   builds every sign immediately without a rejoin.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner
   carries the uploaded Rebirths icon to the left of the "Rebirths" text.
-  Explains the mechanic, shows "Your Rebirths: X.X" (kept live via
-  `RebirthsUpdated` even when Rebirths are spent elsewhere, e.g. the
-  Rebirth Shop board), a live "Rebirth now for +X.X Rebirths" preview that
-  updates off the same `ManaUpdated` event the HUD uses, and a Rebirth
-  button (bright red when you have the required 1,000+ Mana, gray
-  otherwise). Same SurfaceGui-on-a-face approach as the Mana board.
+  Explains the mechanic, shows "Your Rebirths: <NumberFormat>" (kept live
+  via `RebirthsUpdated` even when Rebirths are spent elsewhere, e.g. the
+  Rebirth Shop board), a live "Rebirth now for +<NumberFormat> Rebirths"
+  preview that updates off the same `ManaUpdated` event the HUD uses, and
+  a Rebirth button (bright red when you have the required 1,000+ Mana,
+  gray otherwise). Rebirths went through the shared `NumberFormat` (same
+  "10.00T" style as Mana/Arcane Dust) instead of a plain `%.1f`, per direct
+  request - with the Rebirth Shop/Wizard Tier/Upgrade Tree multipliers all
+  stacking, a raw `%.1f` was rendering as one long unreadable number
+  instead of an abbreviated one. Same SurfaceGui-on-a-face approach as the
+  Mana board.
 - `RebirthShopBoardClient.client.lua` — the Rebirth Shop board
   (`Workspace.Kiosks.RebirthShopBoard`), styled in the same red as the
   Rebirths board (not the Mana board's blue - both are Rebirth-themed).

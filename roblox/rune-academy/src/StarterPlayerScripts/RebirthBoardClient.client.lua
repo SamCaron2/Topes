@@ -8,6 +8,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getRebirthStateFunction = remotes:WaitForChild("GetRebirthState")
 local performRebirthFunction = remotes:WaitForChild("PerformRebirth")
@@ -155,8 +157,8 @@ local function render(state)
 	minManaToRebirth = state.minManaToRebirth
 	manaPerRebirth = state.manaPerRebirth
 
-	totalLabel.Text = ("Your Rebirths: %.1f"):format(state.rebirths)
-	previewLabel.Text = ("Rebirth now for +%.1f Rebirths"):format(state.rebirthPreview)
+	totalLabel.Text = ("Your Rebirths: %s"):format(NumberFormat.format(state.rebirths))
+	previewLabel.Text = ("Rebirth now for +%s Rebirths"):format(NumberFormat.format(state.rebirthPreview))
 
 	updateButton()
 end
@@ -165,14 +167,14 @@ render(getRebirthStateFunction:InvokeServer())
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
 	currentMana = amount
-	previewLabel.Text = ("Rebirth now for +%.1f Rebirths"):format(amount / manaPerRebirth)
+	previewLabel.Text = ("Rebirth now for +%s Rebirths"):format(NumberFormat.format(amount / manaPerRebirth))
 	updateButton()
 end)
 
 -- Keeps "Your Rebirths" in sync when Rebirths are spent elsewhere (the
 -- Rebirth Shop board), not just when this board's own button is clicked.
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
-	totalLabel.Text = ("Your Rebirths: %.1f"):format(amount)
+	totalLabel.Text = ("Your Rebirths: %s"):format(NumberFormat.format(amount))
 end)
 
 rebirthButton.MouseButton1Click:Connect(function()
