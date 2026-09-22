@@ -6,6 +6,7 @@
 
 local PlayerData = require(script.Parent.PlayerData)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
+local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -36,7 +37,8 @@ function EtherHandler.collect(player: Player): number?
 		return nil
 	end
 	local level = data.etherYieldLevel or 1
-	data.ether = (data.ether or 0) + amountForLevel(level)
+	local multiplier = RuinRuneHandler.getMultiplier(player, "ether")
+	data.ether = (data.ether or 0) + amountForLevel(level) * multiplier
 	return data.ether
 end
 

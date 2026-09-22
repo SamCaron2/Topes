@@ -16,6 +16,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local EtherHandler = require(script.Parent.EtherHandler)
 local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
+local WizardTierHandler = require(script.Parent.WizardTierHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -34,6 +35,7 @@ local xpUpdatedEvent = remotesFolder:WaitForChild("XPUpdated")
 local arcaneDustUpdatedEvent = remotesFolder:WaitForChild("ArcaneDustUpdated")
 local etherUpdatedEvent = remotesFolder:WaitForChild("EtherUpdated")
 local upgradeTreeTileBoughtEvent = remotesFolder:WaitForChild("UpgradeTreeTileBought")
+local openRuinRunesUIEvent = remotesFolder:WaitForChild("OpenRuinRunesUI")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
 -- island here and lifting spawn onto its surface lifts the whole build with
@@ -795,7 +797,9 @@ newRuinPart(
 )
 
 -- A floating glowing orb centered above the rune circle - the plaza's focal
--- point, visible from a distance once revealed.
+-- point, visible from a distance once revealed. Not just decorative
+-- anymore: clicking it opens the Runes UI (RuinRuneHandler) - per direct
+-- request ("for this rune we made on island 2 lets do 5 tiers").
 local ruinOrb = Instance.new("Part")
 ruinOrb.Name = "RuinOrb"
 ruinOrb.Shape = Enum.PartType.Ball
@@ -807,6 +811,43 @@ ruinOrb.CFrame = CFrame.new(ruinAreaX, ISLAND_TOP_Y + 10, ruinAreaZ)
 ruinOrb.Transparency = 1
 ruinOrb.CanCollide = false
 ruinOrb.Parent = fantasyRuinFolder
+
+local ruinOrbClickDetector = Instance.new("ClickDetector")
+ruinOrbClickDetector.MaxActivationDistance = 20
+ruinOrbClickDetector.Parent = ruinOrb
+
+-- Checked here too, not just relying on the orb being physically
+-- unreachable/invisible pre-Tier-3 - a ClickDetector can still register a
+-- click on a Transparency=1 part, so this is the actual gate, same
+-- defense-in-depth reasoning as every other SecondIsland entry point.
+ruinOrbClickDetector.MouseClick:Connect(function(player)
+	if not WizardTierHandler.hasUnlockedRuin(player) then
+		return
+	end
+	openRuinRunesUIEvent:FireClient(player)
+end)
+
+-- Starts disabled - WizardRuinClient enables it locally alongside revealing
+-- the rest of the ruin, same treatment as ArcaneDustPadLabel/EtherShroudLabel.
+local ruinOrbLabelGui = Instance.new("BillboardGui")
+ruinOrbLabelGui.Name = "RuinOrbLabel"
+ruinOrbLabelGui.Size = UDim2.new(0, 140, 0, 24)
+ruinOrbLabelGui.StudsOffset = Vector3.new(0, 4, 0)
+ruinOrbLabelGui.MaxDistance = 25
+ruinOrbLabelGui.AlwaysOnTop = true
+ruinOrbLabelGui.Enabled = false
+ruinOrbLabelGui.Adornee = ruinOrb
+ruinOrbLabelGui.Parent = ruinOrb
+
+local ruinOrbLabelText = Instance.new("TextLabel")
+ruinOrbLabelText.Size = UDim2.new(1, 0, 1, 0)
+ruinOrbLabelText.BackgroundTransparency = 1
+ruinOrbLabelText.Font = Enum.Font.GothamBold
+ruinOrbLabelText.TextScaled = true
+ruinOrbLabelText.TextColor3 = Color3.fromRGB(255, 220, 120)
+ruinOrbLabelText.TextStrokeTransparency = 0.2
+ruinOrbLabelText.Text = "Click for Runes"
+ruinOrbLabelText.Parent = ruinOrbLabelGui
 
 -- 6 broken pillars in a ring around the rune circle, each a different
 -- height/rotation so they read as crumbling rather than a uniform circle

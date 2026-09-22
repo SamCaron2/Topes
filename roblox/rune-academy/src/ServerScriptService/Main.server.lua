@@ -29,6 +29,7 @@ local EtherHandler = require(script.Parent.EtherHandler)
 local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
 local EtherDustBoostHandler = require(script.Parent.EtherDustBoostHandler)
 local EtherIslandHandler = require(script.Parent.EtherIslandHandler)
+local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -109,6 +110,9 @@ local getEtherDustBoostStateFunction = newRemoteFunction("GetEtherDustBoostState
 local buyEtherDustBoostUpgradeFunction = newRemoteFunction("BuyEtherDustBoostUpgrade")
 local getEtherIslandStateFunction = newRemoteFunction("GetEtherIslandState")
 local unlockEtherIslandFunction = newRemoteFunction("UnlockEtherIsland")
+local openRuinRunesUIEvent = newRemoteEvent("OpenRuinRunesUI") -- server -> client, fired when this player clicks the Ruin's orb
+local getRuinRuneStateFunction = newRemoteFunction("GetRuinRuneState")
+local buyRuinRuneTierFunction = newRemoteFunction("BuyRuinRuneTier")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -420,6 +424,21 @@ unlockEtherIslandFunction.OnServerInvoke = function(player)
 		if data then
 			etherUpdatedEvent:FireClient(player, data.ether or 0)
 		end
+	end
+	return success, err, newState
+end
+
+getRuinRuneStateFunction.OnServerInvoke = function(player)
+	return RuinRuneHandler.getState(player)
+end
+
+-- Each Rune tier is paid in Mana, so a successful buy needs to push the new
+-- Mana balance to every other Mana-reading HUD/board too, same as every
+-- other Mana-spending purchase in this file.
+buyRuinRuneTierFunction.OnServerInvoke = function(player)
+	local success, err, newState = RuinRuneHandler.buyNextTier(player)
+	if success then
+		manaUpdatedEvent:FireClient(player, newState.mana)
 	end
 	return success, err, newState
 end

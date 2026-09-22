@@ -5,7 +5,8 @@
 -- CanCollide back on LOCALLY, same per-player pattern as
 -- SecondIslandGateClient uses for the SecondIsland gate - other players who
 -- haven't reached Tier 3 still see/walk through empty space where the ruin
--- sits.
+-- sits. Also enables the RuinOrb's floating "Click for Runes" label, which
+-- isn't a BasePart so the loop below doesn't touch it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,6 +25,12 @@ local function revealRuin()
 			part.Transparency = 0
 			part.CanCollide = true
 		end
+	end
+
+	local ruinOrb = ruinFolder:FindFirstChild("RuinOrb")
+	local orbLabel = ruinOrb and ruinOrb:FindFirstChild("RuinOrbLabel")
+	if orbLabel then
+		orbLabel.Enabled = true
 	end
 end
 

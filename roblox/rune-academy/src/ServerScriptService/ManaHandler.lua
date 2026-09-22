@@ -9,6 +9,7 @@ local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
 local ManaBoostHandler = require(script.Parent.ManaBoostHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
+local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -38,8 +39,9 @@ local ManaHandler = {}
 -- Shop's permanent "Mana Value Multiplier" (1x-2x, survives rebirthing -
 -- that's the whole point), the Arcane Dust board's "More Mana" upgrade
 -- (1x-6x), the Wizard Tier flat multiplier (1x until Tier 1, then 20x),
--- and the Upgrade Tree's own Mana tiles (x2 each, x4 combined once both
--- are bought). Floored to keep Mana a whole number.
+-- the Upgrade Tree's own Mana tiles (x2 each, x4 combined once both are
+-- bought), and the Fantasy Ruin's own Rune tiers (x2 once Apprentice Rune
+-- is bought). Floored to keep Mana a whole number.
 local function effectiveAmountForLevel(player: Player, level: number): number
 	return math.floor(
 		amountForLevel(level)
@@ -47,6 +49,7 @@ local function effectiveAmountForLevel(player: Player, level: number): number
 			* ManaBoostHandler.getMultiplier(player)
 			* WizardTierHandler.getManaMultiplier(player)
 			* UpgradeTreeHandler.getManaMultiplier(player)
+			* RuinRuneHandler.getMultiplier(player, "mana")
 	)
 end
 
