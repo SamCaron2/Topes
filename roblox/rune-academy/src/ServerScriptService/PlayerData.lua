@@ -153,14 +153,15 @@ function PlayerData.load(player: Player)
 	end
 
 	-- TEMP: testing only - grants Mana/Rebirths/Level/Arcane Dust on every
-	-- join so SecondIsland's gate and Wizard Tiers 1-2 are immediately
-	-- reachable/affordable (buying Tier 1 zeroes Mana back to 0 - rejoin
-	-- Play mode afterward to re-trigger this grant and test Tier 2 too).
-	-- Remove these lines once you're done testing.
-	data.mana = 21000000000
-	data.rebirths = 80000
+	-- join so everything on the island (SecondIsland's gate, both Wizard
+	-- Tiers, every upgrade) is immediately reachable/affordable (buying a
+	-- Wizard Tier zeroes Mana/Rebirths/Arcane Dust back to 0 - rejoin Play
+	-- mode afterward to re-trigger this grant for the next tier). Remove
+	-- these lines once you're done testing.
+	data.mana = 1e13
+	data.rebirths = 1e13
 	data.level = 50
-	data.arcaneDust = 1000000
+	data.arcaneDust = 1e13
 
 	sessions[player] = data
 
