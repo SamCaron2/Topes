@@ -334,13 +334,12 @@ design notes.
   reads as staggered rather than a perfectly straight line. Each piece is
   also built from several overlapping/stacked parts instead of one plain
   shape, for a fuller look than a single sphere or dot. This scattering
-  logic lives in a shared `scatterIslandDecor(folder, centerX, centerZ,
-  size, nearEdgeSign, decorKinds?)` function - `nearEdgeSign` just flips
-  which edge is the one to skip, so the same function rings SecondIsland,
-  EtherIsland, and LeaderboardIsland despite their bridges approaching from
-  different directions; the optional `decorKinds` (defaulting to the
-  original green `makeTree`/`makeBush`/`makeFlower` set) is what lets
-  SecondIsland alone use its own themed pieces below.
+  logic lives in `WorldDecor.lua`'s `WorldDecor.scatter(folder, centerX,
+  centerZ, size, nearEdgeSign, groundY, bridgeWidth, useWizardTheme?)` -
+  `nearEdgeSign` just flips which edge is the one to skip, so the same
+  function rings SecondIsland, EtherIsland, and LeaderboardIsland despite
+  their bridges approaching from different directions; `useWizardTheme` is
+  what lets SecondIsland alone use its own themed pieces below.
   SecondIsland's own ring is a "purple wizardy nature" theme instead of the
   plain green one, per direct request ("this island can we do purple
   wizardy nature theme for decorations make it look good") -
@@ -357,7 +356,31 @@ design notes.
   little), and `makeGlowFlower` (the same stem+bloom shape as the plain
   flower, just a deeper teal stem and blooms drawn only from a
   purple/lilac palette). EtherIsland and LeaderboardIsland keep the
-  original green theme - only SecondIsland was asked for the reskin. The exact direction/size
+  original green theme - only SecondIsland was asked for the reskin.
+- `WorldDecor.lua` — every piece-maker function above
+  (`makeTree`/`makeBush`/`makeFlower`/`makeWizardTree`/
+  `makeCrystalCluster`/`makeGlowMushroom`/`makeGlowFlower`) plus
+  `WorldDecor.scatter` itself used to live directly in
+  `WorldBuilder.server.lua`, until adding the purple-wizard theme pushed
+  that script's own top-level locals over Luau's 200-local-register-per-
+  chunk limit - Studio's actual error was `Out of local registers when
+  trying to allocate index: exceeded limit 200` at the point the whole
+  script's top-level code stopped running, which is why EVERYTHING
+  disappeared (not just SecondIsland's decor) - nothing past that point in
+  the file, including the starting island itself, ever got built. Confirmed
+  and fixed by installing the real `luau-compile` and reproducing the exact
+  error with `luau-compile -O0` (Roblox Studio appears to compile scripts
+  at that optimization level, where dead locals aren't reused/retired as
+  aggressively as `-O1`/`-O2` do) - every ModuleScript compiles as its own
+  separate chunk with its own fresh budget, so moving this self-contained
+  piece out into its own file is the actual fix, not just a workaround.
+  `groundY`/`bridgeWidth` are now explicit parameters (`ISLAND_TOP_Y`/
+  `BRIDGE_WIDTH` from `WorldBuilder`) instead of closed-over globals, and
+  `useWizardTheme: boolean?` replaces the old `decorKinds` table parameter
+  now that both theme tables live inside this same module. Every `.lua`
+  file in the project was then compile-checked the same way (`luau-compile
+  -O0` on each) to confirm nothing else is anywhere close to this limit.
+  The exact direction/size
   (`BRIDGE_LENGTH`/`BRIDGE_WIDTH`/`SECOND_ISLAND_SIZE`/
   `SECOND_ISLAND_OFFSET_X`) is a best guess from a screenshot, same "nudge
   the numbers after testing" situation as the kiosk board offsets above if
