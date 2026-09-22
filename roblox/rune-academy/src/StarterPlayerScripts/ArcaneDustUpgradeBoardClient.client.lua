@@ -17,6 +17,7 @@ local Workspace = game:GetService("Workspace")
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local getSecondIslandStateFunction = remotes:WaitForChild("GetSecondIslandState")
 local getArcaneDustYieldStateFunction = remotes:WaitForChild("GetArcaneDustYieldState")
 local buyArcaneDustYieldUpgradeFunction = remotes:WaitForChild("BuyArcaneDustYieldUpgrade")
 local getArcaneDustSpawnStateFunction = remotes:WaitForChild("GetArcaneDustSpawnState")
@@ -27,6 +28,20 @@ local arcaneDustUpdatedEvent = remotes:WaitForChild("ArcaneDustUpdated")
 local playerWizardTieredEvent = remotes:WaitForChild("PlayerWizardTiered")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("ArcaneDustUpgradeBoard")
+
+-- Waits (without building anything) until SecondIsland is actually
+-- unlocked - per direct request ("make all the cards and everything look
+-- locked until they open that first door"), since a SurfaceGui renders
+-- independent of its host Part's own Transparency, so hiding the physical
+-- board alone (WorldBuilder/SecondIslandGateClient) wouldn't have stopped
+-- this UI from showing through on top of it.
+while true do
+	local state = getSecondIslandStateFunction:InvokeServer()
+	if state and state.unlocked then
+		break
+	end
+	task.wait(1)
+end
 
 local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230)

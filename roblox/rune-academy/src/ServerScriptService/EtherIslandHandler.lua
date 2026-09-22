@@ -54,6 +54,14 @@ function EtherIslandHandler.unlock(player: Player)
 		return true, nil, EtherIslandHandler.getState(player)
 	end
 
+	-- Its own gate is physically on SecondIsland, past the Ether Shroud -
+	-- checking secondIslandUnlocked too, not just relying on players
+	-- physically needing to be there, so this stays correct even if a
+	-- containment bug ever lets someone reach the gate early.
+	if not data.secondIslandUnlocked then
+		return false, "SecondIsland not unlocked"
+	end
+
 	if not EtherIslandHandler.meetsRequirement(player) then
 		return false, "Requirement not met"
 	end

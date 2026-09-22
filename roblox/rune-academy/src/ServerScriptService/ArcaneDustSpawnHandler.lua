@@ -66,10 +66,16 @@ function ArcaneDustSpawnHandler.getUpgradeState(player: Player)
 	}
 end
 
+-- Lives physically on SecondIsland - gated on secondIslandUnlocked too, not
+-- just physical containment, so a containment bug can't let anyone buy
+-- this from behind a locked door.
 function ArcaneDustSpawnHandler.buyUpgrade(player: Player, mode: string?)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
+	end
+	if not data.secondIslandUnlocked then
+		return false, "SecondIsland not unlocked"
 	end
 
 	local level = data.arcaneDustSpawnSpeedLevel or 1

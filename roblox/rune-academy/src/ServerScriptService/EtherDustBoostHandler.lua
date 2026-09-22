@@ -6,6 +6,7 @@
 -- Arcane Dust's own "More Mana" boosts Mana (the one below that).
 
 local PlayerData = require(script.Parent.PlayerData)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local MAX_LEVEL = 50
 local MULTIPLIER_PER_LEVEL = 0.1 -- level 50 = 1 + 49 * 0.1 = 5.9x
@@ -48,6 +49,9 @@ function EtherDustBoostHandler.buyUpgrade(player: Player, mode: string?)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
+	end
+	if not UpgradeTreeHandler.isEtherUnlocked(player) then
+		return false, "Ether not unlocked"
 	end
 
 	local level = data.etherDustBoostLevel or 1

@@ -26,9 +26,15 @@ end
 
 local ArcaneDustHandler = {}
 
+-- Everything in this module lives physically on SecondIsland - gate every
+-- entry point on secondIslandUnlocked too, not just the physical
+-- containment (WorldBuilder's gate-check loop), so a containment bug can
+-- never again let an unlocked-door player actually collect/buy anything
+-- here (this was reported as exactly that: "I was able to purchase
+-- upgrades from behind the locked door").
 function ArcaneDustHandler.collect(player: Player): number?
 	local data = PlayerData.get(player)
-	if not data then
+	if not data or not data.secondIslandUnlocked then
 		return nil
 	end
 	local level = data.arcaneDustYieldLevel or 1
@@ -63,6 +69,9 @@ function ArcaneDustHandler.buyYieldUpgrade(player: Player, mode: string?)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
+	end
+	if not data.secondIslandUnlocked then
+		return false, "SecondIsland not unlocked"
 	end
 
 	local level = data.arcaneDustYieldLevel or 1

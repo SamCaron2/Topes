@@ -14,11 +14,26 @@ local Workspace = game:GetService("Workspace")
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
+local getSecondIslandStateFunction = remotes:WaitForChild("GetSecondIslandState")
 local getWizardTierStateFunction = remotes:WaitForChild("GetWizardTierState")
 local buyWizardTierFunction = remotes:WaitForChild("BuyWizardTier")
 local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("WizardTierBoard")
+
+-- Waits (without building anything) until SecondIsland is actually
+-- unlocked - per direct request ("make all the cards and everything look
+-- locked until they open that first door"), since a SurfaceGui renders
+-- independent of its host Part's own Transparency, so hiding the physical
+-- board alone wouldn't have stopped this UI from showing through on top
+-- of it.
+while true do
+	local state = getSecondIslandStateFunction:InvokeServer()
+	if state and state.unlocked then
+		break
+	end
+	task.wait(1)
+end
 
 local GOLD = Color3.fromRGB(255, 220, 90)
 local COLOR_CAN_ENTER = Color3.fromRGB(200, 40, 40)

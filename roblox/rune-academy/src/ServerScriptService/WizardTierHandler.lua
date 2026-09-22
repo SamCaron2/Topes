@@ -152,10 +152,16 @@ function WizardTierHandler.getState(player: Player)
 	}
 end
 
+-- Lives physically on SecondIsland's Wizard Tier board - gated on
+-- secondIslandUnlocked too, not just physical containment, so a
+-- containment bug can't let anyone buy a tier from behind a locked door.
 function WizardTierHandler.buyNextTier(player: Player)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
+	end
+	if not data.secondIslandUnlocked then
+		return false, "SecondIsland not unlocked"
 	end
 
 	local tier = data.wizardTier or 0

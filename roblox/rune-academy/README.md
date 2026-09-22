@@ -181,9 +181,32 @@ design notes.
   so actually SPENDS the Mana/Rebirths requirement (Level is checked but
   never spent - there's nothing to take from a level) rather than just
   checking it, per direct correction to the original "walk up and it
-  auto-unlocks for free" design. Restricted to the bridge's own width so
-  it never touches someone just walking near the starting island's edge
-  elsewhere. `ArcaneDustUpgradeBoard` sits near the island's -X edge
+  auto-unlocks for free" design.
+  BUG FIX: this poll used to check X only within `BRIDGE_WIDTH / 2` (6
+  studs) of center, meaning it only enforced the lock on the narrow bridge
+  itself - once a not-yet-unlocked player made it across onto the much
+  wider island (120 studs) and drifted off that corridor, the check
+  silently stopped matching and never caught them again, letting them use
+  every board/pad on the island without ever unlocking it (reported
+  directly: "I was able to purchase upgrades from behind the locked
+  door"). Now checks the FULL island width, so it keeps enforcing anywhere
+  on SecondIsland, not just the bridge crossing. As defense in depth on
+  top of that physical fix, every handler that actually lives on
+  SecondIsland (`ArcaneDustHandler`, `ArcaneDustSpawnHandler`,
+  `ManaBoostHandler`, `WizardTierHandler`, `UpgradeTreeHandler`, all three
+  Ether handlers, `EtherIslandHandler`) now also checks
+  `secondIslandUnlocked` directly before collecting/buying anything, so a
+  future containment bug can't reopen the same hole. `ArcaneDustPad` and
+  both upgrade boards below are also now hidden/no-collide by default
+  (same `RevealTransparency`/`RevealCanCollide` attribute pattern as the
+  Fantasy Ruin/Ether Area) and only revealed LOCALLY by
+  `SecondIslandGateClient` once a player is actually unlocked - per direct
+  request, "make all the cards and everything look locked until they open
+  that first door" - and `ArcaneDustUpgradeBoardClient`/
+  `WizardTierBoardClient` each wait on `GetSecondIslandState().unlocked`
+  before building their `SurfaceGui` at all, since a `SurfaceGui` renders
+  independent of its host Part's own Transparency and so wouldn't have
+  been hidden by that alone. `ArcaneDustUpgradeBoard` sits near the island's -X edge
   (`ARCANE_DUST_AREA_X`, 15 studs in from the edge), un-rotated - thin
   along X, wide along Z, running parallel to the edge like the starting
   island's kiosk row - facing inward toward the island's center, "Right"
@@ -260,9 +283,12 @@ design notes.
   locked-gate mechanic as SecondIsland's own bridge, just running along X
   instead of Z (`EtherIslandBridge`'s deck/rails/posts are built the same
   way, just swapping which axis is the long one) since it leaves from an
-  X edge rather than a Z edge. Nothing built on the island itself yet
-  beyond grass and a decor ring - purely the gate/bridge/island for now.
-  See `EtherIslandHandler`/`EtherIslandGateClient` below.
+  X edge rather than a Z edge. Its gate-check loop had the same
+  bridge-width-only bug SecondIsland's did (fixed alongside it) - now
+  checks the full island width instead of just `BRIDGE_WIDTH`. Nothing
+  built on the island itself yet beyond grass and a decor ring - purely
+  the gate/bridge/island for now. See
+  `EtherIslandHandler`/`EtherIslandGateClient` below.
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -477,7 +503,12 @@ design notes.
   Ether total (identical to Arcane Dust's own board total, since both
   boards' column curves are the same), so 1B prices past that while also
   matching Tier 1's 1B Mana and Upgrade Tree Tile 1's 1B Dust - every
-  resource's first big gate lands on the same recognizable scale.
+  resource's first big gate lands on the same recognizable scale. `unlock`
+  also checks `secondIslandUnlocked` directly (its own gate is physically
+  on SecondIsland, past the Ether Shroud) - same defense-in-depth reasoning
+  as every other SecondIsland-hosted handler, after the bridge
+  containment bug (see `WorldBuilder`) let players reach content before
+  unlocking the door it was behind.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -654,7 +685,12 @@ design notes.
   the island. No `PlayerRebirthed` hookup - a plain Rebirth never resets
   Arcane Dust - but it does listen for the new `PlayerWizardTiered` event
   and re-fetches all 3 columns when it fires, since a Wizard Tier purchase
-  resets all of them.
+  resets all of them. Waits in a blocking loop on `GetSecondIslandState()
+  .unlocked` before building anything at all - per direct request that
+  everything "look locked until they open that first door" - since a
+  `SurfaceGui` renders independent of its host Part's Transparency, so
+  hiding the physical board alone wouldn't stop this UI from showing
+  through on top of it.
 - `WizardTierBoardClient.client.lua` — the bigger `WizardTierBoard` right
   next to the Arcane Dust Upgrades board: a "Wizard Tiers" title banner, a
   line naming the current tier and its bonuses (or "No Tier Entered Yet"),
@@ -672,7 +708,9 @@ design notes.
   the second actually calls `BuyWizardTier` - a safeguard not asked for
   outright, but reasonable given how destructive a misclick here would be.
   On success, re-renders from the server's returned state (which reports
-  "No further tiers yet" once there's nothing left to buy).
+  "No further tiers yet" once there's nothing left to buy). Waits in a
+  blocking loop on `GetSecondIslandState().unlocked` before building
+  anything, same reasoning and same fix as `ArcaneDustUpgradeBoardClient`.
 - `WizardRuinClient.client.lua` — reveals `Workspace.FantasyRuin` (Tier
   3's unlock) LOCALLY for whichever players have actually reached it: every
   part starts hidden/no-collide server-side since it's shared world
@@ -796,6 +834,13 @@ design notes.
   without hitting the server on every Mana pickup. Clicking it while
   affordable calls `UnlockSecondIsland`; on success, hides the gate and
   its sign locally, same as the already-unlocked case.
+  Also reveals `ArcaneDustPad`, its label, and both upgrade boards
+  LOCALLY the moment this player is actually unlocked (in both the
+  already-unlocked and just-clicked-Unlock paths) - per direct request,
+  "make all the cards and everything look locked until they open that
+  first door" - reading each part's `RevealTransparency`/
+  `RevealCanCollide` attributes, same mechanism `WizardRuinClient`/
+  `EtherAreaClient` use.
 
 ## Manual steps required before everything works
 

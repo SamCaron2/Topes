@@ -54,9 +54,17 @@ local TILES = {
 local UpgradeTreeHandler = {}
 UpgradeTreeHandler.TILES = TILES
 
+-- Lives physically on SecondIsland (as does everything Tier 3+ requires
+-- passing through) - checking secondIslandUnlocked directly too, not just
+-- relying on the wizardTier chain transitively requiring it, so this
+-- invariant stays true even if a future change to WizardTierHandler
+-- loosens its own gate.
 function UpgradeTreeHandler.isUnlocked(player: Player): boolean
 	local data = PlayerData.get(player)
-	local tier = data and data.wizardTier or 0
+	if not data or not data.secondIslandUnlocked then
+		return false
+	end
+	local tier = data.wizardTier or 0
 	return tier >= UNLOCK_MIN_TIER
 end
 

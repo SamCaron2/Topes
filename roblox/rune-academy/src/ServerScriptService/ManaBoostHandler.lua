@@ -44,10 +44,16 @@ function ManaBoostHandler.getUpgradeState(player: Player)
 	}
 end
 
+-- Lives physically on SecondIsland's Arcane Dust board - gated on
+-- secondIslandUnlocked too, not just physical containment, so a
+-- containment bug can't let anyone buy this from behind a locked door.
 function ManaBoostHandler.buyUpgrade(player: Player, mode: string?)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
+	end
+	if not data.secondIslandUnlocked then
+		return false, "SecondIsland not unlocked"
 	end
 
 	local level = data.manaBoostLevel or 1

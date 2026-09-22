@@ -5,6 +5,7 @@
 -- ArcaneDustSpawnHandler.
 
 local PlayerData = require(script.Parent.PlayerData)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local MAX_SPEED_LEVEL = 10
 local BASE_COOLDOWN_SECONDS = 1.1
@@ -51,6 +52,9 @@ function EtherClickSpeedHandler.buyUpgrade(player: Player, mode: string?)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
+	end
+	if not UpgradeTreeHandler.isEtherUnlocked(player) then
+		return false, "Ether not unlocked"
 	end
 
 	local level = data.etherClickSpeedLevel or 1

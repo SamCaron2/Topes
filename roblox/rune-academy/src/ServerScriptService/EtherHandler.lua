@@ -5,6 +5,7 @@
 -- ArcaneDustHandler's exact shape and yield curve for consistency.
 
 local PlayerData = require(script.Parent.PlayerData)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -24,9 +25,14 @@ end
 
 local EtherHandler = {}
 
+-- Ether requires Upgrade Tree Tile 9, which itself transitively requires
+-- SecondIsland to be unlocked - but checking isEtherUnlocked directly here
+-- too (not just at the WorldBuilder ClickDetector call site) means this
+-- stays true even if called some other way, not just relying on every
+-- caller remembering to check first.
 function EtherHandler.collect(player: Player): number?
 	local data = PlayerData.get(player)
-	if not data then
+	if not data or not UpgradeTreeHandler.isEtherUnlocked(player) then
 		return nil
 	end
 	local level = data.etherYieldLevel or 1
@@ -58,6 +64,9 @@ function EtherHandler.buyYieldUpgrade(player: Player, mode: string?)
 	local data = PlayerData.get(player)
 	if not data then
 		return false, "Not loaded"
+	end
+	if not UpgradeTreeHandler.isEtherUnlocked(player) then
+		return false, "Ether not unlocked"
 	end
 
 	local level = data.etherYieldLevel or 1

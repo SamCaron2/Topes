@@ -543,13 +543,20 @@ scatterIslandDecor(secondIslandDecorFolder, secondIslandCenterX, secondIslandCen
 
 -- Enforces the lock: a player who hasn't pressed the gate's Unlock button
 -- yet (SecondIslandHandler.unlock, via SecondIslandGateClient) gets pushed
--- back onto the starting island the moment they step onto the bridge -
+-- back onto the starting island the moment they step past the gate -
 -- meeting the stat requirement alone no longer opens it, only pressing the
 -- button does (that's the whole point of the button - it actually SPENDS
 -- the Mana/Rebirths requirement instead of just checking it). Same
--- poll-loop pattern as the fall-kill check above. Restricted to the
--- bridge's own width so it never catches someone just walking near the
--- starting island's edge elsewhere.
+-- poll-loop pattern as the fall-kill check above.
+--
+-- BUG FIX: this used to check X within BRIDGE_WIDTH/2 (6 studs) of center,
+-- meaning it only enforced the lock on the narrow bridge itself - once a
+-- player made it across onto the much wider SecondIsland (120 studs) and
+-- drifted off that 6-stud-wide corridor, the check silently stopped
+-- matching and never caught them again, letting them walk right up to
+-- and use every board/pad on the island without ever unlocking it. Now
+-- checks the FULL island width so it keeps enforcing anywhere on
+-- SecondIsland, not just the bridge crossing itself.
 local GATE_CHECK_INTERVAL = 0.25
 local GATE_Z = islandEdgeZ + 1 -- just onto the bridge past the starting island's edge
 
@@ -562,7 +569,7 @@ task.spawn(function()
 			if
 				rootPart
 				and rootPart.Position.Z >= GATE_Z
-				and math.abs(rootPart.Position.X - secondIslandCenterX) <= BRIDGE_WIDTH / 2
+				and math.abs(rootPart.Position.X - secondIslandCenterX) <= SECOND_ISLAND_SIZE / 2
 			then
 				local data = PlayerData.get(player)
 				if data and not data.secondIslandUnlocked then
@@ -601,25 +608,36 @@ end
 
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the Arcane Dust icon's own blue, per direct request
 
+-- Hidden/no-collide until SecondIsland is actually unlocked - per direct
+-- request ("make all the cards and everything look locked until they open
+-- that first door"), after a containment bug let players reach and use
+-- everything here before ever pressing Unlock. SecondIslandGateClient
+-- reveals this (and the label, and the two boards below) LOCALLY once
+-- `secondIslandUnlocked` is true for that player, same per-player pattern
+-- already used for the Fantasy Ruin/Ether Area.
 local arcaneDustPad = Instance.new("Part")
 arcaneDustPad.Name = "ArcaneDustPad"
 arcaneDustPad.Anchored = true
-arcaneDustPad.CanCollide = true
+arcaneDustPad.CanCollide = false
 arcaneDustPad.Material = Enum.Material.Neon
 arcaneDustPad.Color = ARCANE_DUST_COLOR
 arcaneDustPad.Shape = Enum.PartType.Cylinder
 arcaneDustPad.Size = Vector3.new(0.6, ARCANE_DUST_PAD_RADIUS * 2, ARCANE_DUST_PAD_RADIUS * 2) -- Cylinder's round axis is local X; rotated below to lie flat
 arcaneDustPad.CFrame = CFrame.new(arcaneDustPadX, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
+arcaneDustPad.Transparency = 1
+arcaneDustPad:SetAttribute("RevealCanCollide", true)
 arcaneDustPad.Parent = Workspace
 
 -- Small and only visible up close (MaxDistance) - per direct request, it
--- was reading as way too large/visible from across the map.
+-- was reading as way too large/visible from across the map. Starts
+-- disabled - revealed alongside the pad itself.
 local padLabelGui = Instance.new("BillboardGui")
 padLabelGui.Name = "ArcaneDustPadLabel"
 padLabelGui.Size = UDim2.new(0, 100, 0, 24)
 padLabelGui.StudsOffset = Vector3.new(0, 2.5, 0)
 padLabelGui.MaxDistance = 20
 padLabelGui.AlwaysOnTop = true
+padLabelGui.Enabled = false
 padLabelGui.Adornee = arcaneDustPad
 padLabelGui.Parent = arcaneDustPad
 
@@ -681,12 +699,14 @@ local ARCANE_DUST_BOARD_WIDTH = 30
 local arcaneDustBoard = Instance.new("Part")
 arcaneDustBoard.Name = "ArcaneDustUpgradeBoard"
 arcaneDustBoard.Anchored = true
-arcaneDustBoard.CanCollide = true
+arcaneDustBoard.CanCollide = false
 arcaneDustBoard.Material = Enum.Material.Glass
 arcaneDustBoard.Color = Color3.fromRGB(45, 45, 60)
-arcaneDustBoard.Transparency = 0.7
+arcaneDustBoard.Transparency = 1
 arcaneDustBoard.Size = Vector3.new(1, 18, ARCANE_DUST_BOARD_WIDTH)
 arcaneDustBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 9, ARCANE_DUST_AREA_Z)
+arcaneDustBoard:SetAttribute("RevealTransparency", 0.7) -- glass, like every other board
+arcaneDustBoard:SetAttribute("RevealCanCollide", true)
 arcaneDustBoard.Parent = kiosksFolder
 
 -- ===========================================================================
@@ -705,12 +725,14 @@ local wizardTierAreaZ = ARCANE_DUST_AREA_Z + (ARCANE_DUST_BOARD_WIDTH / 2 + WIZA
 local wizardTierBoard = Instance.new("Part")
 wizardTierBoard.Name = "WizardTierBoard"
 wizardTierBoard.Anchored = true
-wizardTierBoard.CanCollide = true
+wizardTierBoard.CanCollide = false
 wizardTierBoard.Material = Enum.Material.Glass
 wizardTierBoard.Color = Color3.fromRGB(45, 30, 70)
-wizardTierBoard.Transparency = 0.7
+wizardTierBoard.Transparency = 1
 wizardTierBoard.Size = Vector3.new(1, 24, WIZARD_TIER_BOARD_WIDTH)
 wizardTierBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 12, wizardTierAreaZ)
+wizardTierBoard:SetAttribute("RevealTransparency", 0.7)
+wizardTierBoard:SetAttribute("RevealCanCollide", true)
 wizardTierBoard.Parent = kiosksFolder
 
 -- ===========================================================================
@@ -1216,7 +1238,11 @@ scatterIslandDecor(etherIslandDecorFolder, etherIslandCenterX, etherIslandCenter
 -- yet (EtherIslandHandler.unlock, via EtherIslandGateClient) gets pushed
 -- back onto SecondIsland the moment they step onto the bridge. Same
 -- poll-loop pattern as SecondIsland's own gate check, just checking X
--- instead of Z since this bridge runs the other axis.
+-- instead of Z since this bridge runs the other axis. Checks the FULL
+-- island width (not just the bridge's own width) for the same reason
+-- SecondIsland's own check does - a bridge-width-only check stops
+-- matching, and so stops enforcing, the moment someone gets far enough
+-- onto the much wider island itself.
 local ETHER_GATE_CHECK_INTERVAL = 0.25
 local ETHER_GATE_X = secondIslandEdgeX + 1 -- just onto the bridge past SecondIsland's edge
 
@@ -1229,7 +1255,7 @@ task.spawn(function()
 			if
 				rootPart
 				and rootPart.Position.X >= ETHER_GATE_X
-				and math.abs(rootPart.Position.Z - etherIslandCenterZ) <= BRIDGE_WIDTH / 2
+				and math.abs(rootPart.Position.Z - etherIslandCenterZ) <= ETHER_ISLAND_SIZE / 2
 			then
 				local data = PlayerData.get(player)
 				if data and not data.etherIslandUnlocked then
