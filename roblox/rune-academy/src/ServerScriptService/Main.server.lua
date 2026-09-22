@@ -28,6 +28,7 @@ local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local EtherHandler = require(script.Parent.EtherHandler)
 local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
 local EtherDustBoostHandler = require(script.Parent.EtherDustBoostHandler)
+local EtherIslandHandler = require(script.Parent.EtherIslandHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -106,6 +107,8 @@ local getEtherClickSpeedStateFunction = newRemoteFunction("GetEtherClickSpeedSta
 local buyEtherClickSpeedUpgradeFunction = newRemoteFunction("BuyEtherClickSpeedUpgrade")
 local getEtherDustBoostStateFunction = newRemoteFunction("GetEtherDustBoostState")
 local buyEtherDustBoostUpgradeFunction = newRemoteFunction("BuyEtherDustBoostUpgrade")
+local getEtherIslandStateFunction = newRemoteFunction("GetEtherIslandState")
+local unlockEtherIslandFunction = newRemoteFunction("UnlockEtherIsland")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -400,6 +403,21 @@ unlockSecondIslandFunction.OnServerInvoke = function(player)
 		if data then
 			manaUpdatedEvent:FireClient(player, data.mana or 0)
 			rebirthsUpdatedEvent:FireClient(player, data.rebirths or 0)
+		end
+	end
+	return success, err, newState
+end
+
+getEtherIslandStateFunction.OnServerInvoke = function(player)
+	return EtherIslandHandler.getState(player)
+end
+
+unlockEtherIslandFunction.OnServerInvoke = function(player)
+	local success, err, newState = EtherIslandHandler.unlock(player)
+	if success then
+		local data = PlayerData.get(player)
+		if data then
+			etherUpdatedEvent:FireClient(player, data.ether or 0)
 		end
 	end
 	return success, err, newState

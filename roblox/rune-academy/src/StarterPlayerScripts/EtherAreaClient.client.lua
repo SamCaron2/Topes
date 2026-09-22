@@ -4,7 +4,12 @@
 -- non-collide server-side (shared world geometry, but different players
 -- can be at different Upgrade Tree progress at once), so this flips
 -- Transparency/CanCollide back on for that client only, same per-player
--- pattern as WizardRuinClient uses for the Fantasy Ruin.
+-- pattern as WizardRuinClient uses for the Fantasy Ruin. Each part's
+-- revealed Transparency/CanCollide come from its own RevealTransparency/
+-- RevealCanCollide attributes (set in WorldBuilder) instead of a flat 0/
+-- true for everything - the board needs to end up "clear" like every
+-- other board (0.7, glass), not fully opaque, and the mist needs to stay
+-- translucent (0.55) and non-collide, not become a solid ball.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,8 +25,8 @@ local etherAreaFolder = Workspace:WaitForChild("EtherArea")
 local function revealEtherArea()
 	for _, part in etherAreaFolder:GetChildren() do
 		if part:IsA("BasePart") then
-			part.Transparency = 0
-			part.CanCollide = true
+			part.Transparency = part:GetAttribute("RevealTransparency") or 0
+			part.CanCollide = part:GetAttribute("RevealCanCollide") or false
 
 			local label = part:FindFirstChild("EtherShroudLabel")
 			if label then

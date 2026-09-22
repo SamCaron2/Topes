@@ -1033,6 +1033,9 @@ for i = 1, ETHER_MIST_COUNT do
 	)
 	mistPart.Transparency = 1
 	mistPart.CanCollide = false
+	-- Revealed transparency is translucent (0.55), not fully opaque - it's
+	-- meant to read as mist, not a solid ball.
+	mistPart:SetAttribute("RevealTransparency", 0.55)
 	mistPart.Parent = etherAreaFolder
 end
 
@@ -1048,6 +1051,7 @@ etherPlatform.Size = Vector3.new(0.6, 12, 12)
 etherPlatform.CFrame = CFrame.new(etherShroudX, ISLAND_TOP_Y + 0.3, etherShroudZ) * CFrame.Angles(0, 0, math.rad(90))
 etherPlatform.Transparency = 1
 etherPlatform.CanCollide = false
+etherPlatform:SetAttribute("RevealCanCollide", true) -- solid ground once revealed, unlike the floating shroud/mist above it
 etherPlatform.Parent = etherAreaFolder
 
 -- Its upgrade board, same physical style as every other board (thin along
@@ -1064,6 +1068,12 @@ etherBoard.Size = Vector3.new(1, 18, ETHER_BOARD_WIDTH)
 etherBoard.CFrame = CFrame.new(etherBoardX, ISLAND_TOP_Y + 9, etherBoardZ)
 etherBoard.Transparency = 1
 etherBoard.CanCollide = false
+-- Revealed transparency matches every other board's own "clear glass" look
+-- (0.7) - per direct request ("the card needs to be clear"), since the
+-- generic reveal logic would otherwise leave it fully opaque like the
+-- Shroud itself.
+etherBoard:SetAttribute("RevealTransparency", 0.7)
+etherBoard:SetAttribute("RevealCanCollide", true) -- solid sign wall, matching every other board
 etherBoard.Parent = etherAreaFolder
 
 local ETHER_CLICK_COOLDOWN = {} -- [player] = os.clock() of the next click this player is allowed to grant Ether from
@@ -1089,6 +1099,145 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	ETHER_CLICK_COOLDOWN[player] = nil
+end)
+
+-- ===========================================================================
+-- Ether Island: a further island bridged straight out along +X from
+-- SecondIsland's own edge (continuing the same direction the Upgrade Tree
+-- chain and Ether Shroud already extend in), gated behind an Ether
+-- threshold instead of Mana/Rebirths/Level - per direct request ("add a
+-- bridge to another island that is locked until you have what you think
+-- is good to progress in terms of ether"). Same rope-bridge look and
+-- locked-gate mechanic as SecondIsland's own bridge (EtherIslandHandler
+-- mirrors SecondIslandHandler exactly, just Ether-only), just running
+-- along X instead of Z since it leaves from SecondIsland's +X edge rather
+-- than the starting island's own +Z edge. Nothing built on the island
+-- itself yet beyond grass and decor - purely the gate/bridge/island for
+-- now, ready for whatever goes on it next.
+local ETHER_ISLAND_SIZE = ISLAND_SIZE
+
+for _, name in { "EtherIsland", "EtherIslandBridge", "EtherIslandGate", "EtherIslandDecor" } do
+	local existingPart = Workspace:FindFirstChild(name)
+	if existingPart then
+		existingPart:Destroy()
+	end
+end
+
+local secondIslandEdgeX = secondIslandCenterX + SECOND_ISLAND_SIZE / 2
+local etherIslandCenterX = secondIslandEdgeX + BRIDGE_LENGTH + ETHER_ISLAND_SIZE / 2
+local etherIslandCenterZ = secondIslandCenterZ
+
+local etherIsland = Instance.new("Part")
+etherIsland.Name = "EtherIsland"
+etherIsland.Anchored = true
+etherIsland.CanCollide = true
+etherIsland.Material = Enum.Material.Grass
+etherIsland.Color = Color3.fromRGB(90, 170, 60)
+etherIsland.Size = Vector3.new(ETHER_ISLAND_SIZE, ISLAND_THICKNESS, ETHER_ISLAND_SIZE)
+etherIsland.CFrame = CFrame.new(etherIslandCenterX, ISLAND_TOP_Y - ISLAND_THICKNESS / 2, etherIslandCenterZ)
+etherIsland.Parent = Workspace
+
+-- Same rope-bridge look as IslandBridge/LeaderboardBridge, just running
+-- along X (deck's long side is X here, not Z) since this bridge leaves
+-- from SecondIsland's +X edge instead of a +Z/-Z edge.
+local etherIslandBridgeFolder = Instance.new("Folder")
+etherIslandBridgeFolder.Name = "EtherIslandBridge"
+etherIslandBridgeFolder.Parent = Workspace
+
+local etherBridgeCenterX = secondIslandEdgeX + BRIDGE_LENGTH / 2
+
+local etherDeck = Instance.new("Part")
+etherDeck.Name = "BridgeDeck"
+etherDeck.Anchored = true
+etherDeck.CanCollide = true
+etherDeck.Material = Enum.Material.WoodPlanks
+etherDeck.Color = Color3.fromRGB(150, 110, 70)
+etherDeck.Size = Vector3.new(BRIDGE_LENGTH, BRIDGE_THICKNESS, BRIDGE_WIDTH)
+etherDeck.CFrame = CFrame.new(etherBridgeCenterX, ISLAND_TOP_Y - BRIDGE_THICKNESS / 2, etherIslandCenterZ)
+etherDeck.Parent = etherIslandBridgeFolder
+
+local function makeEtherBridgeRail(zOffset: number)
+	local rail = Instance.new("Part")
+	rail.Name = "BridgeRail"
+	rail.Anchored = true
+	rail.CanCollide = false
+	rail.Material = Enum.Material.Wood
+	rail.Color = Color3.fromRGB(110, 80, 50)
+	rail.Shape = Enum.PartType.Cylinder
+	rail.Size = Vector3.new(BRIDGE_LENGTH, 0.6, 0.6) -- Cylinder's round axis is local X, which already points along world X here - no extra rotation needed, unlike the Z-oriented bridges
+	rail.CFrame = CFrame.new(etherBridgeCenterX, ISLAND_TOP_Y + BRIDGE_RAIL_HEIGHT, etherIslandCenterZ + zOffset)
+	rail.Parent = etherIslandBridgeFolder
+end
+makeEtherBridgeRail(BRIDGE_WIDTH / 2)
+makeEtherBridgeRail(-BRIDGE_WIDTH / 2)
+
+for postX = 0, BRIDGE_LENGTH, BRIDGE_POST_SPACING do
+	for _, zOffset in { BRIDGE_WIDTH / 2, -BRIDGE_WIDTH / 2 } do
+		local post = Instance.new("Part")
+		post.Name = "BridgePost"
+		post.Anchored = true
+		post.CanCollide = false
+		post.Material = Enum.Material.Wood
+		post.Color = Color3.fromRGB(110, 80, 50)
+		post.Size = Vector3.new(0.6, BRIDGE_RAIL_HEIGHT, 0.6)
+		post.CFrame = CFrame.new(secondIslandEdgeX + postX, ISLAND_TOP_Y + BRIDGE_RAIL_HEIGHT / 2, etherIslandCenterZ + zOffset)
+		post.Parent = etherIslandBridgeFolder
+	end
+end
+
+-- Purely visual (CanCollide false) - the position-check loop below enforces
+-- the lock. Thin along X (blocks the X-direction crossing) instead of Z,
+-- matching this bridge's orientation. Its UI is built client-side by
+-- EtherIslandGateClient, same reasoning as SecondIslandGateClient.
+local etherIslandGate = Instance.new("Part")
+etherIslandGate.Name = "EtherIslandGate"
+etherIslandGate.Anchored = true
+etherIslandGate.CanCollide = false
+etherIslandGate.Material = Enum.Material.ForceField
+etherIslandGate.Color = Color3.fromRGB(150, 60, 220)
+etherIslandGate.Transparency = 0.5
+etherIslandGate.Size = Vector3.new(1, 14, BRIDGE_WIDTH)
+etherIslandGate.CFrame = CFrame.new(secondIslandEdgeX + 0.5, ISLAND_TOP_Y + 7, etherIslandCenterZ)
+etherIslandGate.Parent = Workspace
+
+local etherIslandDecorFolder = Instance.new("Folder")
+etherIslandDecorFolder.Name = "EtherIslandDecor"
+etherIslandDecorFolder.Parent = Workspace
+
+-- scatterIslandDecor's nearEdgeSign only skips a gap on a ±Z edge (every
+-- other island's bridge approaches along Z) - this bridge approaches along
+-- X instead, so there's no X-edge gap to skip; the ring is still a
+-- reasonable decorative approximation (decor pieces are all CanCollide
+-- false, so an uninterrupted row near the entrance is a cosmetic
+-- imperfection at worst, not a blocked path).
+scatterIslandDecor(etherIslandDecorFolder, etherIslandCenterX, etherIslandCenterZ, ETHER_ISLAND_SIZE, -1)
+
+-- Enforces the lock: a player who hasn't pressed the gate's Unlock button
+-- yet (EtherIslandHandler.unlock, via EtherIslandGateClient) gets pushed
+-- back onto SecondIsland the moment they step onto the bridge. Same
+-- poll-loop pattern as SecondIsland's own gate check, just checking X
+-- instead of Z since this bridge runs the other axis.
+local ETHER_GATE_CHECK_INTERVAL = 0.25
+local ETHER_GATE_X = secondIslandEdgeX + 1 -- just onto the bridge past SecondIsland's edge
+
+task.spawn(function()
+	while true do
+		task.wait(ETHER_GATE_CHECK_INTERVAL)
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+			if
+				rootPart
+				and rootPart.Position.X >= ETHER_GATE_X
+				and math.abs(rootPart.Position.Z - etherIslandCenterZ) <= BRIDGE_WIDTH / 2
+			then
+				local data = PlayerData.get(player)
+				if data and not data.etherIslandUnlocked then
+					rootPart.CFrame = CFrame.new(ETHER_GATE_X - 5, ISLAND_TOP_Y + 3, etherIslandCenterZ)
+				end
+			end
+		end
+	end
 end)
 
 -- ===========================================================================

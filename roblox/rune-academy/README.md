@@ -243,11 +243,26 @@ design notes.
   world geometry, but players can be at different Upgrade Tree progress -
   and gets revealed LOCALLY per-player by `EtherAreaClient` once
   `UpgradeTreeHandler.isEtherUnlocked` reports true for them, same
-  pattern as the Fantasy Ruin. Themed purple throughout, per direct
-  request, in a deeper/more violet shade than the Wizard Tier board's own
-  purple so the two read as distinct. See `EtherHandler`/
-  `EtherClickSpeedHandler`/`EtherDustBoostHandler`/`EtherAreaClient`/
-  `EtherUpgradeBoardClient` below.
+  pattern as the Fantasy Ruin - each part's revealed look comes from its
+  own `RevealTransparency`/`RevealCanCollide` attributes rather than a
+  flat opaque/solid for everything, so the board ends up "clear" (0.7
+  transparency, glass, matching every other board) per direct request,
+  and the mist stays translucent (0.55) and non-collide instead of
+  becoming a solid ball. Themed purple throughout, per direct request, in
+  a deeper/more violet shade than the Wizard Tier board's own purple so
+  the two read as distinct. See `EtherHandler`/`EtherClickSpeedHandler`/
+  `EtherDustBoostHandler`/`EtherAreaClient`/`EtherUpgradeBoardClient`
+  below.
+  Further out past that, bridged straight off SecondIsland's own +X edge
+  (continuing the same direction the tree/Shroud already extend in) sits
+  `EtherIsland` - gated behind an Ether threshold instead of
+  Mana/Rebirths/Level, per direct request. Same rope-bridge look and
+  locked-gate mechanic as SecondIsland's own bridge, just running along X
+  instead of Z (`EtherIslandBridge`'s deck/rails/posts are built the same
+  way, just swapping which axis is the long one) since it leaves from an
+  X edge rather than a Z edge. Nothing built on the island itself yet
+  beyond grass and a decor ring - purely the gate/bridge/island for now.
+  See `EtherIslandHandler`/`EtherIslandGateClient` below.
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -451,6 +466,18 @@ design notes.
   boosting Arcane Dust, the same way Arcane Dust's own "More Mana"
   column boosts Mana. Read by `ArcaneDustHandler` alongside
   `WizardTierHandler`'s and `UpgradeTreeHandler`'s own dust multipliers.
+- `EtherIslandHandler.lua` — owns EtherIsland's unlock: `meetsRequirement`/
+  `getState`/`unlock`, exact same shape as `SecondIslandHandler` (an
+  explicit Unlock button that actually SPENDS the requirement, not a
+  passive threshold check), just gated on Ether alone instead of
+  Mana/Rebirths/Level, per direct request ("locked until you have what
+  you think is good to progress in terms of ether"). The requirement
+  (1,000,000,000 Ether) is derived the same way as every other milestone
+  cost here: fully maxing the whole 3-column Ether board costs ~619,465
+  Ether total (identical to Arcane Dust's own board total, since both
+  boards' column curves are the same), so 1B prices past that while also
+  matching Tier 1's 1B Mana and Upgrade Tree Tile 1's 1B Dust - every
+  resource's first big gate lands on the same recognizable scale.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -671,6 +698,15 @@ design notes.
   waits on the same unlock check before it's ever created. Also rechecks
   on `UpgradeTreeTileBought`, building the board immediately once Tile 9
   is bought.
+- `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
+  sign and Unlock button, exact same shape as `SecondIslandGateClient`
+  just with a single Ether requirement instead of Mana/Rebirths/Level.
+  Fetches `GetEtherIslandState` on load (retrying a few times if
+  `PlayerData` isn't loaded yet); if already unlocked, sets the gate's
+  `Transparency` to 1 for this player only and stops there. Otherwise
+  tracks the Unlock button's afford state live off `EtherUpdated`, and
+  pressing it while affordable calls `UnlockEtherIsland`; on success,
+  hides the gate and disables its `SurfaceGui` locally.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner
@@ -759,8 +795,8 @@ Nothing server-side generates or removes world parts anymore except what
 `WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`,
 `Kiosks`, `SecondIsland`, `IslandBridge`, `ArcaneDustPad`,
 `SecondIslandGate`, `SecondIslandDecor`, `FantasyRuin`, `UpgradeTreeTiles`,
-`EtherArea`,
-`LeaderboardIsland`,
+`EtherArea`, `EtherIsland`, `EtherIslandBridge`, `EtherIslandGate`,
+`EtherIslandDecor`, `LeaderboardIsland`,
 `LeaderboardBridge`, `LeaderboardDecor`, all rebuilt from scratch on every
 server start). If your saved `.rbxl`
 still has leftover parts from before the reset (e.g. a

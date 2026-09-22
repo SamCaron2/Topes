@@ -131,6 +131,13 @@ local function defaultData()
 		etherClickSpeedLevel = 1,
 		etherDustBoostLevel = 1,
 
+		-- EtherIsland: a third island bridged from SecondIsland, gated behind
+		-- an Ether threshold instead of Mana/Rebirths/Level (EtherIslandHandler)
+		-- - same explicit Unlock-button-that-actually-spends-the-requirement
+		-- pattern as secondIslandUnlocked below, just Ether-only. Permanent
+		-- once set.
+		etherIslandUnlocked = false,
+
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,
