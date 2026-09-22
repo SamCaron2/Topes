@@ -225,10 +225,11 @@ design notes.
   so `WizardRuinClient` reveals it LOCALLY per-player (same pattern as
   `SecondIslandGateClient`) once `WizardTierHandler.hasUnlockedRuin`
   reports true for them.
-  In the open grass between `ArcaneDustPad` and the tree line (a best
-  guess from a screenshot showing where to place it, same as every other
-  placement here) sits `UpgradeTreeTiles`, the start of a ground upgrade
-  tree - `UpgradeTreeTile1`, a 6x6 stud paving-stone tile, is walked over
+  In the open grass between the Fantasy Ruin and `ArcaneDustPad` (the
+  midpoint between the two - a best guess from a circled screenshot
+  showing where to place it, same as every other placement here) sits
+  `UpgradeTreeTiles`, the start of a ground upgrade tree -
+  `UpgradeTreeTile1`, a 6x6 stud paving-stone tile, is walked over
   instead of clicked like every other upgrade, per direct request. See
   `UpgradeTreeHandler`/`UpgradeTreeClient` below; only Tile 1 exists so
   far, with a planned 1-2-3-2-1 diamond of tiles to come.
@@ -562,11 +563,14 @@ design notes.
   and flips `Transparency`/`CanCollide` back on for that client only if
   it's true. Also re-checks on every `PlayerWizardTiered` event, so
   reaching Tier 3 reveals the ruin immediately without needing to rejoin.
-- `UpgradeTreeClient.client.lua` — the floating card above
-  `UpgradeTreeTile1`, styled like the reference upgrade cards (colored
-  background, title, cost) but only exists at all once
+- `UpgradeTreeClient.client.lua` — the info sign for `UpgradeTreeTile1`,
+  styled like the reference upgrade cards (colored background, title, cost)
+  but painted flat onto the tile's own Top face with a `SurfaceGui`, per
+  direct request ("no 3D dynamic text just stuck to the ground like a sign
+  laying down") - NOT a `BillboardGui`, which would float above the tile
+  and always turn to face the camera. Only exists at all once
   `GetUpgradeTreeState().unlocked` is true - the tile itself is always
-  solid ground, so nothing floats there before Tier 3 rather than
+  solid ground, so no sign paints onto it before Tier 3 rather than
   spoiling what's coming. Colored per the exact rule given: red (not
   enough Dust), yellow (affordable - walk over it to buy), green (bought) -
   tracked live off `ArcaneDustUpdated` (afford check) and the new

@@ -850,17 +850,17 @@ end
 -- Upgrade Tree: walk-over tiles (UpgradeTreeHandler), only reachable once a
 -- player has reached Tier 3 - the tile itself is always solid/visible (a
 -- plain paving stone; nothing to hide, since walking onto it before Tier 3
--- just silently no-ops server-side), but the colored info card floating
--- above it only renders per-player once they're actually unlocked
--- (UpgradeTreeClient). Positioned in the open grass between ArcaneDustPad
--- and the tree line, per direct request ("here is where I want them to
--- begin being placed") - a best guess from a screenshot like every other
--- placement here; nudge UPGRADE_TREE_TILE_1_X/Z if it's off. Only Tile 1
--- exists so far ("lets just start with one tho") - the planned layout
--- widens into a 1-2-3-2-1 diamond of tiles later.
+-- just silently no-ops server-side), but the info sign painted flat onto
+-- its top face only renders per-player once they're actually unlocked
+-- (UpgradeTreeClient). Positioned in the open grass between the Fantasy
+-- Ruin and ArcaneDustPad, per direct request with a circled screenshot -
+-- the midpoint between the two, same best-guess-from-a-screenshot
+-- treatment as every other placement here; nudge UPGRADE_TREE_TILE_1_X/Z
+-- if it's off. Only Tile 1 exists so far ("lets just start with one tho") -
+-- the planned layout widens into a 1-2-3-2-1 diamond of tiles later.
 local UPGRADE_TREE_TILE_SIZE = 6
-local UPGRADE_TREE_TILE_1_X = arcaneDustPadX - 5
-local UPGRADE_TREE_TILE_1_Z = arcaneDustPadZ - 15
+local UPGRADE_TREE_TILE_1_X = (ruinAreaX + arcaneDustPadX) / 2
+local UPGRADE_TREE_TILE_1_Z = (ruinAreaZ + arcaneDustPadZ) / 2 - 5
 
 local existingUpgradeTree = Workspace:FindFirstChild("UpgradeTreeTiles")
 if existingUpgradeTree then
