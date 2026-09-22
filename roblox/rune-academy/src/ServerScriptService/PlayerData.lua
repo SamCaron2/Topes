@@ -152,12 +152,13 @@ function PlayerData.load(player: Player)
 		data.firstJoinedAt = os.time()
 	end
 
-	-- TEMP: testing only - grants Mana/Rebirths/Level on every join so
-	-- SecondIsland's gate is immediately reachable. Remove these lines once
-	-- you're done testing.
-	data.mana = 80000000
+	-- TEMP: testing only - grants Mana/Rebirths/Level/Arcane Dust on every
+	-- join so SecondIsland's gate and Wizard Tier 1 are immediately
+	-- reachable/affordable. Remove these lines once you're done testing.
+	data.mana = 2000000000
 	data.rebirths = 80000
 	data.level = 50
+	data.arcaneDust = 1000000
 
 	sessions[player] = data
 
