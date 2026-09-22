@@ -1,12 +1,15 @@
 -- Builds the Arcane Dust upgrade board on SecondIsland (past the
 -- ArcaneDustPad you stand on to actually collect it): a small clear icon +
 -- amount readout (no "Arcane Dust" word) above an "Arcane Dust Upgrades"
--- title banner, then 2 columns filling the board edge-to-edge - "More
--- Arcane Dust" and "Grant Speed" (how often the pad pays out while you're
--- standing on it). Same createUpgradeColumn pattern as the Mana Upgrades
--- board, just costed in Arcane Dust instead of Mana, and with no
--- PlayerRebirthed hookup - Arcane Dust is entirely separate from Mana/
--- Rebirths, so rebirthing never resets it.
+-- title banner, then 3 columns filling the board edge-to-edge - "More
+-- Arcane Dust", "Grant Speed" (how often the pad pays out while you're
+-- standing on it), and "More Mana" (boosts Mana Per Pickup, per direct
+-- request for a Mana upgrade costed in Dust). Same createUpgradeColumn
+-- pattern as the Mana Upgrades board, just costed in Arcane Dust instead of
+-- Mana. Themed blue to match the Arcane Dust icon itself, per direct
+-- request. Listens for PlayerWizardTiered (not PlayerRebirthed - a plain
+-- Rebirth never resets Arcane Dust) since a Wizard Tier purchase resets all
+-- 3 of these upgrade levels along with everything else.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -18,9 +21,15 @@ local getArcaneDustYieldStateFunction = remotes:WaitForChild("GetArcaneDustYield
 local buyArcaneDustYieldUpgradeFunction = remotes:WaitForChild("BuyArcaneDustYieldUpgrade")
 local getArcaneDustSpawnStateFunction = remotes:WaitForChild("GetArcaneDustSpawnState")
 local buyArcaneDustSpawnUpgradeFunction = remotes:WaitForChild("BuyArcaneDustSpawnUpgrade")
+local getManaBoostStateFunction = remotes:WaitForChild("GetManaBoostState")
+local buyManaBoostUpgradeFunction = remotes:WaitForChild("BuyManaBoostUpgrade")
 local arcaneDustUpdatedEvent = remotes:WaitForChild("ArcaneDustUpdated")
+local playerWizardTieredEvent = remotes:WaitForChild("PlayerWizardTiered")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("ArcaneDustUpgradeBoard")
+
+local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
+local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230)
 
 local COLOR_CAN_BUY = Color3.fromRGB(70, 190, 60)
 local COLOR_CANT_AFFORD = Color3.fromRGB(200, 55, 55)
@@ -28,11 +37,11 @@ local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
 local COLOR_MAXED_OUT = Color3.fromRGB(90, 90, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
 
--- Sized to fill the board edge-to-edge for exactly 2 columns (0.03 margin on
+-- Sized to fill the board edge-to-edge for exactly 3 columns (0.02 margin on
 -- both sides), same spacing scheme as the Mana Upgrades board.
-local COLUMN_WIDTH = 0.45
-local COLUMN_GAP = 0.04
-local COLUMN_START_X = 0.03
+local COLUMN_WIDTH = 0.3
+local COLUMN_GAP = 0.03
+local COLUMN_START_X = 0.02
 local COLUMN_TOP_Y = 0.33
 
 -- Sits near SecondIsland's -X edge, un-rotated (thin along X, wide along Z,
@@ -49,12 +58,13 @@ surfaceGui.Parent = board
 
 local background = Instance.new("Frame")
 background.Size = UDim2.new(1, 0, 1, 0)
-background.BackgroundColor3 = Color3.fromRGB(150, 110, 30)
+background.BackgroundColor3 = Color3.fromRGB(20, 60, 90)
 background.BackgroundTransparency = 0.55
 background.BorderSizePixel = 0
 background.Parent = surfaceGui
 
--- Same clear-readout template as the Mana Upgrades board.
+-- Same clear-readout template as the Mana Upgrades board, with the dust
+-- icon overlapping its left edge the same way Mana's own icon does.
 local currencyReadout = Instance.new("Frame")
 currencyReadout.Size = UDim2.new(0.5, 0, 0.06, 0)
 currencyReadout.Position = UDim2.new(0.25, 0, 0.02, 0)
@@ -62,6 +72,14 @@ currencyReadout.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 currencyReadout.BackgroundTransparency = 0.75
 currencyReadout.BorderSizePixel = 0
 currencyReadout.Parent = background
+
+local currencyReadoutIcon = Instance.new("ImageLabel")
+currencyReadoutIcon.AnchorPoint = Vector2.new(0, 0.5)
+currencyReadoutIcon.Position = UDim2.new(0, -22, 0.5, 0)
+currencyReadoutIcon.Size = UDim2.new(0, 44, 0, 44)
+currencyReadoutIcon.BackgroundTransparency = 1
+currencyReadoutIcon.Image = ARCANE_DUST_ICON_ID
+currencyReadoutIcon.Parent = currencyReadout
 
 local currencyReadoutCorner = Instance.new("UICorner")
 currencyReadoutCorner.CornerRadius = UDim.new(0.3, 0)
@@ -84,7 +102,7 @@ end)
 local titleBanner = Instance.new("Frame")
 titleBanner.Size = UDim2.new(0.94, 0, 0.15, 0)
 titleBanner.Position = UDim2.new(0.03, 0, 0.1, 0)
-titleBanner.BackgroundColor3 = Color3.fromRGB(90, 65, 15)
+titleBanner.BackgroundColor3 = Color3.fromRGB(15, 40, 65)
 titleBanner.BackgroundTransparency = 0.15
 titleBanner.BorderSizePixel = 0
 titleBanner.Parent = background
@@ -98,7 +116,7 @@ titleText.Size = UDim2.new(1, 0, 1, 0)
 titleText.BackgroundTransparency = 1
 titleText.Font = Enum.Font.GothamBold
 titleText.TextScaled = true
-titleText.TextColor3 = Color3.fromRGB(255, 220, 90)
+titleText.TextColor3 = ARCANE_DUST_COLOR
 titleText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 titleText.Text = "Arcane Dust Upgrades"
 titleText.Parent = titleBanner
@@ -133,7 +151,7 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.TextScaled = true
-	nameLabel.TextColor3 = Color3.fromRGB(255, 220, 90)
+	nameLabel.TextColor3 = ARCANE_DUST_COLOR
 	nameLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 	nameLabel.Text = name
 	nameLabel.Parent = column
@@ -291,16 +309,34 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	end
 end
 
-createUpgradeColumn(1, "More Arcane Dust", Color3.fromRGB(255, 200, 80), getArcaneDustYieldStateFunction, buyArcaneDustYieldUpgradeFunction, function(state)
-	if state.nextLevelCost then
-		return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
-	end
-	return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
-end)
+local columnRefreshFunctions = {
+	createUpgradeColumn(1, "More Arcane Dust", ARCANE_DUST_COLOR, getArcaneDustYieldStateFunction, buyArcaneDustYieldUpgradeFunction, function(state)
+		if state.nextLevelCost then
+			return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
+		end
+		return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
+	end),
 
-createUpgradeColumn(2, "Grant Speed", Color3.fromRGB(255, 160, 220), getArcaneDustSpawnStateFunction, buyArcaneDustSpawnUpgradeFunction, function(state)
-	if state.nextLevelCost then
-		return ("Every %.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
+	createUpgradeColumn(2, "Grant Speed", Color3.fromRGB(255, 160, 220), getArcaneDustSpawnStateFunction, buyArcaneDustSpawnUpgradeFunction, function(state)
+		if state.nextLevelCost then
+			return ("Every %.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
+		end
+		return ("Every %.1fs (MAX)"):format(state.respawnSeconds)
+	end),
+
+	createUpgradeColumn(3, "More Mana", Color3.fromRGB(180, 120, 255), getManaBoostStateFunction, buyManaBoostUpgradeFunction, function(state)
+		if state.nextLevelCost then
+			return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
+		end
+		return ("%.1fx (MAX)"):format(state.multiplier)
+	end),
+}
+
+-- A Wizard Tier purchase resets all 3 of these upgrade levels (along with
+-- Mana/Rebirths/Level) - re-fetch every column so this board doesn't keep
+-- showing stale pre-reset levels/costs.
+playerWizardTieredEvent.OnClientEvent:Connect(function()
+	for _, refresh in columnRefreshFunctions do
+		refresh()
 	end
-	return ("Every %.1fs (MAX)"):format(state.respawnSeconds)
 end)

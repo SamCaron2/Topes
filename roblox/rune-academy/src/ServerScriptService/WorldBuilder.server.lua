@@ -594,12 +594,14 @@ if existingArcaneDustPad then
 	existingArcaneDustPad:Destroy()
 end
 
+local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the Arcane Dust icon's own blue, per direct request
+
 local arcaneDustPad = Instance.new("Part")
 arcaneDustPad.Name = "ArcaneDustPad"
 arcaneDustPad.Anchored = true
 arcaneDustPad.CanCollide = true
 arcaneDustPad.Material = Enum.Material.Neon
-arcaneDustPad.Color = Color3.fromRGB(255, 200, 80)
+arcaneDustPad.Color = ARCANE_DUST_COLOR
 arcaneDustPad.Shape = Enum.PartType.Cylinder
 arcaneDustPad.Size = Vector3.new(0.6, ARCANE_DUST_PAD_RADIUS * 2, ARCANE_DUST_PAD_RADIUS * 2) -- Cylinder's round axis is local X; rotated below to lie flat
 arcaneDustPad.CFrame = CFrame.new(arcaneDustPadX, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
@@ -621,7 +623,7 @@ padLabelText.Size = UDim2.new(1, 0, 1, 0)
 padLabelText.BackgroundTransparency = 1
 padLabelText.Font = Enum.Font.GothamBold
 padLabelText.TextScaled = true
-padLabelText.TextColor3 = Color3.fromRGB(255, 200, 80)
+padLabelText.TextColor3 = ARCANE_DUST_COLOR
 padLabelText.TextStrokeTransparency = 0.2
 padLabelText.Text = "Stand for Arcane Dust"
 padLabelText.Parent = padLabelGui
@@ -668,7 +670,8 @@ end)
 -- studs in front of it along that same +X direction, at the same Z, so
 -- standing on the pad faces you directly at the board. A guess like every
 -- other board's face here; flip to Left if it renders unreadable.
-local ARCANE_DUST_BOARD_WIDTH = 24
+-- Widened from 24 to 30 to fit its 3rd column ("More Mana").
+local ARCANE_DUST_BOARD_WIDTH = 30
 
 local arcaneDustBoard = Instance.new("Part")
 arcaneDustBoard.Name = "ArcaneDustUpgradeBoard"
@@ -680,6 +683,30 @@ arcaneDustBoard.Transparency = 0.7
 arcaneDustBoard.Size = Vector3.new(1, 18, ARCANE_DUST_BOARD_WIDTH)
 arcaneDustBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 9, ARCANE_DUST_AREA_Z)
 arcaneDustBoard.Parent = kiosksFolder
+
+-- ===========================================================================
+-- Wizard Tiers: a deeper prestige layer than Rebirths (WizardTierHandler).
+-- Its board sits right next to the Arcane Dust Upgrades board - same X (so
+-- both are coplanar, facing the same +X direction) and offset along +Z
+-- (away from the bridge/near edge, where there's 80+ studs of room left on
+-- this island, unlike the -Z side which is only ~10 studs from the edge) -
+-- per direct request, "a card to the left of this that is decently
+-- bigger." Left/right is a guess like every other board's face here; flip
+-- the Z offset's sign if it actually lands on the right.
+local WIZARD_TIER_BOARD_WIDTH = 36
+local WIZARD_TIER_BOARD_GAP = 6
+local wizardTierAreaZ = ARCANE_DUST_AREA_Z + (ARCANE_DUST_BOARD_WIDTH / 2 + WIZARD_TIER_BOARD_GAP + WIZARD_TIER_BOARD_WIDTH / 2)
+
+local wizardTierBoard = Instance.new("Part")
+wizardTierBoard.Name = "WizardTierBoard"
+wizardTierBoard.Anchored = true
+wizardTierBoard.CanCollide = true
+wizardTierBoard.Material = Enum.Material.Glass
+wizardTierBoard.Color = Color3.fromRGB(45, 30, 70)
+wizardTierBoard.Transparency = 0.7
+wizardTierBoard.Size = Vector3.new(1, 24, WIZARD_TIER_BOARD_WIDTH)
+wizardTierBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 12, wizardTierAreaZ)
+wizardTierBoard.Parent = kiosksFolder
 
 -- ===========================================================================
 -- Leaderboard island: a third island, straight out along -Z (the opposite

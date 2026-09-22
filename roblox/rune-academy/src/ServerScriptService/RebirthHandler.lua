@@ -9,6 +9,7 @@
 local PlayerData = require(script.Parent.PlayerData)
 local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
+local WizardTierHandler = require(script.Parent.WizardTierHandler)
 
 local MANA_PER_REBIRTH = 1000
 local MIN_MANA_TO_REBIRTH = MANA_PER_REBIRTH -- must have at least one full Rebirth's worth
@@ -22,7 +23,7 @@ function RebirthHandler.getState(player: Player)
 	end
 
 	local mana = data.mana or 0
-	local multiplier = RebirthShopHandler.getRebirthMultiplier(player)
+	local multiplier = RebirthShopHandler.getRebirthMultiplier(player) * WizardTierHandler.getRebirthMultiplier(player)
 	return {
 		rebirths = data.rebirths or 0,
 		mana = mana,
@@ -43,7 +44,7 @@ function RebirthHandler.rebirth(player: Player)
 		return false, ("Need at least %d Mana to rebirth"):format(MIN_MANA_TO_REBIRTH)
 	end
 
-	local multiplier = RebirthShopHandler.getRebirthMultiplier(player)
+	local multiplier = RebirthShopHandler.getRebirthMultiplier(player) * WizardTierHandler.getRebirthMultiplier(player)
 	data.rebirths = (data.rebirths or 0) + (mana / MANA_PER_REBIRTH) * multiplier
 	data.mana = 0
 	data.manaYieldLevel = 1

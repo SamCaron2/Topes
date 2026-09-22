@@ -187,22 +187,32 @@ design notes.
   (`ARCANE_DUST_AREA_X`, 15 studs in from the edge), un-rotated - thin
   along X, wide along Z, running parallel to the edge like the starting
   island's kiosk row - facing inward toward the island's center, "Right"
-  instead of the row's "Left". `ArcaneDustPad` - a flat gold cylinder
-  (Neon material, rotated flat) with a small floating "Stand for Arcane
-  Dust" `BillboardGui` label, kept small and given a `MaxDistance` (20
-  studs) so it only shows up close instead of being readable from across
-  the map - sits `ARCANE_DUST_PAD_FRONT_OFFSET` (12) studs in front of the
-  board, along its +X facing direction, at the same Z - directly facing
-  the board, not off to the side along the edge like an earlier layout
-  had it. The second wizard resource, entirely separate from Mana (no
-  Rebirth Shop interaction, not reset by rebirthing). No pickup nodes to
+  instead of the row's "Left". `ArcaneDustPad` - a flat cylinder (Neon
+  material, rotated flat, colored blue to match the Arcane Dust icon's own
+  palette, per direct request - was gold before) with a small floating
+  "Stand for Arcane Dust" `BillboardGui` label, kept small and given a
+  `MaxDistance` (20 studs) so it only shows up close instead of being
+  readable from across the map - sits `ARCANE_DUST_PAD_FRONT_OFFSET` (12)
+  studs in front of the board, along its +X facing direction, at the same
+  Z - directly facing the board, not off to the side along the edge like
+  an earlier layout had it. The second wizard resource, entirely separate
+  from Mana (no Rebirth Shop interaction, not reset by rebirthing - though
+  a Wizard Tier purchase, below, DOES reset it). No pickup nodes to
   walk past, per direct request - standing on the pad's radius grants
   Arcane Dust immediately, then again every `ArcaneDustSpawnHandler`
   interval for as long as you stay; step off and the timer
   (`arcaneDustNextGrant`, keyed per player) resets, so it's "stand here to
-  farm," not "walk past to collect once." The board's own 2-column UI
-  (`ArcaneDustUpgradeBoardClient`) has "More Arcane Dust" and "Grant
-  Speed" (how often the pad pays out).
+  farm," not "walk past to collect once." The board's own 3-column UI
+  (`ArcaneDustUpgradeBoardClient`), widened from 24 to 30 studs to fit the
+  3rd column, has "More Arcane Dust", "Grant Speed" (how often the pad pays
+  out), and "More Mana" (boosts Mana Per Pickup, costed in Arcane Dust -
+  see `ManaBoostHandler` below). Themed blue throughout (title, column
+  names, background tint) to match the Arcane Dust icon, per direct
+  request - was gold before.
+  Right next to it (same X, offset along +Z where the island has 80+ studs
+  of open room, unlike the ~10 left on the -Z/bridge side) sits
+  `WizardTierBoard` (36 studs wide, bigger than the Arcane Dust board per
+  direct request) - see `WizardTierHandler`/`WizardTierBoardClient` below.
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -255,8 +265,11 @@ design notes.
   what they gave (level 1 still costs 10, but level 9 - to reach level
   10's +25/pickup - now costs 210 instead of 90). Every pickup is also
   scaled by `RebirthShopHandler`'s permanent "Mana Value Multiplier"
-  (1x-200x, survives rebirthing) - `amountPerPickup`/`nextAmountPerPickup`
-  in the returned state already include it, so the board always shows
+  (1x-200x, survives rebirthing), `ManaBoostHandler`'s "More Mana" upgrade
+  (1x-6x, paid in Arcane Dust), and `WizardTierHandler`'s flat tier
+  multiplier (1x until Tier 1, then 20x) -
+  `amountPerPickup`/`nextAmountPerPickup` in the returned state already
+  include all three, so the board always shows
   the real effective yield. `buyYieldUpgrade` takes an optional `"max"`
   mode that buys as many levels in a row as currently affordable.
   Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones`
@@ -273,6 +286,8 @@ design notes.
   all, not reset by rebirthing). Mirrors `ManaHandler`'s exact shape and
   yield curve for consistency - its own "More Arcane Dust" upgrade (level
   1-100), its own `arcaneDust` currency and `arcaneDustYieldLevel` field.
+  Every collect is also scaled by `WizardTierHandler`'s flat dust
+  multiplier (1x until Tier 1, then 5x).
 - `ArcaneDustSpawnHandler.lua` — the "Grant Speed" upgrade for
   `ArcaneDustPad` (level 1-10, its grant interval going 1.5s → 0.5s while
   you stand on the pad - lowered from an original 2.0s → 0.2s per direct
@@ -282,6 +297,29 @@ design notes.
   nodes, just the one pad. Costed on its own curve (`currentLevel * 10`,
   paid in Arcane Dust - not Mana's shared `UpgradeCost`, a different
   currency entirely).
+- `ManaBoostHandler.lua` — the Arcane Dust Upgrades board's 3rd column,
+  "More Mana" (per direct request, "another upgrade for mana, 50 total
+  upgrades, make them cost dust"). 50 levels, a flat multiplier on Mana Per
+  Pickup climbing linearly from 1x at level 1 to 6x at level 50 (+0.1x per
+  level - a reasonable default since no exact curve was specified; easy to
+  retune via `MULTIPLIER_PER_LEVEL`). Costed on its own curve
+  (`currentLevel * 25`, paid in Arcane Dust). `ManaHandler` reads
+  `getMultiplier` to fold it into effective Mana yield.
+- `WizardTierHandler.lua` — Wizard Tiers, a deeper prestige layer than
+  Rebirths: spend a flat Mana cost to wipe every "lobby" currency/upgrade
+  earned so far (Mana, Rebirths, Level/XP, and every Mana/Rebirth
+  Shop/Arcane Dust upgrade level, including `ManaBoostHandler`'s) back to
+  default, in exchange for a permanent flat multiplier on Mana, Rebirths,
+  and Arcane Dust that applies from the very next pickup onward. Per direct
+  request, `secondIslandUnlocked` is deliberately left untouched by the
+  reset ("the entire lobby thus far resets except for the locked door that
+  stays open"), and lifetime stats (`totalManaEarned`, `wizardTier` itself)
+  never reset either. Only Tier 1 is defined so far (`data.wizardTier`
+  starts at 0): costs 1,000,000,000 Mana, grants x20 Mana, x20 Rebirths,
+  x5 Arcane Dust - the `TIERS` table is built to hold more later without
+  any logic changes. `getManaMultiplier`/`getRebirthMultiplier`/
+  `getDustMultiplier` are read by `ManaHandler`/`RebirthHandler`/
+  `ArcaneDustHandler` respectively.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -337,37 +375,33 @@ design notes.
   at all, just the icon sitting a small fixed gap (`ICON_TEXT_GAP`) from a
   bold, left-aligned number - no "Mana"/"Arcane Dust"/"Rebirths" word, the
   icon says it - colored to echo the icon's own palette (violet for Mana,
-  matching the Mana nodes' own glow; gold for Arcane Dust, matching its
-  nodes; pink-red for Rebirths, matching the Rebirth board's red theme).
+  matching the Mana nodes' own glow; blue for Arcane Dust, matching its
+  own uploaded icon, per direct request - was a gold placeholder glyph
+  before; pink-red for Rebirths, matching the Rebirth board's red theme).
   The Rebirths icon keeps a small round white circle behind it for
-  contrast; the Mana icon has none, per direct request, since its
-  sparkles poke outside a round silhouette and looked bad boxed into one.
-  Arcane Dust has no uploaded image yet, so its icon falls back to a
-  colored circle with a safe Unicode glyph (✦, not emoji) - same
-  placeholder treatment as the side menu's Runes/Profile icons - `createCounterRow`
-  takes either an `imageId` or a `symbol` for exactly this reason. Both
-  the Arcane Dust and Rebirths rows start hidden and only appear once
-  their `Updated` event fires with a value above 0 - Arcane Dust the
-  first time you actually stand on `ArcaneDustPad`, Rebirths only once
-  you've actually rebirthed - so neither counter shows up before it's
-  relevant. `reflowLayout` re-stacks whichever rows are currently visible
-  with no gap in between, since the two collapsible rows aren't always
-  both present.
+  contrast; the Mana and Arcane Dust icons have none, since both already
+  read fine boxed on their own. Both the Arcane Dust and Rebirths rows
+  are visible only while their amount is actually above 0, not just "ever
+  shown once" - Arcane Dust the first time you actually stand on
+  `ArcaneDustPad`, Rebirths only once you've actually rebirthed - and hide
+  again if a Wizard Tier purchase resets either back to 0, so neither
+  counter shows up before it's relevant. `reflowLayout` re-stacks
+  whichever rows are currently visible with no gap in between, since the
+  two collapsible rows aren't always both present.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
   Mana counter's placement, laid out 2x2 on a high-opacity dark
   `SideMenuPanel` (not just a transparent background) behind the whole
   grid, so the icons read as one solid unit: Store/Runes/Profile/Settings.
-  Store and Settings show their uploaded icon image directly (background
-  transparent, no colored circle behind it - the art reads fine on its
-  own); Profile shows the PLAYER'S OWN live avatar headshot instead, via
+  Store, Settings, and Runes all show their uploaded icon image directly
+  (background transparent, no colored circle behind it - the art reads
+  fine on its own); Profile shows the PLAYER'S OWN live avatar headshot
+  instead, via
   `Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)`
   - no uploaded asset needed since Roblox already renders and hosts a
   thumbnail per-player - swapped in after the fact (starts as the usual
-  placeholder circle+glyph, same as Runes, since the fetch yields on a
+  placeholder circle+glyph, since the fetch yields on a
   network call) with the colored circle dropped once the real image
-  lands, same as Store/Settings; Runes doesn't have real art yet, so it
-  keeps the original colored-circle-plus-placeholder-symbol look (safe
-  basic Unicode glyphs - not emoji) until it does. Each item also gets a
+  lands, same as Store/Settings/Runes. Each item also gets a
   bold `FredokaOne`
   name label with a heavy stroke underneath for a "cool logo" look. A
   small round `SideMenuToggle` tab sits fixed just above the panel and
@@ -414,18 +448,38 @@ design notes.
   levels/costs after a rebirth resets them server-side.
 - `ArcaneDustUpgradeBoardClient.client.lua` — the Arcane Dust upgrade
   board on SecondIsland (`Workspace.Kiosks.ArcaneDustUpgradeBoard`), a
-  gold-themed version of `ManaUpgradeBoardClient` with just 2 columns
-  instead of 4 - "More Arcane Dust" and "Grant Speed" - same
-  `createUpgradeColumn` pattern, clear readout, and Buy/Max → "Maxed"
-  behavior, just costed and gated in Arcane Dust instead of Mana - and its
+  blue-themed version of `ManaUpgradeBoardClient` (was gold before, per
+  direct request to match the Arcane Dust icon's own palette) with 3
+  columns instead of 4 - "More Arcane Dust", "Grant Speed", and "More
+  Mana" (`ManaBoostHandler`) - same
+  `createUpgradeColumn` pattern, clear readout (now with the real uploaded
+  dust icon overlapping its left edge, same as Mana's own readout), and
+  Buy/Max → "Maxed" behavior, just costed and gated in Arcane Dust instead
+  of Mana - and its
   Buy/Max buttons sit at Y=0.7 instead of the Mana board's 0.82, since
   this board's bottom edge sits right at ground level (its height puts
   the bottom of the Part at `ISLAND_TOP_Y`), so 0.82 read as the buttons
   touching the floor. Sits near SecondIsland's -X edge facing inward -
   "Right" instead of the starting island kiosk row's "Left" - since it's
   positioned off to the side near an edge rather than in the middle of
-  the island. No `PlayerRebirthed` hookup - Arcane Dust is entirely
-  separate from Mana/Rebirths, so rebirthing never resets it.
+  the island. No `PlayerRebirthed` hookup - a plain Rebirth never resets
+  Arcane Dust - but it does listen for the new `PlayerWizardTiered` event
+  and re-fetches all 3 columns when it fires, since a Wizard Tier purchase
+  resets all of them.
+- `WizardTierBoardClient.client.lua` — the bigger `WizardTierBoard` right
+  next to the Arcane Dust Upgrades board: a "Wizard Tiers" title banner, a
+  line naming the current tier and its bonuses (or "No Tier Entered Yet"),
+  a description box explaining the next tier's cost/reset/reward in plain
+  English, and a big red "Enter" button - styled after a reference "Summer
+  Tiers" board's layout (title → tier name → description → buy button),
+  minus its prev/next tier arrows since only Tier 1 exists so far. Because
+  buying a tier wipes almost everything (Mana, Rebirths, Level, every
+  upgrade), the button requires two clicks - the first turns it orange
+  with "Click again to confirm!" for a few seconds (`CONFIRM_WINDOW_SECONDS`),
+  the second actually calls `BuyWizardTier` - a safeguard not asked for
+  outright, but reasonable given how destructive a misclick here would be.
+  On success, re-renders from the server's returned state (which reports
+  "No further tiers yet" once there's nothing left to buy).
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner

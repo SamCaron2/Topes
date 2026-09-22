@@ -85,6 +85,17 @@ local function defaultData()
 		arcaneDust = 0, -- second wizard resource, collected from ArcaneDustNodes; entirely separate from Mana/Rebirths, NOT reset by rebirthing
 		arcaneDustYieldLevel = 1, -- "More Arcane Dust" upgrade level, 1-100
 		arcaneDustSpawnSpeedLevel = 1, -- "Arcane Dust Spawn Speed" upgrade level, 1-10
+		manaBoostLevel = 1, -- "More Mana" upgrade level, 1-50, paid in Arcane Dust (ManaBoostHandler); NOT reset by rebirthing
+
+		-- Wizard Tiers: a deeper prestige layer than Rebirths (WizardTierHandler).
+		-- Buying a tier wipes every field above this comment back to its
+		-- default (except totalManaEarned, a lifetime stat) AND the four
+		-- Rebirth Shop multiplier levels right below - but leaves
+		-- secondIslandUnlocked and wizardTier itself alone, per direct
+		-- request ("the entire lobby thus far resets except for the locked
+		-- door that stays open"). Keep WizardTierHandler.buyNextTier's reset
+		-- list in sync if any of these are renamed or a new upgrade is added.
+		wizardTier = 0, -- count of Wizard Tiers purchased so far; permanent, never reset
 
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,

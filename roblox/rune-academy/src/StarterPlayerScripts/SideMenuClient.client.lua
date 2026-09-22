@@ -1,12 +1,10 @@
 -- Right-side icon menu: Store, Runes, Profile, Settings, laid out 2x2 on a
 -- high-opacity dark panel, with a small toggle tab above it to slide the
--- whole thing off-screen and hide it. Store and Settings use uploaded icon
--- images; Profile gets the player's own live avatar headshot (fetched via
--- GetUserThumbnailAsync, no upload needed - see below); Runes still uses a
--- placeholder symbol icon (a safe basic Unicode glyph, not emoji, so it
--- renders reliably) until it gets real art too. Hovering grows the icon
--- slightly to show what's highlighted. No panels wired up yet - just needs
--- to exist on screen.
+-- whole thing off-screen and hide it. Store, Settings, and Runes all use
+-- uploaded icon images now; Profile gets the player's own live avatar
+-- headshot instead (fetched via GetUserThumbnailAsync, no upload needed -
+-- see below). Hovering grows the icon slightly to show what's highlighted.
+-- No panels wired up yet - just needs to exist on screen.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -20,7 +18,7 @@ local HOVER_TWEEN_INFO = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingD
 
 local MENU_ITEMS = {
 	{ name = "Store", symbol = "$", color = Color3.fromRGB(70, 190, 90), imageId = "rbxassetid://87898848906072" },
-	{ name = "Runes", symbol = "\u{2726}", color = Color3.fromRGB(150, 80, 255) },
+	{ name = "Runes", symbol = "\u{2726}", color = Color3.fromRGB(150, 80, 255), imageId = "rbxassetid://94841473802618" },
 	{ name = "Profile", symbol = "\u{263A}", color = Color3.fromRGB(70, 150, 220) },
 	{ name = "Settings", symbol = "\u{2699}", color = Color3.fromRGB(120, 120, 130), imageId = "rbxassetid://90039600568167" },
 }

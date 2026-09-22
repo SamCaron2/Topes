@@ -5,6 +5,7 @@
 -- currency/upgrade level fields.
 
 local PlayerData = require(script.Parent.PlayerData)
+local WizardTierHandler = require(script.Parent.WizardTierHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -29,7 +30,7 @@ function ArcaneDustHandler.collect(player: Player): number?
 		return nil
 	end
 	local level = data.arcaneDustYieldLevel or 1
-	data.arcaneDust = (data.arcaneDust or 0) + amountForLevel(level)
+	data.arcaneDust = (data.arcaneDust or 0) + amountForLevel(level) * WizardTierHandler.getDustMultiplier(player)
 	return data.arcaneDust
 end
 

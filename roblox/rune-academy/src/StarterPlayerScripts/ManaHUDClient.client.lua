@@ -21,6 +21,8 @@ local arcaneDustUpdatedEvent = remotes:WaitForChild("ArcaneDustUpdated")
 
 local MANA_ICON_ID = "rbxassetid://119417928367783"
 local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
+local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
+local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the dust icon's own blue, per direct request
 local ICON_SIZE = 46
 local ICON_TEXT_GAP = 6
 
@@ -118,16 +120,16 @@ end
 
 -- Middle-left of the screen. Text colors echo each icon's own palette -
 -- violet for the Mana potion (matching the Mana nodes' own purple glow),
--- gold for Arcane Dust (matching its nodes' color), pink-red for the
--- Rebirths arrows (matching the Rebirth board's red theme). Created all at
--- yOffset 0 - reflowLayout below assigns real positions based on which
--- rows are currently visible, so a hidden Arcane Dust row (not collected
--- from yet) doesn't leave a gap before Rebirths.
+-- blue for Arcane Dust (matching its own icon, per direct request), pink-red
+-- for the Rebirths arrows (matching the Rebirth board's red theme). Created
+-- all at yOffset 0 - reflowLayout below assigns real positions based on
+-- which rows are currently visible, so a hidden Arcane Dust row (not
+-- collected from yet) doesn't leave a gap before Rebirths.
 local manaRow, manaText = createCounterRow("ManaCounter", 0, Color3.fromRGB(180, 120, 255), MANA_ICON_ID, false)
 manaText.Text = "0"
 
 local arcaneDustRow, arcaneDustText =
-	createCounterRow("ArcaneDustCounter", 0, Color3.fromRGB(255, 200, 80), nil, true, "\u{2726}")
+	createCounterRow("ArcaneDustCounter", 0, ARCANE_DUST_COLOR, ARCANE_DUST_ICON_ID, false)
 arcaneDustRow.Visible = false
 arcaneDustText.Text = "0"
 
@@ -154,20 +156,23 @@ manaUpdatedEvent.OnClientEvent:Connect(function(amount)
 	manaText.Text = NumberFormat.format(amount)
 end)
 
+-- Visible only while amount > 0 (not just "ever shown") - a Wizard Tier
+-- reset zeroes this back out, and it should hide again exactly like it did
+-- before the first pickup, per the same "hidden until collected" rule.
 arcaneDustUpdatedEvent.OnClientEvent:Connect(function(amount)
-	local wasHidden = not arcaneDustRow.Visible
-	arcaneDustRow.Visible = true
+	local wasVisible = arcaneDustRow.Visible
+	arcaneDustRow.Visible = amount > 0
 	arcaneDustText.Text = NumberFormat.format(amount)
-	if wasHidden then
+	if wasVisible ~= arcaneDustRow.Visible then
 		reflowLayout()
 	end
 end)
 
 rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
-	local wasHidden = not rebirthsRow.Visible
-	rebirthsRow.Visible = true
+	local wasVisible = rebirthsRow.Visible
+	rebirthsRow.Visible = amount > 0
 	rebirthsText.Text = ("%.1f"):format(amount)
-	if wasHidden then
+	if wasVisible ~= rebirthsRow.Visible then
 		reflowLayout()
 	end
 end)

@@ -22,6 +22,8 @@ local StoreHandler = require(script.Parent.StoreHandler) -- self-wires Marketpla
 local TitleHandler = require(script.Parent.TitleHandler)
 local LeaderboardHandler = require(script.Parent.LeaderboardHandler)
 local SecondIslandHandler = require(script.Parent.SecondIslandHandler)
+local ManaBoostHandler = require(script.Parent.ManaBoostHandler)
+local WizardTierHandler = require(script.Parent.WizardTierHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -85,6 +87,11 @@ local getArcaneDustSpawnStateFunction = newRemoteFunction("GetArcaneDustSpawnSta
 local buyArcaneDustSpawnUpgradeFunction = newRemoteFunction("BuyArcaneDustSpawnUpgrade")
 local getSecondIslandStateFunction = newRemoteFunction("GetSecondIslandState")
 local unlockSecondIslandFunction = newRemoteFunction("UnlockSecondIsland")
+local getManaBoostStateFunction = newRemoteFunction("GetManaBoostState")
+local buyManaBoostUpgradeFunction = newRemoteFunction("BuyManaBoostUpgrade")
+local getWizardTierStateFunction = newRemoteFunction("GetWizardTierState")
+local buyWizardTierFunction = newRemoteFunction("BuyWizardTier")
+local playerWizardTieredEvent = newRemoteEvent("PlayerWizardTiered") -- server -> client, tells the Mana/Rebirth Shop/Arcane Dust boards to re-fetch every column (levels reset)
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -267,6 +274,50 @@ buyArcaneDustSpawnUpgradeFunction.OnServerInvoke = function(player, mode)
 	local success, err, newState = ArcaneDustSpawnHandler.buyUpgrade(player, mode)
 	if success then
 		arcaneDustUpdatedEvent:FireClient(player, newState.arcaneDust)
+	end
+	return success, err, newState
+end
+
+getManaBoostStateFunction.OnServerInvoke = function(player)
+	return ManaBoostHandler.getUpgradeState(player)
+end
+
+buyManaBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = ManaBoostHandler.buyUpgrade(player, mode)
+	if success then
+		arcaneDustUpdatedEvent:FireClient(player, newState.arcaneDust)
+	end
+	return success, err, newState
+end
+
+getWizardTierStateFunction.OnServerInvoke = function(player)
+	return WizardTierHandler.getState(player)
+end
+
+-- A full "lobby" reset (Mana, Rebirths, Level/XP, every Mana/Rebirth
+-- Shop/Arcane Dust upgrade) - push every affected HUD/board its new state.
+-- Rebirths and Arcane Dust go through their own Updated events (guarded to
+-- 0 so ManaHUDClient hides those rows again, matching "hidden until first
+-- collected"); playerWizardTieredEvent is the new, separate signal for the
+-- boards that don't already listen to those (Arcane Dust Upgrades' 3
+-- columns) - reusing playerRebirthedEvent would incorrectly suggest a
+-- plain Rebirth resets Arcane Dust, which it never does.
+buyWizardTierFunction.OnServerInvoke = function(player)
+	local success, err, newState = WizardTierHandler.buyNextTier(player)
+	if success then
+		local data = PlayerData.get(player)
+		if data then
+			manaUpdatedEvent:FireClient(player, data.mana or 0)
+			rebirthsUpdatedEvent:FireClient(player, data.rebirths or 0)
+			arcaneDustUpdatedEvent:FireClient(player, data.arcaneDust or 0)
+			collectionRangeUpdatedEvent:FireClient(player, CollectionRangeHandler.getRadius(player))
+			xpUpdatedEvent:FireClient(player, XPHandler.getState(player))
+		end
+		playerRebirthedEvent:FireClient(player)
+		playerWizardTieredEvent:FireClient(player)
 	end
 	return success, err, newState
 end
