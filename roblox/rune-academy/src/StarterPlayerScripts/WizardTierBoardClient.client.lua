@@ -22,11 +22,11 @@ local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("WizardTierBoard")
 
 -- Waits (without building anything) until SecondIsland is actually
--- unlocked - per direct request ("make all the cards and everything look
--- locked until they open that first door"), since a SurfaceGui renders
--- independent of its host Part's own Transparency, so hiding the physical
--- board alone wouldn't have stopped this UI from showing through on top
--- of it.
+-- unlocked - per direct request ("keep the cards so people see there is
+-- stuff on the island but the text on them does not appear until you
+-- unlock"). The board Part itself is always visible/solid; only this
+-- SurfaceGui (which renders independent of its host Part's Transparency)
+-- is withheld until unlock.
 while true do
 	local state = getSecondIslandStateFunction:InvokeServer()
 	if state and state.unlocked then

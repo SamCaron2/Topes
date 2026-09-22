@@ -608,29 +608,29 @@ end
 
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the Arcane Dust icon's own blue, per direct request
 
--- Hidden/no-collide until SecondIsland is actually unlocked - per direct
--- request ("make all the cards and everything look locked until they open
--- that first door"), after a containment bug let players reach and use
--- everything here before ever pressing Unlock. SecondIslandGateClient
--- reveals this (and the label, and the two boards below) LOCALLY once
--- `secondIslandUnlocked` is true for that player, same per-player pattern
--- already used for the Fantasy Ruin/Ether Area.
+-- Visible and solid from the start, even before SecondIsland is unlocked -
+-- per direct request ("keep the cards so people see there is stuff on the
+-- island but the text on them does not appear until you unlock"), replacing
+-- the earlier fully-hidden treatment. The actual Arcane Dust grant is still
+-- blocked server-side until `secondIslandUnlocked` (ArcaneDustHandler.collect
+-- checks this directly), so standing here early just does nothing rather
+-- than needing to be physically unreachable.
 local arcaneDustPad = Instance.new("Part")
 arcaneDustPad.Name = "ArcaneDustPad"
 arcaneDustPad.Anchored = true
-arcaneDustPad.CanCollide = false
+arcaneDustPad.CanCollide = true
 arcaneDustPad.Material = Enum.Material.Neon
 arcaneDustPad.Color = ARCANE_DUST_COLOR
 arcaneDustPad.Shape = Enum.PartType.Cylinder
 arcaneDustPad.Size = Vector3.new(0.6, ARCANE_DUST_PAD_RADIUS * 2, ARCANE_DUST_PAD_RADIUS * 2) -- Cylinder's round axis is local X; rotated below to lie flat
 arcaneDustPad.CFrame = CFrame.new(arcaneDustPadX, ISLAND_TOP_Y + 0.3, arcaneDustPadZ) * CFrame.Angles(0, 0, math.rad(90))
-arcaneDustPad.Transparency = 1
-arcaneDustPad:SetAttribute("RevealCanCollide", true)
+arcaneDustPad.Transparency = 0
 arcaneDustPad.Parent = Workspace
 
 -- Small and only visible up close (MaxDistance) - per direct request, it
 -- was reading as way too large/visible from across the map. Starts
--- disabled - revealed alongside the pad itself.
+-- disabled - this is the pad's "text," so it stays hidden until
+-- SecondIslandGateClient reveals it once this player actually unlocks.
 local padLabelGui = Instance.new("BillboardGui")
 padLabelGui.Name = "ArcaneDustPadLabel"
 padLabelGui.Size = UDim2.new(0, 100, 0, 24)
@@ -696,17 +696,20 @@ end)
 -- Widened from 24 to 30 to fit its 3rd column ("More Mana").
 local ARCANE_DUST_BOARD_WIDTH = 30
 
+-- Visible/solid glass from the start, same reasoning as ArcaneDustPad above
+-- - the board itself (an empty glass panel) is what tells players "there's
+-- stuff here," while ArcaneDustUpgradeBoardClient still withholds the
+-- actual upgrade UI (a SurfaceGui, which renders independent of this Part's
+-- Transparency) until this player's SecondIsland is unlocked.
 local arcaneDustBoard = Instance.new("Part")
 arcaneDustBoard.Name = "ArcaneDustUpgradeBoard"
 arcaneDustBoard.Anchored = true
-arcaneDustBoard.CanCollide = false
+arcaneDustBoard.CanCollide = true
 arcaneDustBoard.Material = Enum.Material.Glass
 arcaneDustBoard.Color = Color3.fromRGB(45, 45, 60)
-arcaneDustBoard.Transparency = 1
+arcaneDustBoard.Transparency = 0.7 -- glass, like every other board
 arcaneDustBoard.Size = Vector3.new(1, 18, ARCANE_DUST_BOARD_WIDTH)
 arcaneDustBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 9, ARCANE_DUST_AREA_Z)
-arcaneDustBoard:SetAttribute("RevealTransparency", 0.7) -- glass, like every other board
-arcaneDustBoard:SetAttribute("RevealCanCollide", true)
 arcaneDustBoard.Parent = kiosksFolder
 
 -- ===========================================================================
@@ -722,17 +725,18 @@ local WIZARD_TIER_BOARD_WIDTH = 36
 local WIZARD_TIER_BOARD_GAP = 6
 local wizardTierAreaZ = ARCANE_DUST_AREA_Z + (ARCANE_DUST_BOARD_WIDTH / 2 + WIZARD_TIER_BOARD_GAP + WIZARD_TIER_BOARD_WIDTH / 2)
 
+-- Visible/solid from the start, same reasoning as the Arcane Dust board
+-- above - WizardTierBoardClient still withholds its own SurfaceGui until
+-- this player's SecondIsland is unlocked.
 local wizardTierBoard = Instance.new("Part")
 wizardTierBoard.Name = "WizardTierBoard"
 wizardTierBoard.Anchored = true
-wizardTierBoard.CanCollide = false
+wizardTierBoard.CanCollide = true
 wizardTierBoard.Material = Enum.Material.Glass
 wizardTierBoard.Color = Color3.fromRGB(45, 30, 70)
-wizardTierBoard.Transparency = 1
+wizardTierBoard.Transparency = 0.7
 wizardTierBoard.Size = Vector3.new(1, 24, WIZARD_TIER_BOARD_WIDTH)
 wizardTierBoard.CFrame = CFrame.new(ARCANE_DUST_AREA_X, ISLAND_TOP_Y + 12, wizardTierAreaZ)
-wizardTierBoard:SetAttribute("RevealTransparency", 0.7)
-wizardTierBoard:SetAttribute("RevealCanCollide", true)
 wizardTierBoard.Parent = kiosksFolder
 
 -- ===========================================================================

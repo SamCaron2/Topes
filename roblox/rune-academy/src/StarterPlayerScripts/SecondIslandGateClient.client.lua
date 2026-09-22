@@ -7,15 +7,13 @@
 -- alone doesn't open it anymore, only the button does. Level is checked
 -- but never spent.
 --
--- Also reveals everything else physically on SecondIsland (ArcaneDustPad,
--- its label, and both upgrade boards) LOCALLY the moment this player is
--- actually unlocked - per direct request ("make all the cards and
--- everything look locked until they open that first door"), after a
--- containment bug let players reach and use all of it before ever
--- pressing Unlock (see WorldBuilder's gate-check loop for that fix). Each
--- part's revealed Transparency/CanCollide come from its own
--- RevealTransparency/RevealCanCollide attributes, same mechanism as the
--- Fantasy Ruin/Ether Area.
+-- Also reveals the ArcaneDustPad's floating label text LOCALLY the moment
+-- this player is actually unlocked - per direct request ("keep the cards
+-- so people see there is stuff on the island but the text on them does
+-- not appear until you unlock"). The pad and both upgrade boards
+-- themselves are always visible/solid (built that way in WorldBuilder);
+-- only their text/UI waits on unlock - the boards' own SurfaceGuis are
+-- withheld client-side in ArcaneDustUpgradeBoardClient/WizardTierBoardClient.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -33,20 +31,12 @@ local xpUpdatedEvent = remotes:WaitForChild("XPUpdated")
 
 local gate = Workspace:WaitForChild("SecondIslandGate")
 local arcaneDustPad = Workspace:WaitForChild("ArcaneDustPad")
-local kiosks = Workspace:WaitForChild("Kiosks")
-local arcaneDustBoard = kiosks:WaitForChild("ArcaneDustUpgradeBoard")
-local wizardTierBoard = kiosks:WaitForChild("WizardTierBoard")
 
 local TEXT_STROKE_TRANSPARENCY = 0.4
 local COLOR_CAN_UNLOCK = Color3.fromRGB(70, 190, 60)
 local COLOR_CANT_UNLOCK = Color3.fromRGB(200, 55, 55)
 
 local function revealSecondIslandContent()
-	for _, part in { arcaneDustPad, arcaneDustBoard, wizardTierBoard } do
-		part.Transparency = part:GetAttribute("RevealTransparency") or 0
-		part.CanCollide = part:GetAttribute("RevealCanCollide") or false
-	end
-
 	local padLabel = arcaneDustPad:FindFirstChild("ArcaneDustPadLabel")
 	if padLabel then
 		padLabel.Enabled = true
