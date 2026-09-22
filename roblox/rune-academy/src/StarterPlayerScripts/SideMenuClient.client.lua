@@ -4,7 +4,9 @@
 -- uploaded icon images now; Profile gets the player's own live avatar
 -- headshot instead (fetched via GetUserThumbnailAsync, no upload needed -
 -- see below). Hovering grows the icon slightly to show what's highlighted.
--- No panels wired up yet - just needs to exist on screen.
+-- Only Profile is wired to a panel so far (ProfileClient.client.lua, via
+-- the OpenProfileRequested BindableEvent below) - Store/Runes/Settings
+-- still just need to exist on screen for now.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -192,6 +194,18 @@ local buttonsByName = {}
 for index, item in MENU_ITEMS do
 	buttonsByName[item.name] = createMenuButton(index, item.name, item.symbol, item.color, item.imageId)
 end
+
+-- ProfileClient owns the actual panel (separate concern, separate script) -
+-- this just fires a BindableEvent parented under this same ScreenGui so it
+-- can be found reliably regardless of which script's PlayerAdded-equivalent
+-- runs first.
+local openProfileEvent = Instance.new("BindableEvent")
+openProfileEvent.Name = "OpenProfileRequested"
+openProfileEvent.Parent = screenGui
+
+buttonsByName["Profile"].MouseButton1Click:Connect(function()
+	openProfileEvent:Fire()
+end)
 
 -- Profile gets the PLAYER'S OWN avatar headshot instead of a placeholder
 -- symbol - fetched live via GetUserThumbnailAsync, no uploaded asset

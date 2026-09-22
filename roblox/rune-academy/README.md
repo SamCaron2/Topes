@@ -572,8 +572,35 @@ design notes.
   stays reachable even while the panel's hidden.
   Hovering tweens the icon up to 1.15x size (centered growth, not
   top-anchored, so it doesn't push
-  into the label) to show what's highlighted. Not wired to any panel yet -
-  it only needed to exist on screen for now.
+  into the label) to show what's highlighted. Only Profile is wired to a
+  panel so far - clicking it fires an `OpenProfileRequested`
+  `BindableEvent` (parented under this script's own `SideMenuHUD`
+  `ScreenGui` so `ProfileClient` can find it reliably regardless of which
+  script runs first) instead of building the panel itself, keeping the
+  icon grid and the panel it opens as separate concerns. Store/Runes/
+  Settings still just need to exist on screen for now.
+- `ProfileClient.client.lua` — the Profile panel opened by that event: a
+  dark modal card (dimmed background `Frame` with `Active = true` so
+  clicks don't pass through to the side menu underneath) with two pages.
+  The "Profile" page - what was originally asked for, per DESIGN.md's
+  "Main profile screen" - shows the player's own avatar/name up top, then
+  the 4 stats specifically requested: Time Played, Total Mana (now
+  exposed by `GetProfile` as `totalManaEarned`, the same lifetime figure
+  the leaderboard uses - not the live spendable `mana` balance also in
+  that payload), Runes Opened, and Robux Spent. A "Titles ➜" button
+  switches to the "Titles" page: every `GameConfig.Titles` entry (all 14),
+  colored by its own title color when unlocked or grayed out when not,
+  each locked one showing `describeCondition` - a plain-English rendering
+  of its `condition` (none of the config entries carry a human-readable
+  string, so this builds one: "Play for 7 days", "Spend R$1,000 total",
+  "Join the group", "Own the ElitePass gamepass", "Join during launch
+  week", "Granted manually") - and each unlocked one getting an
+  Equip/Equipped button that calls the already-existing (but previously
+  uncalled from any client) `EquipTitle` remote. A "⬅ Back" button
+  returns to the Profile page. Both pages re-fetch fresh from `GetProfile`
+  every time the panel opens rather than staying subscribed to live
+  updates, since a modal stat/title screen doesn't need to track changes
+  while it's closed.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
   feet, visible only while standing inside the `ManaZone` platform
   bounds (read off attributes `WorldBuilder` sets on that folder:

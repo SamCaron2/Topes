@@ -179,6 +179,7 @@ getProfileFunction.OnServerInvoke = function(player)
 
 	return {
 		mana = data.mana or 0,
+		totalManaEarned = data.totalManaEarned or 0, -- lifetime, for the Profile screen's "Total Mana" - NOT the live spendable `mana` balance above
 		gems = data.gems or 0,
 		playtimeSeconds = data.playtimeSeconds or 0,
 		robuxSpent = data.robuxSpent or 0,
