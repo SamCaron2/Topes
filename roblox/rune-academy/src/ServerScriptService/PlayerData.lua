@@ -116,6 +116,21 @@ local function defaultData()
 		dustTreeTile8 = false,
 		dustTreeTile9 = false, -- also doubles as "has this player unlocked Ether"
 
+		-- Ether: the third wizard resource, unlocked only once dustTreeTile9
+		-- is bought (EtherHandler). Click-collected (a shroud with a
+		-- ClickDetector, not auto-collected like Mana/walked-over like
+		-- Arcane Dust), per direct request - deliberately slower-paced than
+		-- the other two currencies. Its own 3-column board: "More Ether"
+		-- (etherYieldLevel, 1-100, paid in Ether), "Click Speed"
+		-- (etherClickSpeedLevel, 1-10, paid in Ether), and "More Dust"
+		-- (etherDustBoostLevel, 1-50, paid in Ether - boosts Arcane Dust
+		-- yield, mirroring ManaBoostHandler's own Dust-funded Mana boost).
+		-- Permanent like the Upgrade Tree itself - not reset by anything.
+		ether = 0,
+		etherYieldLevel = 1,
+		etherClickSpeedLevel = 1,
+		etherDustBoostLevel = 1,
+
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,
 		scrolls = 0,
@@ -171,17 +186,26 @@ function PlayerData.load(player: Player)
 		data.firstJoinedAt = os.time()
 	end
 
-	-- TEMP: testing only - spawns in already past Tier 3 (per direct
-	-- request) with Mana/Rebirths/Arcane Dust/Level maxed out, so
-	-- SecondIsland, the Fantasy Ruin, and the Upgrade Tree's Tile 1 are all
-	-- immediately visible/affordable without grinding through the tiers
-	-- first. Remove these lines (and the wizardTier one) once you're done
-	-- testing.
+	-- TEMP: testing only - spawns in already past Tier 3 with every
+	-- Upgrade Tree tile already bought (per direct request), so
+	-- SecondIsland, the Fantasy Ruin, and the Ether Shroud/board are all
+	-- immediately visible/testable without grinding through the tiers or
+	-- tree first. Remove all of these lines once you're done testing.
 	data.mana = 1e13
 	data.rebirths = 1e13
 	data.level = 50
 	data.arcaneDust = 1e13
+	data.ether = 1e13
 	data.wizardTier = 3
+	data.dustTreeTile1 = true
+	data.dustTreeTile2 = true
+	data.dustTreeTile3 = true
+	data.dustTreeTile4 = true
+	data.dustTreeTile5 = true
+	data.dustTreeTile6 = true
+	data.dustTreeTile7 = true
+	data.dustTreeTile8 = true
+	data.dustTreeTile9 = true
 
 	sessions[player] = data
 

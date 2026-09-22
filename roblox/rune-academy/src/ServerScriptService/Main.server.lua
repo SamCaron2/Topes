@@ -25,6 +25,9 @@ local SecondIslandHandler = require(script.Parent.SecondIslandHandler)
 local ManaBoostHandler = require(script.Parent.ManaBoostHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
+local EtherHandler = require(script.Parent.EtherHandler)
+local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
+local EtherDustBoostHandler = require(script.Parent.EtherDustBoostHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -95,6 +98,14 @@ local buyWizardTierFunction = newRemoteFunction("BuyWizardTier")
 local playerWizardTieredEvent = newRemoteEvent("PlayerWizardTiered") -- server -> client, tells the Mana/Rebirth Shop/Arcane Dust boards to re-fetch every column (levels reset)
 local getUpgradeTreeStateFunction = newRemoteFunction("GetUpgradeTreeState")
 local upgradeTreeTileBoughtEvent = newRemoteEvent("UpgradeTreeTileBought") -- server -> client, fired the instant a tile is bought (args: tileId)
+local getEtherUnlockedFunction = newRemoteFunction("GetEtherUnlocked")
+local etherUpdatedEvent = newRemoteEvent("EtherUpdated") -- server -> client, fired on join and every click/purchase
+local getEtherYieldStateFunction = newRemoteFunction("GetEtherYieldState")
+local buyEtherYieldUpgradeFunction = newRemoteFunction("BuyEtherYieldUpgrade")
+local getEtherClickSpeedStateFunction = newRemoteFunction("GetEtherClickSpeedState")
+local buyEtherClickSpeedUpgradeFunction = newRemoteFunction("BuyEtherClickSpeedUpgrade")
+local getEtherDustBoostStateFunction = newRemoteFunction("GetEtherDustBoostState")
+local buyEtherDustBoostUpgradeFunction = newRemoteFunction("BuyEtherDustBoostUpgrade")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -329,6 +340,55 @@ getUpgradeTreeStateFunction.OnServerInvoke = function(player)
 	return UpgradeTreeHandler.getState(player)
 end
 
+getEtherUnlockedFunction.OnServerInvoke = function(player)
+	return UpgradeTreeHandler.isEtherUnlocked(player)
+end
+
+getEtherYieldStateFunction.OnServerInvoke = function(player)
+	return EtherHandler.getYieldUpgradeState(player)
+end
+
+buyEtherYieldUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = EtherHandler.buyYieldUpgrade(player, mode)
+	if success then
+		etherUpdatedEvent:FireClient(player, newState.ether)
+	end
+	return success, err, newState
+end
+
+getEtherClickSpeedStateFunction.OnServerInvoke = function(player)
+	return EtherClickSpeedHandler.getUpgradeState(player)
+end
+
+buyEtherClickSpeedUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = EtherClickSpeedHandler.buyUpgrade(player, mode)
+	if success then
+		etherUpdatedEvent:FireClient(player, newState.ether)
+	end
+	return success, err, newState
+end
+
+getEtherDustBoostStateFunction.OnServerInvoke = function(player)
+	return EtherDustBoostHandler.getUpgradeState(player)
+end
+
+buyEtherDustBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = EtherDustBoostHandler.buyUpgrade(player, mode)
+	if success then
+		etherUpdatedEvent:FireClient(player, newState.ether)
+	end
+	return success, err, newState
+end
+
 getSecondIslandStateFunction.OnServerInvoke = function(player)
 	return SecondIslandHandler.getState(player)
 end
@@ -470,6 +530,9 @@ Players.PlayerAdded:Connect(function(player)
 		end
 		if (data.rebirths or 0) > 0 then
 			rebirthsUpdatedEvent:FireClient(player, data.rebirths)
+		end
+		if (data.ether or 0) > 0 then
+			etherUpdatedEvent:FireClient(player, data.ether)
 		end
 	end
 end)

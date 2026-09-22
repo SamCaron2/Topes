@@ -7,6 +7,7 @@
 local PlayerData = require(script.Parent.PlayerData)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
+local EtherDustBoostHandler = require(script.Parent.EtherDustBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -31,7 +32,9 @@ function ArcaneDustHandler.collect(player: Player): number?
 		return nil
 	end
 	local level = data.arcaneDustYieldLevel or 1
-	local multiplier = WizardTierHandler.getDustMultiplier(player) * UpgradeTreeHandler.getDustMultiplier(player)
+	local multiplier = WizardTierHandler.getDustMultiplier(player)
+		* UpgradeTreeHandler.getDustMultiplier(player)
+		* EtherDustBoostHandler.getMultiplier(player)
 	data.arcaneDust = (data.arcaneDust or 0) + amountForLevel(level) * multiplier
 	return data.arcaneDust
 end

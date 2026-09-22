@@ -14,6 +14,8 @@ local CollectionRangeHandler = require(script.Parent.CollectionRangeHandler)
 local XPHandler = require(script.Parent.XPHandler)
 local PlayerData = require(script.Parent.PlayerData)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
+local EtherHandler = require(script.Parent.EtherHandler)
+local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -30,6 +32,7 @@ local remotesFolder = ReplicatedStorage:WaitForChild("Remotes")
 local manaUpdatedEvent = remotesFolder:WaitForChild("ManaUpdated")
 local xpUpdatedEvent = remotesFolder:WaitForChild("XPUpdated")
 local arcaneDustUpdatedEvent = remotesFolder:WaitForChild("ArcaneDustUpdated")
+local etherUpdatedEvent = remotesFolder:WaitForChild("EtherUpdated")
 local upgradeTreeTileBoughtEvent = remotesFolder:WaitForChild("UpgradeTreeTileBought")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
@@ -934,6 +937,158 @@ task.spawn(function()
 			end
 		end
 	end
+end)
+
+-- ===========================================================================
+-- Ether: the third wizard resource, unlocked only once Tile 9 (the
+-- Upgrade Tree's final tile) is bought. Click-collected via a
+-- ClickDetector on the Ether Shroud, not auto-collected/walked-over like
+-- Mana/Arcane Dust, per direct request - a deliberately slower, more
+-- active-attention resource. Placed further out past Tile 9, in the open
+-- grass toward the tree line, per the circled screenshot - a guess like
+-- every other placement here; nudge ETHER_SHROUD_OFFSET if it's off.
+-- Themed purple throughout, per direct request, distinct from the Wizard
+-- Tier board's own purple (deeper violet here vs. that board's
+-- indigo/gold). Everything here starts hidden/no-collide - shared world
+-- geometry, but players can be at different Upgrade Tree progress, so
+-- EtherAreaClient reveals it LOCALLY per-player once
+-- UpgradeTreeHandler.isEtherUnlocked reports true for them, same pattern
+-- as the Fantasy Ruin.
+local ETHER_COLOR = Color3.fromRGB(150, 60, 220)
+local ETHER_SHROUD_OFFSET = 15 -- studs past Tile 9, continuing the same +X chain direction
+local ETHER_BOARD_FRONT_OFFSET = 12 -- studs behind the shroud, same front/back relationship as ArcaneDustPad/its board
+
+local tile9Position = UPGRADE_TREE_TILE_POSITIONS[9]
+local etherShroudX = tile9Position.x + ETHER_SHROUD_OFFSET
+local etherShroudZ = tile9Position.z
+local etherBoardX = etherShroudX + ETHER_BOARD_FRONT_OFFSET
+local etherBoardZ = tile9Position.z
+
+local existingEtherArea = Workspace:FindFirstChild("EtherArea")
+if existingEtherArea then
+	existingEtherArea:Destroy()
+end
+
+local etherAreaFolder = Instance.new("Folder")
+etherAreaFolder.Name = "EtherArea"
+etherAreaFolder.Parent = Workspace
+
+-- The Shroud itself: a cluster of overlapping translucent spheres (a
+-- "mist" look) around one solid core sphere that actually carries the
+-- ClickDetector - clicking the core is what registers, the mist around it
+-- is purely decorative.
+local etherShroudCore = Instance.new("Part")
+etherShroudCore.Name = "EtherShroudCore"
+etherShroudCore.Shape = Enum.PartType.Ball
+etherShroudCore.Anchored = true
+etherShroudCore.Material = Enum.Material.Neon
+etherShroudCore.Color = ETHER_COLOR
+etherShroudCore.Size = Vector3.new(6, 6, 6)
+etherShroudCore.CFrame = CFrame.new(etherShroudX, ISLAND_TOP_Y + 4, etherShroudZ)
+etherShroudCore.Transparency = 1
+etherShroudCore.CanCollide = false
+etherShroudCore.Parent = etherAreaFolder
+
+local etherClickDetector = Instance.new("ClickDetector")
+etherClickDetector.MaxActivationDistance = 20
+etherClickDetector.Parent = etherShroudCore
+
+-- Starts disabled - EtherAreaClient enables it locally alongside revealing
+-- the rest of the area, same "hidden until unlocked" treatment.
+local etherShroudLabelGui = Instance.new("BillboardGui")
+etherShroudLabelGui.Name = "EtherShroudLabel"
+etherShroudLabelGui.Size = UDim2.new(0, 140, 0, 24)
+etherShroudLabelGui.StudsOffset = Vector3.new(0, 4.5, 0)
+etherShroudLabelGui.MaxDistance = 25
+etherShroudLabelGui.AlwaysOnTop = true
+etherShroudLabelGui.Enabled = false
+etherShroudLabelGui.Adornee = etherShroudCore
+etherShroudLabelGui.Parent = etherShroudCore
+
+local etherShroudLabelText = Instance.new("TextLabel")
+etherShroudLabelText.Size = UDim2.new(1, 0, 1, 0)
+etherShroudLabelText.BackgroundTransparency = 1
+etherShroudLabelText.Font = Enum.Font.GothamBold
+etherShroudLabelText.TextScaled = true
+etherShroudLabelText.TextColor3 = ETHER_COLOR
+etherShroudLabelText.TextStrokeTransparency = 0.2
+etherShroudLabelText.Text = "Click to Collect Ether"
+etherShroudLabelText.Parent = etherShroudLabelGui
+
+local ETHER_MIST_COUNT = 5
+for i = 1, ETHER_MIST_COUNT do
+	local angle = (i - 1) / ETHER_MIST_COUNT * math.pi * 2
+	local radius = 3
+	local mistPart = Instance.new("Part")
+	mistPart.Name = ("EtherShroudMist%d"):format(i)
+	mistPart.Shape = Enum.PartType.Ball
+	mistPart.Anchored = true
+	mistPart.Material = Enum.Material.ForceField
+	mistPart.Color = ETHER_COLOR
+	mistPart.Size = Vector3.new(5, 5, 5)
+	mistPart.CFrame = CFrame.new(
+		etherShroudX + radius * math.cos(angle),
+		ISLAND_TOP_Y + 4 + math.sin(angle * 2),
+		etherShroudZ + radius * math.sin(angle)
+	)
+	mistPart.Transparency = 1
+	mistPart.CanCollide = false
+	mistPart.Parent = etherAreaFolder
+end
+
+-- Solid ground beneath the shroud so it doesn't just float over plain
+-- grass - a small round platform, same hidden-until-unlocked treatment.
+local etherPlatform = Instance.new("Part")
+etherPlatform.Name = "EtherPlatform"
+etherPlatform.Shape = Enum.PartType.Cylinder
+etherPlatform.Anchored = true
+etherPlatform.Material = Enum.Material.Marble
+etherPlatform.Color = Color3.fromRGB(70, 40, 90)
+etherPlatform.Size = Vector3.new(0.6, 12, 12)
+etherPlatform.CFrame = CFrame.new(etherShroudX, ISLAND_TOP_Y + 0.3, etherShroudZ) * CFrame.Angles(0, 0, math.rad(90))
+etherPlatform.Transparency = 1
+etherPlatform.CanCollide = false
+etherPlatform.Parent = etherAreaFolder
+
+-- Its upgrade board, same physical style as every other board (thin along
+-- X, wide along Z, facing inward at the shroud) - "More Ether", "Click
+-- Speed", and "More Dust".
+local ETHER_BOARD_WIDTH = 30
+
+local etherBoard = Instance.new("Part")
+etherBoard.Name = "EtherUpgradeBoard"
+etherBoard.Anchored = true
+etherBoard.Material = Enum.Material.Glass
+etherBoard.Color = Color3.fromRGB(45, 25, 60)
+etherBoard.Size = Vector3.new(1, 18, ETHER_BOARD_WIDTH)
+etherBoard.CFrame = CFrame.new(etherBoardX, ISLAND_TOP_Y + 9, etherBoardZ)
+etherBoard.Transparency = 1
+etherBoard.CanCollide = false
+etherBoard.Parent = etherAreaFolder
+
+local ETHER_CLICK_COOLDOWN = {} -- [player] = os.clock() of the next click this player is allowed to grant Ether from
+
+etherClickDetector.MouseClick:Connect(function(player)
+	if not UpgradeTreeHandler.isEtherUnlocked(player) then
+		return
+	end
+
+	local now = os.clock()
+	local nextAllowed = ETHER_CLICK_COOLDOWN[player]
+	if nextAllowed and now < nextAllowed then
+		return
+	end
+
+	local newAmount = EtherHandler.collect(player)
+	if newAmount then
+		etherUpdatedEvent:FireClient(player, newAmount)
+	end
+
+	ETHER_CLICK_COOLDOWN[player] = now + EtherClickSpeedHandler.getCooldownSeconds(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	ETHER_CLICK_COOLDOWN[player] = nil
 end)
 
 -- ===========================================================================

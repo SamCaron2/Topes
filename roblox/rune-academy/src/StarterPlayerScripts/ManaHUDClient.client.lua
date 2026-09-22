@@ -1,10 +1,11 @@
 -- Middle-left Mana counter (icon + amount, no word, no background pill),
--- an Arcane Dust counter below that, then a Rebirths counter below that -
--- both Arcane Dust and Rebirths start hidden until the player has at least
--- one of each (the server only fires their Updated event once they do),
--- so Arcane Dust only shows up after first stepping on ArcaneDustPad, and
--- Rebirths only once actually unlocked - reflowLayout keeps the visible
--- rows stacked with no gap either way. Styled after a typical
+-- an Arcane Dust counter below that, a Rebirths counter below that, then
+-- an Ether counter below that - all three below Mana start hidden until
+-- the player has at least one of each (the server only fires their
+-- Updated event once they do), so Arcane Dust only shows up after first
+-- stepping on ArcaneDustPad, Rebirths only once actually unlocked, and
+-- Ether only after first clicking the Ether Shroud - reflowLayout keeps
+-- the visible rows stacked with no gap either way. Styled after a typical
 -- incremental-game HUD: icon sitting right next to a bold number colored
 -- to match the icon, nothing else around it.
 
@@ -18,11 +19,13 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 local rebirthsUpdatedEvent = remotes:WaitForChild("RebirthsUpdated")
 local arcaneDustUpdatedEvent = remotes:WaitForChild("ArcaneDustUpdated")
+local etherUpdatedEvent = remotes:WaitForChild("EtherUpdated")
 
 local MANA_ICON_ID = "rbxassetid://119417928367783"
 local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
 local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the dust icon's own blue, per direct request
+local ETHER_COLOR = Color3.fromRGB(150, 60, 220) -- matches the Ether Shroud's own purple
 local ICON_SIZE = 46
 local ICON_TEXT_GAP = 6
 
@@ -137,8 +140,15 @@ local rebirthsRow, rebirthsText = createCounterRow("RebirthsCounter", 0, Color3.
 rebirthsRow.Visible = false
 rebirthsText.Text = "0"
 
+-- Ether has no uploaded image yet, so it passes `symbol` instead of
+-- `imageId` - same placeholder treatment Arcane Dust used before its own
+-- icon was uploaded.
+local etherRow, etherText = createCounterRow("EtherCounter", 0, ETHER_COLOR, nil, true, "\u{2727}")
+etherRow.Visible = false
+etherText.Text = "0"
+
 local ROW_SPACING = ICON_SIZE + 14
-local orderedRows = { manaRow, arcaneDustRow, rebirthsRow }
+local orderedRows = { manaRow, arcaneDustRow, rebirthsRow, etherRow }
 
 local function reflowLayout()
 	local nextY = 0
@@ -173,6 +183,15 @@ rebirthsUpdatedEvent.OnClientEvent:Connect(function(amount)
 	rebirthsRow.Visible = amount > 0
 	rebirthsText.Text = NumberFormat.format(amount)
 	if wasVisible ~= rebirthsRow.Visible then
+		reflowLayout()
+	end
+end)
+
+etherUpdatedEvent.OnClientEvent:Connect(function(amount)
+	local wasVisible = etherRow.Visible
+	etherRow.Visible = amount > 0
+	etherText.Text = NumberFormat.format(amount)
+	if wasVisible ~= etherRow.Visible then
 		reflowLayout()
 	end
 end)

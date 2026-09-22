@@ -234,6 +234,20 @@ design notes.
   one end, extending outward along +X into the open grass beyond, Tile 9 -
   Ether's unlock - at the opposite end). See `UpgradeTreeHandler`/
   `UpgradeTreeClient` below for what each tile does.
+  Further out past Tile 9 (per a circled screenshot showing where to put
+  it, same best-guess treatment) sits `EtherArea`: the Ether Shroud (a
+  glowing purple `Neon` sphere core carrying a `ClickDetector`, ringed by
+  5 translucent `ForceField` "mist" spheres bobbing at different heights,
+  sitting on a round marble platform) and its own `EtherUpgradeBoard`
+  right behind it. Every part here starts hidden/no-collide - shared
+  world geometry, but players can be at different Upgrade Tree progress -
+  and gets revealed LOCALLY per-player by `EtherAreaClient` once
+  `UpgradeTreeHandler.isEtherUnlocked` reports true for them, same
+  pattern as the Fantasy Ruin. Themed purple throughout, per direct
+  request, in a deeper/more violet shade than the Wizard Tier board's own
+  purple so the two read as distinct. See `EtherHandler`/
+  `EtherClickSpeedHandler`/`EtherDustBoostHandler`/`EtherAreaClient`/
+  `EtherUpgradeBoardClient` below.
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -309,7 +323,9 @@ design notes.
   yield curve for consistency - its own "More Arcane Dust" upgrade (level
   1-100), its own `arcaneDust` currency and `arcaneDustYieldLevel` field.
   Every collect is also scaled by `WizardTierHandler`'s flat dust
-  multiplier (1x until Tier 1, then 5x).
+  multiplier (1x until Tier 1, then 5x), `UpgradeTreeHandler`'s Dust tiles
+  (x2 each), and `EtherDustBoostHandler`'s "More Dust" upgrade (1x-6x,
+  paid in Ether).
 - `ArcaneDustSpawnHandler.lua` — the "Grant Speed" upgrade for
   `ArcaneDustPad` (level 1-10, its grant interval going 1.5s → 0.5s while
   you stand on the pad - lowered from an original 2.0s → 0.2s per direct
@@ -414,6 +430,27 @@ design notes.
   `reachable` per tile, so a tile with unmet requirements can't be bought
   even by walking onto it early, and its sign never appears client-side
   either.
+- `EtherHandler.lua` — Ether, the third wizard resource, unlocked only
+  once Tile 9 is bought (`UpgradeTreeHandler.isEtherUnlocked`).
+  Click-collected instead of auto-collected/walked-over, per direct
+  request - a `ClickDetector` on the Ether Shroud (`WorldBuilder`) fires
+  `collect` server-side. Mirrors `ArcaneDustHandler`'s exact shape and
+  yield curve for its own "More Ether" upgrade (level 1-100, paid in
+  Ether).
+- `EtherClickSpeedHandler.lua` — the Ether board's "Click Speed" column
+  (level 1-10): how long you have to wait between clicks before the
+  Shroud pays out again, 1.1s at level 1 down to 0.1s at level 10, exact
+  values per direct request. Shaped like `ArcaneDustSpawnHandler` (same
+  lerp curve, same API), costed on its own curve (`currentLevel * 10`,
+  paid in Ether). `getCooldownSeconds` is read by `WorldBuilder`'s
+  `ClickDetector.MouseClick` handler, which tracks each player's next
+  allowed click time and silently ignores clicks before it.
+- `EtherDustBoostHandler.lua` — the Ether board's "More Dust" column
+  (level 1-50, 1x-6x): mirrors `ManaBoostHandler` exactly, just one link
+  further down the resource chain - Ether (the newest, deepest resource)
+  boosting Arcane Dust, the same way Arcane Dust's own "More Mana"
+  column boosts Mana. Read by `ArcaneDustHandler` alongside
+  `WizardTierHandler`'s and `UpgradeTreeHandler`'s own dust multipliers.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -464,24 +501,28 @@ design notes.
   resulting state so it can be pushed to the client via `XPUpdated`.
 - `ManaHUDClient.client.lua` — a Mana counter, middle-left of the screen,
   updated live off the `ManaUpdated` RemoteEvent, an Arcane Dust counter
-  below that, then a Rebirths counter below that. Styled after a typical
-  incremental-game HUD, not the original dark rounded pill: no background
-  at all, just the icon sitting a small fixed gap (`ICON_TEXT_GAP`) from a
-  bold, left-aligned number - no "Mana"/"Arcane Dust"/"Rebirths" word, the
-  icon says it - colored to echo the icon's own palette (violet for Mana,
-  matching the Mana nodes' own glow; blue for Arcane Dust, matching its
-  own uploaded icon, per direct request - was a gold placeholder glyph
-  before; pink-red for Rebirths, matching the Rebirth board's red theme).
-  The Rebirths icon keeps a small round white circle behind it for
-  contrast; the Mana and Arcane Dust icons have none, since both already
-  read fine boxed on their own. Both the Arcane Dust and Rebirths rows
-  are visible only while their amount is actually above 0, not just "ever
-  shown once" - Arcane Dust the first time you actually stand on
-  `ArcaneDustPad`, Rebirths only once you've actually rebirthed - and hide
-  again if a Wizard Tier purchase resets either back to 0, so neither
-  counter shows up before it's relevant. `reflowLayout` re-stacks
-  whichever rows are currently visible with no gap in between, since the
-  two collapsible rows aren't always both present.
+  below that, a Rebirths counter below that, then an Ether counter below
+  that. Styled after a typical incremental-game HUD, not the original dark
+  rounded pill: no background at all, just the icon sitting a small fixed
+  gap (`ICON_TEXT_GAP`) from a bold, left-aligned number - no
+  "Mana"/"Arcane Dust"/"Rebirths"/"Ether" word, the icon says it - colored
+  to echo the icon's own palette (violet for Mana, matching the Mana
+  nodes' own glow; blue for Arcane Dust, matching its own uploaded icon,
+  per direct request - was a gold placeholder glyph before; pink-red for
+  Rebirths, matching the Rebirth board's red theme; purple for Ether,
+  matching the Shroud's own color). The Rebirths and Ether icons keep a
+  small round white circle behind them for contrast (Ether has no
+  uploaded image yet, so it falls back to a placeholder glyph the same
+  way Arcane Dust once did); the Mana and Arcane Dust icons have none,
+  since both already read fine boxed on their own. The Arcane Dust,
+  Rebirths, and Ether rows are all visible only while their amount is
+  actually above 0, not just "ever shown once" - Arcane Dust the first
+  time you actually stand on `ArcaneDustPad`, Rebirths only once you've
+  actually rebirthed, Ether only once you've actually clicked the Shroud -
+  and hide again if a Wizard Tier purchase resets any of them back to 0,
+  so no counter shows up before it's relevant. `reflowLayout` re-stacks
+  whichever rows are currently visible with no gap in between, since these
+  three collapsible rows aren't always all present.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
   Mana counter's placement, laid out 2x2 on a high-opacity dark
   `SideMenuPanel` (not just a transparent background) behind the whole
@@ -609,6 +650,27 @@ design notes.
   bought one's color updating.
   Re-checks on every `PlayerWizardTiered` event too, so reaching Tier 3
   builds every sign immediately without a rejoin.
+- `EtherAreaClient.client.lua` — reveals `Workspace.EtherArea` (the Ether
+  Shroud, its mist, platform, and upgrade board) LOCALLY for whichever
+  players have actually unlocked Ether: every part starts hidden/no-collide
+  server-side since it's shared world geometry and different players can
+  be at different Upgrade Tree progress, so this checks `GetEtherUnlocked`
+  (retrying a few times if `PlayerData` isn't loaded yet, same guard as
+  `SecondIslandGateClient`/`WizardRuinClient`) and flips
+  `Transparency`/`CanCollide` back on for that client only if it's true,
+  also enabling the Shroud's "Click to Collect Ether" label. Re-checks on
+  every `UpgradeTreeTileBought` event, so buying Tile 9 reveals the area
+  immediately without a rejoin.
+- `EtherUpgradeBoardClient.client.lua` — the Ether board's 3-column UI
+  ("More Ether", "Click Speed", "More Dust"), same `createUpgradeColumn`
+  pattern and purple theme as every other board, just costed in Ether.
+  Unlike every other board, it doesn't build AT ALL until
+  `GetEtherUnlocked` reports true - the physical board Part is already
+  hidden per-player by `EtherAreaClient`, but that alone wouldn't stop a
+  `SurfaceGui` from still rendering on top of it, so the UI itself also
+  waits on the same unlock check before it's ever created. Also rechecks
+  on `UpgradeTreeTileBought`, building the board immediately once Tile 9
+  is bought.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner
@@ -697,6 +759,7 @@ Nothing server-side generates or removes world parts anymore except what
 `WorldBuilder` explicitly manages (`StartingIsland`, `ManaZone`,
 `Kiosks`, `SecondIsland`, `IslandBridge`, `ArcaneDustPad`,
 `SecondIslandGate`, `SecondIslandDecor`, `FantasyRuin`, `UpgradeTreeTiles`,
+`EtherArea`,
 `LeaderboardIsland`,
 `LeaderboardBridge`, `LeaderboardDecor`, all rebuilt from scratch on every
 server start). If your saved `.rbxl`
