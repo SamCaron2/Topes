@@ -51,7 +51,12 @@ local TIER_COLORS = {
 
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "RuneAltarBoardGui"
-surfaceGui.Face = Enum.NormalId.Left -- board sits further +X than the Altar, facing back at it - a guess like every other board face here; flip to Right if unreadable
+-- The board is now rotated 90° around Y in WorldBuilder (per direct
+-- request, "rotate the card to face towards center of island"), so its
+-- local Right face is the one pointing back south toward the ruin/island
+-- center - a guess like every other board face here; flip to Left if
+-- it renders backwards.
+surfaceGui.Face = Enum.NormalId.Right
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36

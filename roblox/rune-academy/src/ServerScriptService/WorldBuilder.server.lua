@@ -505,27 +505,196 @@ local function makeFlower(folder: Folder, x: number, z: number)
 	bloom.Parent = folder
 end
 
+-- ===========================================================================
+-- SecondIsland's own decor theme: "purple wizardy nature," per direct
+-- request ("this island can we do purple wizardy nature theme for
+-- decorations make it look good"). Same overlapping-parts-per-piece
+-- approach as makeTree/makeBush/makeFlower above (never one flat primitive
+-- shape), just with a magical-forest palette and two brand new piece
+-- types (crystal clusters, glowing mushrooms) instead of reusing the
+-- plain green ones. Used only via SECOND_ISLAND_DECOR_KINDS below -
+-- EtherIsland/LeaderboardIsland keep the original green theme.
+
+-- A darker, purple-barked trunk under a glowing violet canopy instead of
+-- green leaves - same 3-clump silhouette as makeTree, plus a 4th smaller,
+-- brighter magenta clump tucked into the canopy for a bit of sparkle.
+local function makeWizardTree(folder: Folder, x: number, z: number)
+	local trunk = Instance.new("Part")
+	trunk.Name = "WizardTreeTrunk"
+	trunk.Anchored = true
+	trunk.CanCollide = false
+	trunk.Material = Enum.Material.Wood
+	trunk.Color = Color3.fromRGB(58, 42, 68)
+	trunk.Shape = Enum.PartType.Cylinder
+	trunk.Size = Vector3.new(7, 2, 2) -- Cylinder's round axis is local X; rotated below to stand upright
+	trunk.CFrame = CFrame.new(x, ISLAND_TOP_Y + 3.5, z) * CFrame.Angles(0, 0, math.rad(90))
+	trunk.Parent = folder
+
+	local canopyClumps = {
+		{ offset = Vector3.new(0, 9, 0), size = 6.5, color = Color3.fromRGB(140, 70, 210) },
+		{ offset = Vector3.new(1.6, 7.5, 1), size = 5, color = Color3.fromRGB(140, 70, 210) },
+		{ offset = Vector3.new(-1.6, 7.5, -1), size = 5, color = Color3.fromRGB(140, 70, 210) },
+		{ offset = Vector3.new(0.5, 10.5, -0.8), size = 3, color = Color3.fromRGB(210, 110, 255) },
+	}
+	for _, clump in canopyClumps do
+		local leaves = Instance.new("Part")
+		leaves.Name = "WizardTreeLeaves"
+		leaves.Anchored = true
+		leaves.CanCollide = false
+		leaves.Material = Enum.Material.Neon
+		leaves.Color = clump.color
+		leaves.Shape = Enum.PartType.Ball
+		leaves.Size = Vector3.new(clump.size, clump.size, clump.size)
+		leaves.CFrame = CFrame.new(x + clump.offset.X, ISLAND_TOP_Y + clump.offset.Y, z + clump.offset.Z)
+		leaves.Parent = folder
+	end
+end
+
+-- A jagged cluster of 4 translucent purple shards (elongated Balls, not
+-- Wedges - reads as crystal spikes without needing exact wedge-orientation
+-- math), each a different height/tilt/shade so the cluster looks grown,
+-- not stamped out identically.
+local CRYSTAL_SHARD_COLORS = {
+	Color3.fromRGB(200, 160, 255),
+	Color3.fromRGB(160, 100, 230),
+	Color3.fromRGB(120, 70, 200),
+}
+
+local function makeCrystalCluster(folder: Folder, x: number, z: number)
+	local shards = {
+		{ offset = Vector3.new(0, 0, 0), radius = 1.3, height = 6.5, tilt = 0.06 },
+		{ offset = Vector3.new(1.1, 0, 0.6), radius = 0.9, height = 4.5, tilt = -0.1 },
+		{ offset = Vector3.new(-1, 0, 0.8), radius = 1, height = 5, tilt = 0.12 },
+		{ offset = Vector3.new(0.2, 0, -1.2), radius = 0.7, height = 3.5, tilt = -0.08 },
+	}
+	for i, shard in shards do
+		local part = Instance.new("Part")
+		part.Name = "CrystalShard"
+		part.Anchored = true
+		part.CanCollide = false
+		part.Material = Enum.Material.Glass
+		part.Color = CRYSTAL_SHARD_COLORS[(i - 1) % #CRYSTAL_SHARD_COLORS + 1]
+		part.Transparency = 0.15
+		part.Reflectance = 0.15
+		part.Shape = Enum.PartType.Ball
+		part.Size = Vector3.new(shard.radius * 2, shard.height, shard.radius * 2)
+		part.CFrame = CFrame.new(x + shard.offset.X, ISLAND_TOP_Y + shard.height / 2 - 0.5, z + shard.offset.Z)
+			* CFrame.Angles(shard.tilt, i * 1.3, shard.tilt)
+		part.Parent = folder
+	end
+end
+
+-- A pale stem under a glowing magenta cap with a few small white spots -
+-- classic enchanted-forest mushroom, with its own soft PointLight so the
+-- cap actually lights up its surroundings a little at dusk/night.
+local function makeGlowMushroom(folder: Folder, x: number, z: number)
+	local stem = Instance.new("Part")
+	stem.Name = "MushroomStem"
+	stem.Anchored = true
+	stem.CanCollide = false
+	stem.Material = Enum.Material.SmoothPlastic
+	stem.Color = Color3.fromRGB(225, 215, 195)
+	stem.Shape = Enum.PartType.Cylinder
+	stem.Size = Vector3.new(2.6, 0.9, 0.9)
+	stem.CFrame = CFrame.new(x, ISLAND_TOP_Y + 1.3, z) * CFrame.Angles(0, 0, math.rad(90))
+	stem.Parent = folder
+
+	local cap = Instance.new("Part")
+	cap.Name = "MushroomCap"
+	cap.Anchored = true
+	cap.CanCollide = false
+	cap.Material = Enum.Material.Neon
+	cap.Color = Color3.fromRGB(220, 90, 220)
+	cap.Shape = Enum.PartType.Ball
+	cap.Size = Vector3.new(2.8, 1.5, 2.8)
+	cap.CFrame = CFrame.new(x, ISLAND_TOP_Y + 2.6, z)
+	cap.Parent = folder
+
+	local capLight = Instance.new("PointLight")
+	capLight.Color = cap.Color
+	capLight.Range = 8
+	capLight.Brightness = 1.2
+	capLight.Parent = cap
+
+	local spotOffsets = { Vector3.new(0.8, 0.4, 0.5), Vector3.new(-0.7, 0.5, -0.6), Vector3.new(0.1, 0.6, -0.9) }
+	for i, spotOffset in spotOffsets do
+		local spot = Instance.new("Part")
+		spot.Name = ("MushroomSpot%d"):format(i)
+		spot.Anchored = true
+		spot.CanCollide = false
+		spot.Material = Enum.Material.Neon
+		spot.Color = Color3.fromRGB(255, 255, 255)
+		spot.Shape = Enum.PartType.Ball
+		spot.Size = Vector3.new(0.4, 0.4, 0.4)
+		spot.CFrame = CFrame.new(x + spotOffset.X, ISLAND_TOP_Y + 2.6 + spotOffset.Y, z + spotOffset.Z)
+		spot.Parent = folder
+	end
+end
+
+local WIZARD_FLOWER_COLORS = {
+	Color3.fromRGB(200, 160, 255),
+	Color3.fromRGB(230, 100, 220),
+	Color3.fromRGB(140, 80, 220),
+	Color3.fromRGB(225, 210, 255),
+}
+
+-- Same stem+bloom shape as makeFlower, just a deeper teal-toned stem and
+-- blooms drawn only from the purple/lilac side of the palette.
+local function makeGlowFlower(folder: Folder, x: number, z: number)
+	local stem = Instance.new("Part")
+	stem.Name = "GlowFlowerStem"
+	stem.Anchored = true
+	stem.CanCollide = false
+	stem.Material = Enum.Material.Grass
+	stem.Color = Color3.fromRGB(40, 90, 70)
+	stem.Shape = Enum.PartType.Cylinder
+	stem.Size = Vector3.new(1.4, 0.25, 0.25)
+	stem.CFrame = CFrame.new(x, ISLAND_TOP_Y + 0.7, z) * CFrame.Angles(0, 0, math.rad(90))
+	stem.Parent = folder
+
+	local bloom = Instance.new("Part")
+	bloom.Name = "GlowFlowerBloom"
+	bloom.Anchored = true
+	bloom.CanCollide = false
+	bloom.Material = Enum.Material.Neon
+	bloom.Color = WIZARD_FLOWER_COLORS[math.random(#WIZARD_FLOWER_COLORS)]
+	bloom.Shape = Enum.PartType.Ball
+	bloom.Size = Vector3.new(1.2, 1.2, 1.2)
+	bloom.CFrame = CFrame.new(x, ISLAND_TOP_Y + 1.5, z)
+	bloom.Parent = folder
+end
+
 local DECOR_INSET = 8
 local DECOR_STEP = 12
 local DECOR_JITTER = 3
 local DECOR_KINDS = { makeTree, makeBush, makeFlower, makeFlower }
+local SECOND_ISLAND_DECOR_KINDS = { makeWizardTree, makeCrystalCluster, makeGlowMushroom, makeGlowFlower }
 
--- Rings one island's perimeter at a fixed inset, cycling tree/bush/flower/
--- flower so flowers show up more often as small accents between the bigger
--- anchors. Skips the middle stretch of whichever edge faces the bridge
--- (nearEdgeSign -1 = that edge is at centerZ - half, i.e. SecondIsland,
--- whose bridge approaches from -Z; +1 = centerZ + half, i.e.
--- LeaderboardIsland, whose bridge approaches from +Z) so the entrance
--- stays clear. Each spot gets a small random jitter so the ring reads as
--- staggered/natural instead of a perfectly straight line.
-local function scatterIslandDecor(folder: Folder, centerX: number, centerZ: number, size: number, nearEdgeSign: number)
+-- Rings one island's perimeter at a fixed inset, cycling through 4 decor
+-- kinds (defaulting to tree/bush/flower/flower, or `decorKinds` if given -
+-- SecondIsland passes its own purple-wizard set). Skips the middle
+-- stretch of whichever edge faces the bridge (nearEdgeSign -1 = that edge
+-- is at centerZ - half, i.e. SecondIsland, whose bridge approaches from
+-- -Z; +1 = centerZ + half, i.e. LeaderboardIsland, whose bridge
+-- approaches from +Z) so the entrance stays clear. Each spot gets a small
+-- random jitter so the ring reads as staggered/natural instead of a
+-- perfectly straight line.
+local function scatterIslandDecor(
+	folder: Folder,
+	centerX: number,
+	centerZ: number,
+	size: number,
+	nearEdgeSign: number,
+	decorKinds: { any }?
+)
+	local kinds = decorKinds or DECOR_KINDS
 	local half = size / 2 - DECOR_INSET
 	local decorIndex = 0
 	local function placeNextDecor(x: number, z: number)
 		decorIndex += 1
 		local jitterX = (math.random() * 2 - 1) * DECOR_JITTER
 		local jitterZ = (math.random() * 2 - 1) * DECOR_JITTER
-		DECOR_KINDS[(decorIndex - 1) % #DECOR_KINDS + 1](folder, x + jitterX, z + jitterZ)
+		kinds[(decorIndex - 1) % #kinds + 1](folder, x + jitterX, z + jitterZ)
 	end
 
 	for offset = -half, half, DECOR_STEP do
@@ -543,7 +712,15 @@ secondIslandDecorFolder.Name = "SecondIslandDecor"
 secondIslandDecorFolder.Parent = Workspace
 
 -- SecondIsland's bridge approaches from -Z, so that's the edge to skip.
-scatterIslandDecor(secondIslandDecorFolder, secondIslandCenterX, secondIslandCenterZ, SECOND_ISLAND_SIZE, -1)
+-- Uses its own purple-wizard decor set (see above), per direct request.
+scatterIslandDecor(
+	secondIslandDecorFolder,
+	secondIslandCenterX,
+	secondIslandCenterZ,
+	SECOND_ISLAND_SIZE,
+	-1,
+	SECOND_ISLAND_DECOR_KINDS
+)
 
 -- Enforces the lock: a player who hasn't pressed the gate's Unlock button
 -- yet (SecondIslandHandler.unlock, via SecondIslandGateClient) gets pushed
@@ -884,14 +1061,20 @@ for i = 1, RUIN_RUBBLE_COUNT do
 	)
 end
 
--- Its upgrade board (RuinRuneHandler's 5 tiers) sits just outside the
--- pillar ring, facing back at the rune circle - same "thin along X, wide
--- along Z" board shape as every other board here. Hidden/no-collide by
--- default like ArcaneDustUpgradeBoard/WizardTierBoard - WizardRuinClient
--- reveals it (via its own Reveal* attributes, same mechanism) alongside
--- the rest of the ruin, since it's gated on the same hasUnlockedRuin check.
+-- Its upgrade board (RuinRuneHandler's 5 tiers) sits just past the pillar
+-- ring on the +Z side, near where the perimeter tree ring comes closest to
+-- the ruin (per direct request, "move it to where the trees are"),
+-- rotated 90° around Y so it faces back south toward the ruin/island
+-- center instead of west along the ring (per direct request, "rotate the
+-- card to face towards center of island") - wide along X now instead of
+-- Z, same "thin one way, wide the other" board shape as every other board
+-- here, just turned a quarter turn. Hidden/no-collide by default like
+-- ArcaneDustUpgradeBoard/WizardTierBoard - WizardRuinClient reveals it
+-- (via its own Reveal* attributes, same mechanism) alongside the rest of
+-- the ruin, since it's gated on the same hasUnlockedRuin check.
 local RUNE_ALTAR_BOARD_WIDTH = 30
-local runeAltarBoardX = ruinAreaX + RUIN_PILLAR_RADIUS + 6 + RUNE_ALTAR_BOARD_WIDTH / 2
+local runeAltarBoardX = ruinAreaX - 20 -- clear of the archway (which spans roughly ruinAreaX ± 9)
+local runeAltarBoardZ = ruinAreaZ + 14 -- just past the pillar ring, at the tree ring's own approach line
 
 local runeAltarBoard = Instance.new("Part")
 runeAltarBoard.Name = "RuneAltarBoard"
@@ -901,7 +1084,7 @@ runeAltarBoard.Material = Enum.Material.Glass
 runeAltarBoard.Color = Color3.fromRGB(60, 30, 80)
 runeAltarBoard.Transparency = 1
 runeAltarBoard.Size = Vector3.new(1, 18, RUNE_ALTAR_BOARD_WIDTH)
-runeAltarBoard.CFrame = CFrame.new(runeAltarBoardX, ISLAND_TOP_Y + 9, ruinAreaZ)
+runeAltarBoard.CFrame = CFrame.new(runeAltarBoardX, ISLAND_TOP_Y + 9, runeAltarBoardZ) * CFrame.Angles(0, math.rad(90), 0)
 runeAltarBoard:SetAttribute("RevealTransparency", 0.7) -- glass, like every other board
 runeAltarBoard:SetAttribute("RevealCanCollide", true)
 runeAltarBoard.Parent = kiosksFolder

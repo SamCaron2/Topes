@@ -273,13 +273,20 @@ design notes.
   `RuneAltarCollected` (one `{name, amount}` per roll that tick - more
   than one once the Familiar tier is bought) at that player -
   `RuneAltarClient` turns the latter into floating "+N RankName" popups.
-  Just outside the pillar ring sits `RuneAltarBoard`, the Altar's own
-  5-tier upgrade board (`RuinRuneHandler`/`RuneAltarBoardClient`) -
-  hidden/no-collide by default like every other board, but NOT a child of
-  `FantasyRuin` (it needs the "clear glass" 0.7-transparency reveal every
-  other board gets, not the ruin's own full-opacity reveal), so
-  `WizardRuinClient` reveals it explicitly via its own
-  `RevealTransparency`/`RevealCanCollide` attributes.
+  Just past the pillar ring on the +Z side sits `RuneAltarBoard`, the
+  Altar's own 5-tier upgrade board (`RuinRuneHandler`/
+  `RuneAltarBoardClient`) - hidden/no-collide by default like every other
+  board, but NOT a child of `FantasyRuin` (it needs the "clear glass"
+  0.7-transparency reveal every other board gets, not the ruin's own
+  full-opacity reveal), so `WizardRuinClient` reveals it explicitly via its
+  own `RevealTransparency`/`RevealCanCollide` attributes. Positioned right
+  where the perimeter tree ring comes closest to the ruin and rotated 90°
+  around Y, per direct request ("rotate the card to face towards center of
+  island and move it to where the trees are") - it was originally further
+  +X outside the ring facing west back at the Altar, which read as facing
+  the wrong way and sitting away from the trees. Its `SurfaceGui.Face` in
+  `RuneAltarBoardClient` moved from `Left` to `Right` to match the
+  rotation - still a guess like every other board face here.
   In the open grass between the Fantasy Ruin and `ArcaneDustPad` (Tile 1's
   spot is the midpoint between the two - a best guess from a circled
   screenshot, same as every other placement here) sits `UpgradeTreeTiles`,
@@ -321,18 +328,36 @@ design notes.
   built on the island itself yet beyond grass and a decor ring - purely
   the gate/bridge/island for now. See
   `EtherIslandHandler`/`EtherIslandGateClient` below.
-  Also a ring of procedurally placed trees/bushes/flowers
-  (`SecondIslandDecor`) around its
-  edge, inset from the border, skipping the bridge's landing spot, and each
-  given a small random `DECOR_JITTER` offset so the ring reads as staggered
-  rather than a perfectly straight line. Each piece is also built from
-  several overlapping/stacked parts (three canopy clumps per tree, three
-  bumps per bush, a stem + bloom per flower) instead of one plain shape, for
-  a fuller look than a single sphere or dot. This scattering logic lives in
-  a shared `scatterIslandDecor(folder, centerX, centerZ, size, nearEdgeSign)`
-  function - `nearEdgeSign` just flips which edge is the one to skip, so
-  the same function rings both SecondIsland and LeaderboardIsland despite
-  their bridges approaching from opposite directions. The exact direction/size
+  Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
+  around its edge, inset from the border, skipping the bridge's landing
+  spot, and each given a small random `DECOR_JITTER` offset so the ring
+  reads as staggered rather than a perfectly straight line. Each piece is
+  also built from several overlapping/stacked parts instead of one plain
+  shape, for a fuller look than a single sphere or dot. This scattering
+  logic lives in a shared `scatterIslandDecor(folder, centerX, centerZ,
+  size, nearEdgeSign, decorKinds?)` function - `nearEdgeSign` just flips
+  which edge is the one to skip, so the same function rings SecondIsland,
+  EtherIsland, and LeaderboardIsland despite their bridges approaching from
+  different directions; the optional `decorKinds` (defaulting to the
+  original green `makeTree`/`makeBush`/`makeFlower` set) is what lets
+  SecondIsland alone use its own themed pieces below.
+  SecondIsland's own ring is a "purple wizardy nature" theme instead of the
+  plain green one, per direct request ("this island can we do purple
+  wizardy nature theme for decorations make it look good") -
+  `SECOND_ISLAND_DECOR_KINDS` cycles 4 new pieces: `makeWizardTree` (the
+  same 3-clump trunk-and-canopy shape as the plain tree, just a
+  purple-barked trunk under a glowing violet Neon canopy with a small
+  brighter magenta accent clump tucked in), `makeCrystalCluster` (4
+  translucent purple/lilac shards - elongated `Ball`s rather than
+  `WedgePart`s, so the spike look doesn't depend on getting wedge
+  orientation exactly right - at different heights/tilts/shades, `Glass`
+  material with a little `Reflectance` for shine), `makeGlowMushroom` (a
+  pale stem under a glowing magenta Neon cap with 3 small white spots and
+  its own soft `PointLight`, so it actually lights up its surroundings a
+  little), and `makeGlowFlower` (the same stem+bloom shape as the plain
+  flower, just a deeper teal stem and blooms drawn only from a
+  purple/lilac palette). EtherIsland and LeaderboardIsland keep the
+  original green theme - only SecondIsland was asked for the reskin. The exact direction/size
   (`BRIDGE_LENGTH`/`BRIDGE_WIDTH`/`SECOND_ISLAND_SIZE`/
   `SECOND_ISLAND_OFFSET_X`) is a best guess from a screenshot, same "nudge
   the numbers after testing" situation as the kiosk board offsets above if
