@@ -8,6 +8,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
 local ManaBoostHandler = require(script.Parent.ManaBoostHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -36,14 +37,16 @@ local ManaHandler = {}
 -- Effective yield per pickup: the base yield curve scaled by the Rebirth
 -- Shop's permanent "Mana Value Multiplier" (1x-2x, survives rebirthing -
 -- that's the whole point), the Arcane Dust board's "More Mana" upgrade
--- (1x-6x), and the Wizard Tier flat multiplier (1x until Tier 1, then 20x).
--- Floored to keep Mana a whole number.
+-- (1x-6x), the Wizard Tier flat multiplier (1x until Tier 1, then 20x),
+-- and the Upgrade Tree's own Mana tiles (x2 each, x4 combined once both
+-- are bought). Floored to keep Mana a whole number.
 local function effectiveAmountForLevel(player: Player, level: number): number
 	return math.floor(
 		amountForLevel(level)
 			* RebirthShopHandler.getManaValueMultiplier(player)
 			* ManaBoostHandler.getMultiplier(player)
 			* WizardTierHandler.getManaMultiplier(player)
+			* UpgradeTreeHandler.getManaMultiplier(player)
 	)
 end
 

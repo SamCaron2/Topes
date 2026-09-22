@@ -225,14 +225,15 @@ design notes.
   so `WizardRuinClient` reveals it LOCALLY per-player (same pattern as
   `SecondIslandGateClient`) once `WizardTierHandler.hasUnlockedRuin`
   reports true for them.
-  In the open grass between the Fantasy Ruin and `ArcaneDustPad` (the
-  midpoint between the two - a best guess from a circled screenshot
-  showing where to place it, same as every other placement here) sits
-  `UpgradeTreeTiles`, the start of a ground upgrade tree -
-  `UpgradeTreeTile1`, a 6x6 stud paving-stone tile, is walked over
-  instead of clicked like every other upgrade, per direct request. See
-  `UpgradeTreeHandler`/`UpgradeTreeClient` below; only Tile 1 exists so
-  far, with a planned 1-2-3-2-1 diamond of tiles to come.
+  In the open grass between the Fantasy Ruin and `ArcaneDustPad` (Tile 1's
+  spot is the midpoint between the two - a best guess from a circled
+  screenshot, same as every other placement here) sits `UpgradeTreeTiles`,
+  the full 9-tile ground upgrade tree - each a 9x6 stud paving-stone tile,
+  walked over instead of clicked like every other upgrade, per direct
+  request, laid out in the 1-2-3-2-1 diamond chain asked for (Tile 1 at
+  one end, extending outward along +X into the open grass beyond, Tile 9 -
+  Ether's unlock - at the opposite end). See `UpgradeTreeHandler`/
+  `UpgradeTreeClient` below for what each tile does.
   Also a ring of procedurally placed trees/bushes/flowers
   (`SecondIslandDecor`) around its
   edge, inset from the border, skipping the bridge's landing spot, and each
@@ -286,10 +287,11 @@ design notes.
   10's +25/pickup - now costs 210 instead of 90). Every pickup is also
   scaled by `RebirthShopHandler`'s permanent "Mana Value Multiplier"
   (1x-200x, survives rebirthing), `ManaBoostHandler`'s "More Mana" upgrade
-  (1x-6x, paid in Arcane Dust), and `WizardTierHandler`'s flat tier
-  multiplier (1x until Tier 1, then 20x) -
+  (1x-6x, paid in Arcane Dust), `WizardTierHandler`'s flat tier
+  multiplier (1x until Tier 1, then 20x), and the Upgrade Tree's own Mana
+  tiles (x2 each, x4 combined once both are bought) -
   `amountPerPickup`/`nextAmountPerPickup` in the returned state already
-  include all three, so the board always shows
+  include all four, so the board always shows
   the real effective yield. `buyYieldUpgrade` takes an optional `"max"`
   mode that buys as many levels in a row as currently affordable.
   Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones`
@@ -371,25 +373,38 @@ design notes.
   `getManaMultiplier`/`getRebirthMultiplier`/
   `getDustMultiplier` are read by `ManaHandler`/`RebirthHandler`/
   `ArcaneDustHandler` respectively.
-- `UpgradeTreeHandler.lua` — the ground upgrade tree: walk-over tiles,
-  only reachable once `WizardTierHandler` reports Tier 3+, each a
-  ONE-TIME purchase (not a leveled upgrade like everything else) paid in
-  Arcane Dust. `TILES` is a numbered list from the start (even with just
-  one entry) so the planned 1-2-3-2-1 diamond layout can append more tiles
-  later without reshaping anything - each tile just needs its own
-  `dustTreeTileN` `PlayerData` field. Tile 1's cost is derived the same
-  way as the Wizard Tier costs: fully maxing the whole 3-column Arcane
-  Dust Upgrades board costs ~619,465 Dust total, so Tile 1 prices past
-  that at 1,000,000,000 Dust (also mirroring Tier 1's own 1B Mana price)
-  for a genuine next milestone, not something maxing the board alone
-  affords. Grants a permanent x2 Arcane Dust multiplier once bought -
-  `getDustMultiplier` folds every bought tile's multiplier together
-  (multiplicatively, ready for more tiles), read by `ArcaneDustHandler`
-  alongside `WizardTierHandler`'s own dust multiplier. `buyTile1` is
-  called every tick by `WorldBuilder`'s proximity loop for any player
-  standing on the tile - it silently no-ops (returns false) if not
-  unlocked, already bought, or unaffordable, so it's safe to call on
-  every check without a separate "can I buy this" query first.
+- `UpgradeTreeHandler.lua` — the full 9-tile ground upgrade tree:
+  walk-over tiles, only reachable once `WizardTierHandler` reports Tier
+  3+, each a ONE-TIME purchase (not a leveled upgrade like everything
+  else) paid in Arcane Dust. `TILES` is a single data-driven list (id,
+  `PlayerData` field name, cost, `kind`, multiplier, display label) that
+  every function here reads generically - `foldMultiplier(player, kind)`
+  multiplies together every bought tile of that `kind`, so
+  `getDustMultiplier`/`getManaMultiplier`/`getXpMultiplier`/
+  `getRebirthMultiplier`/`getRuneBulkMultiplier` are all one-line wrappers
+  around it, and `buyTile(player, tileId)` looks up any tile by id instead
+  of needing a separate `buyTileN` function each - adding a 10th tile
+  later is just one more `TILES` entry and `PlayerData` field, no code
+  changes. Tile 1's cost is derived the same way as the Wizard Tier costs:
+  fully maxing the whole 3-column Arcane Dust Upgrades board costs
+  ~619,465 Dust total, so Tile 1 prices past that at 1,000,000,000 Dust
+  (also mirroring Tier 1's own 1B Mana price) for a genuine next
+  milestone. The other 8 tiles' costs double per ring outward from Tile 1
+  (2e9 → 4e9 → 8e9 → 16e9) while every tile's EFFECT stays a flat x2 - so
+  cost is the only thing that scales with distance, keeping the whole tree
+  easy to read at a glance: Tiles 2/7 (Mana x2, 2 layers), Tile 3 (XP x2),
+  Tiles 4/8 (Rebirths x2, 2 layers), Tile 5 (Rune Bulk x2 - the widest
+  row's center tile, per direct request "one of the cards in the middle"),
+  Tile 6 (Dust x2, a 2nd layer stacking with Tile 1's), and Tile 9 (the
+  final tile at the opposite end of the chain from Tile 1, per direct
+  request - unlocks Ether, a brand new wizard resource named now but with
+  no collection mechanic built yet, `isEtherUnlocked` for whenever that's
+  ready). `getXpMultiplier`/`getRuneBulkMultiplier` are read by
+  `XPHandler`/`RuneHandler` the same way the other three are read by
+  `ManaHandler`/`RebirthHandler`/`ArcaneDustHandler` - Rune Bulk multiplies
+  how many Runes a single pull grants even though no pull UI exists yet
+  ("we can do that another time I just want it on the tile"), so it's
+  already live for whenever that screen gets built.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -563,21 +578,25 @@ design notes.
   and flips `Transparency`/`CanCollide` back on for that client only if
   it's true. Also re-checks on every `PlayerWizardTiered` event, so
   reaching Tier 3 reveals the ruin immediately without needing to rejoin.
-- `UpgradeTreeClient.client.lua` — the info sign for `UpgradeTreeTile1`,
-  styled like the reference upgrade cards (colored background, title, cost)
-  but painted flat onto the tile's own Top face with a `SurfaceGui`, per
-  direct request ("no 3D dynamic text just stuck to the ground like a sign
-  laying down") - NOT a `BillboardGui`, which would float above the tile
-  and always turn to face the camera. Only exists at all once
-  `GetUpgradeTreeState().unlocked` is true - the tile itself is always
-  solid ground, so no sign paints onto it before Tier 3 rather than
-  spoiling what's coming. Colored per the exact rule given: red (not
-  enough Dust), yellow (affordable - walk over it to buy), green (bought) -
-  tracked live off `ArcaneDustUpdated` (afford check) and the new
-  `UpgradeTreeTileBought` event (flips to green the instant `WorldBuilder`'s
-  proximity loop actually buys it, no need to wait for the next Dust tick).
+- `UpgradeTreeClient.client.lua` — the info sign for every
+  `UpgradeTreeTile1`-`UpgradeTreeTile9`, styled like the reference upgrade
+  cards (colored background, title, cost) but painted flat onto each
+  tile's own Top face with a `SurfaceGui`, per direct request ("no 3D
+  dynamic text just stuck to the ground like a sign laying down") - NOT a
+  `BillboardGui`, which would float above the tile and always turn to face
+  the camera. All 9 signs only exist at all once
+  `GetUpgradeTreeState().unlocked` is true - every tile is always solid
+  ground, so no sign paints onto any of them before Tier 3 rather than
+  spoiling what's coming, and each one's title comes straight from
+  `UpgradeTreeHandler`'s own `label` for that tile. Colored per the exact
+  rule given: red (not enough Dust), yellow (affordable - walk over it to
+  buy), green (bought) - tracked live off `ArcaneDustUpdated` (afford
+  check, re-evaluated against every unbought tile's own cost at once) and
+  the `UpgradeTreeTileBought` event (now fired with a numeric tile id,
+  flips just that one sign to green the instant `WorldBuilder`'s proximity
+  loop actually buys it, no need to wait for the next Dust tick).
   Re-checks on every `PlayerWizardTiered` event too, so reaching Tier 3
-  builds the card immediately without a rejoin.
+  builds every sign immediately without a rejoin.
 - `RebirthBoardClient.client.lua` — a separate, narrower board
   (`Workspace.Kiosks.RebirthBoard`) just past the Mana Upgrades board's
   edge, styled in red instead of the Mana board's blue. Its title banner

@@ -99,11 +99,22 @@ local function defaultData()
 
 		-- The ground upgrade tree (UpgradeTreeHandler): walk-over tiles, only
 		-- reachable once wizardTier >= 3, each a one-time purchase (not a
-		-- leveled upgrade) paid in Arcane Dust. dustTreeTile1 grants a
-		-- permanent x2 Arcane Dust multiplier once bought. Named per-tile so
-		-- the planned 1-2-3-2-1 diamond layout can add more later without
-		-- reshaping this into a table.
+		-- leveled upgrade) paid in Arcane Dust. The full 1-2-3-2-1 diamond
+		-- chain, extending outward from Tile 1: Tile 1 (Dust x2) -> Tiles
+		-- 2-3 (Mana x2, XP x2) -> Tiles 4-6 (Rebirths x2, Rune Bulk x2,
+		-- Dust x2) -> Tiles 7-8 (Mana x2, Rebirths x2) -> Tile 9 (unlocks
+		-- Ether, the next wizard resource - not built yet). Named per-tile
+		-- (not a table) so each just needs a plain boolean here; see
+		-- UpgradeTreeHandler.TILES for what each one actually does.
 		dustTreeTile1 = false,
+		dustTreeTile2 = false,
+		dustTreeTile3 = false,
+		dustTreeTile4 = false,
+		dustTreeTile5 = false,
+		dustTreeTile6 = false,
+		dustTreeTile7 = false,
+		dustTreeTile8 = false,
+		dustTreeTile9 = false, -- also doubles as "has this player unlocked Ether"
 
 		gems = 0, -- global premium currency, outside any zone/chain
 		stats = stats,

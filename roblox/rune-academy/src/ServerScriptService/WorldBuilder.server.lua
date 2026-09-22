@@ -848,25 +848,42 @@ end
 
 -- ===========================================================================
 -- Upgrade Tree: walk-over tiles (UpgradeTreeHandler), only reachable once a
--- player has reached Tier 3 - the tile itself is always solid/visible (a
--- plain paving stone; nothing to hide, since walking onto it before Tier 3
--- just silently no-ops server-side), but the info sign painted flat onto
--- its top face only renders per-player once they're actually unlocked
--- (UpgradeTreeClient). Positioned in the open grass between the Fantasy
--- Ruin and ArcaneDustPad, per direct request with a circled screenshot -
--- the midpoint between the two, same best-guess-from-a-screenshot
--- treatment as every other placement here; nudge UPGRADE_TREE_TILE_1_X/Z
--- if it's off. Only Tile 1 exists so far ("lets just start with one tho") -
--- the planned layout widens into a 1-2-3-2-1 diamond of tiles later.
--- Widened from a 6x6 square per direct request ("make it a bit wider") -
--- wider along X (WIDTH) than deep along Z (DEPTH), so the sign reads more
--- like a wide plaque than a square tile. Rotated 180° around Y (also per
--- direct request) so the SurfaceGui's Top-face text reads right-side-up
--- from the direction players actually approach it.
+-- player has reached Tier 3 - every tile is always solid/visible (plain
+-- paving stone; nothing to hide, since walking onto one before Tier 3 just
+-- silently no-ops server-side), but the info sign painted flat onto each
+-- tile's top face only renders per-player once they're actually unlocked
+-- (UpgradeTreeClient). Widened from an original 6x6 square to 9x6 and
+-- rotated 180° around Y (both per direct request) so every sign reads
+-- right-side-up from the direction players actually approach them.
+--
+-- Tile 1 was placed first, in the open grass between the Fantasy Ruin and
+-- ArcaneDustPad (a screenshot-guess, same treatment as every placement
+-- here). The other 8 extend outward from it in a straight 1-2-3-2-1
+-- diamond chain along +X (away from the ruin/pad/board cluster, into the
+-- open grass beyond) - per direct request, with the sign for the widest
+-- middle row's center tile (Tile 5, Rune Bulk x2) and the final row's
+-- single tile (Tile 9, unlocks Ether) landing exactly where asked ("one of
+-- the cards in the middle" / "the very last tile on the opposite side").
+-- UPGRADE_TREE_TILE_POSITIONS is keyed by UpgradeTreeHandler tile id so
+-- the two stay in sync; nudge UPGRADE_TREE_SPACING or individual offsets
+-- if the shape doesn't land right on the ground.
 local UPGRADE_TREE_TILE_WIDTH = 9
 local UPGRADE_TREE_TILE_DEPTH = 6
 local UPGRADE_TREE_TILE_1_X = (ruinAreaX + arcaneDustPadX) / 2
 local UPGRADE_TREE_TILE_1_Z = (ruinAreaZ + arcaneDustPadZ) / 2 - 5
+local UPGRADE_TREE_SPACING = 10
+
+local UPGRADE_TREE_TILE_POSITIONS = {
+	[1] = { x = UPGRADE_TREE_TILE_1_X, z = UPGRADE_TREE_TILE_1_Z }, -- Dust x2 (built first, on its own)
+	[2] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING, z = UPGRADE_TREE_TILE_1_Z - UPGRADE_TREE_SPACING / 2 }, -- Mana x2
+	[3] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING, z = UPGRADE_TREE_TILE_1_Z + UPGRADE_TREE_SPACING / 2 }, -- XP x2
+	[4] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING * 2, z = UPGRADE_TREE_TILE_1_Z - UPGRADE_TREE_SPACING }, -- Rebirths x2
+	[5] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING * 2, z = UPGRADE_TREE_TILE_1_Z }, -- Rune Bulk x2 (middle of the widest row)
+	[6] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING * 2, z = UPGRADE_TREE_TILE_1_Z + UPGRADE_TREE_SPACING }, -- Dust x2
+	[7] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING * 3, z = UPGRADE_TREE_TILE_1_Z - UPGRADE_TREE_SPACING / 2 }, -- Mana x2
+	[8] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING * 3, z = UPGRADE_TREE_TILE_1_Z + UPGRADE_TREE_SPACING / 2 }, -- Rebirths x2
+	[9] = { x = UPGRADE_TREE_TILE_1_X + UPGRADE_TREE_SPACING * 4, z = UPGRADE_TREE_TILE_1_Z }, -- unlocks Ether (final tile, opposite end from Tile 1)
+}
 
 local existingUpgradeTree = Workspace:FindFirstChild("UpgradeTreeTiles")
 if existingUpgradeTree then
@@ -877,19 +894,22 @@ local upgradeTreeFolder = Instance.new("Folder")
 upgradeTreeFolder.Name = "UpgradeTreeTiles"
 upgradeTreeFolder.Parent = Workspace
 
-local upgradeTreeTile1 = Instance.new("Part")
-upgradeTreeTile1.Name = "UpgradeTreeTile1"
-upgradeTreeTile1.Anchored = true
-upgradeTreeTile1.CanCollide = true
-upgradeTreeTile1.Material = Enum.Material.Marble
-upgradeTreeTile1.Color = Color3.fromRGB(200, 200, 210)
-upgradeTreeTile1.Size = Vector3.new(UPGRADE_TREE_TILE_WIDTH, 0.4, UPGRADE_TREE_TILE_DEPTH)
-upgradeTreeTile1.CFrame = CFrame.new(UPGRADE_TREE_TILE_1_X, ISLAND_TOP_Y + 0.2, UPGRADE_TREE_TILE_1_Z)
-	* CFrame.Angles(0, math.rad(180), 0)
-upgradeTreeTile1.Parent = upgradeTreeFolder
-
 local UPGRADE_TREE_TILE_RADIUS = math.max(UPGRADE_TREE_TILE_WIDTH, UPGRADE_TREE_TILE_DEPTH) / 2
 local UPGRADE_TREE_CHECK_INTERVAL = 0.5
+
+for _, tile in UpgradeTreeHandler.TILES do
+	local position = UPGRADE_TREE_TILE_POSITIONS[tile.id]
+
+	local tilePart = Instance.new("Part")
+	tilePart.Name = ("UpgradeTreeTile%d"):format(tile.id)
+	tilePart.Anchored = true
+	tilePart.CanCollide = true
+	tilePart.Material = Enum.Material.Marble
+	tilePart.Color = Color3.fromRGB(200, 200, 210)
+	tilePart.Size = Vector3.new(UPGRADE_TREE_TILE_WIDTH, 0.4, UPGRADE_TREE_TILE_DEPTH)
+	tilePart.CFrame = CFrame.new(position.x, ISLAND_TOP_Y + 0.2, position.z) * CFrame.Angles(0, math.rad(180), 0)
+	tilePart.Parent = upgradeTreeFolder
+end
 
 task.spawn(function()
 	while true do
@@ -897,16 +917,20 @@ task.spawn(function()
 		for _, player in Players:GetPlayers() do
 			local character = player.Character
 			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-			local onTile = rootPart
-				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(UPGRADE_TREE_TILE_1_X, UPGRADE_TREE_TILE_1_Z)).Magnitude
-					<= UPGRADE_TREE_TILE_RADIUS
+			if rootPart then
+				local playerPosition = Vector2.new(rootPart.Position.X, rootPart.Position.Z)
+				for _, tile in UpgradeTreeHandler.TILES do
+					local position = UPGRADE_TREE_TILE_POSITIONS[tile.id]
+					local onTile = (playerPosition - Vector2.new(position.x, position.z)).Magnitude <= UPGRADE_TREE_TILE_RADIUS
 
-			if onTile and UpgradeTreeHandler.buyTile1(player) then
-				local data = PlayerData.get(player)
-				if data then
-					arcaneDustUpdatedEvent:FireClient(player, data.arcaneDust or 0)
+					if onTile and UpgradeTreeHandler.buyTile(player, tile.id) then
+						local data = PlayerData.get(player)
+						if data then
+							arcaneDustUpdatedEvent:FireClient(player, data.arcaneDust or 0)
+						end
+						upgradeTreeTileBoughtEvent:FireClient(player, tile.id)
+					end
 				end
-				upgradeTreeTileBoughtEvent:FireClient(player, "tile1")
 			end
 		end
 	end

@@ -9,6 +9,7 @@
 
 local PlayerData = require(script.Parent.PlayerData)
 local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local MAX_LEVEL = 50
 local BASE_XP_PER_PICKUP = 10
@@ -46,7 +47,8 @@ function XPHandler.grantXpForPickup(player: Player)
 
 	local level = data.level or 1
 	if level < MAX_LEVEL then
-		data.xp = (data.xp or 0) + BASE_XP_PER_PICKUP * RebirthShopHandler.getXpMultiplier(player)
+		data.xp = (data.xp or 0)
+			+ BASE_XP_PER_PICKUP * RebirthShopHandler.getXpMultiplier(player) * UpgradeTreeHandler.getXpMultiplier(player)
 
 		while level < MAX_LEVEL and data.xp >= costForLevel(level) do
 			data.xp -= costForLevel(level)

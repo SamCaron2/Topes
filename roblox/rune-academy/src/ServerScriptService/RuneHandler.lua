@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local PlayerData = require(script.Parent.PlayerData)
+local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 
 local RuneHandler = {}
 
@@ -51,8 +52,13 @@ function RuneHandler.pull(player: Player)
 	local fortune = data.stats.Fortune or 1
 	local rank = weightedPick(fortune)
 
-	data.runesOpened += 1
-	data.runesOwned[rank.name] = (data.runesOwned[rank.name] or 0) + 1
+	-- Rune Bulk (Upgrade Tree Tile 5) multiplies how many of this rank a
+	-- single pull actually grants - banked here now even with no pull UI
+	-- wired up yet, per direct request ("we can do that another time I
+	-- just want it on the tile").
+	local runeBulk = UpgradeTreeHandler.getRuneBulkMultiplier(player)
+	data.runesOpened += runeBulk
+	data.runesOwned[rank.name] = (data.runesOwned[rank.name] or 0) + runeBulk
 
 	for statName, multiplier in rank.statBoosts do
 		data.stats[statName] = (data.stats[statName] or 1) * multiplier
