@@ -858,7 +858,13 @@ end
 -- treatment as every other placement here; nudge UPGRADE_TREE_TILE_1_X/Z
 -- if it's off. Only Tile 1 exists so far ("lets just start with one tho") -
 -- the planned layout widens into a 1-2-3-2-1 diamond of tiles later.
-local UPGRADE_TREE_TILE_SIZE = 6
+-- Widened from a 6x6 square per direct request ("make it a bit wider") -
+-- wider along X (WIDTH) than deep along Z (DEPTH), so the sign reads more
+-- like a wide plaque than a square tile. Rotated 180° around Y (also per
+-- direct request) so the SurfaceGui's Top-face text reads right-side-up
+-- from the direction players actually approach it.
+local UPGRADE_TREE_TILE_WIDTH = 9
+local UPGRADE_TREE_TILE_DEPTH = 6
 local UPGRADE_TREE_TILE_1_X = (ruinAreaX + arcaneDustPadX) / 2
 local UPGRADE_TREE_TILE_1_Z = (ruinAreaZ + arcaneDustPadZ) / 2 - 5
 
@@ -877,11 +883,12 @@ upgradeTreeTile1.Anchored = true
 upgradeTreeTile1.CanCollide = true
 upgradeTreeTile1.Material = Enum.Material.Marble
 upgradeTreeTile1.Color = Color3.fromRGB(200, 200, 210)
-upgradeTreeTile1.Size = Vector3.new(UPGRADE_TREE_TILE_SIZE, 0.4, UPGRADE_TREE_TILE_SIZE)
+upgradeTreeTile1.Size = Vector3.new(UPGRADE_TREE_TILE_WIDTH, 0.4, UPGRADE_TREE_TILE_DEPTH)
 upgradeTreeTile1.CFrame = CFrame.new(UPGRADE_TREE_TILE_1_X, ISLAND_TOP_Y + 0.2, UPGRADE_TREE_TILE_1_Z)
+	* CFrame.Angles(0, math.rad(180), 0)
 upgradeTreeTile1.Parent = upgradeTreeFolder
 
-local UPGRADE_TREE_TILE_RADIUS = UPGRADE_TREE_TILE_SIZE / 2
+local UPGRADE_TREE_TILE_RADIUS = math.max(UPGRADE_TREE_TILE_WIDTH, UPGRADE_TREE_TILE_DEPTH) / 2
 local UPGRADE_TREE_CHECK_INTERVAL = 0.5
 
 task.spawn(function()

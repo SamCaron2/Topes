@@ -51,8 +51,7 @@ local function updateSign()
 
 	local canAfford = currentDust >= tile1Cost
 	background.BackgroundColor3 = canAfford and COLOR_READY or COLOR_LOCKED
-	costText.Text = canAfford and ("Walk over! Cost: %s Dust"):format(NumberFormat.format(tile1Cost))
-		or ("Cost: %s Arcane Dust"):format(NumberFormat.format(tile1Cost))
+	costText.Text = ("Cost: %s Arcane Dust"):format(NumberFormat.format(tile1Cost))
 end
 
 -- Painted directly onto the tile's Top face with a SurfaceGui, same
@@ -78,6 +77,13 @@ local function buildSign()
 	background.BackgroundColor3 = COLOR_LOCKED
 	background.BorderSizePixel = 0
 	background.Parent = surfaceGui
+
+	-- Outlined per direct request ("make the text bubble outlined") - a
+	-- clean white border around the whole colored sign.
+	local backgroundOutline = Instance.new("UIStroke")
+	backgroundOutline.Thickness = 4
+	backgroundOutline.Color = Color3.fromRGB(255, 255, 255)
+	backgroundOutline.Parent = background
 
 	titleText = Instance.new("TextLabel")
 	titleText.Size = UDim2.new(1, 0, 0.45, 0)
