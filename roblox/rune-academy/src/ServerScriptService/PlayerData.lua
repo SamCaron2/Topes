@@ -160,16 +160,17 @@ function PlayerData.load(player: Player)
 		data.firstJoinedAt = os.time()
 	end
 
-	-- TEMP: testing only - grants Mana/Rebirths/Level/Arcane Dust on every
-	-- join so everything on the island (SecondIsland's gate, both Wizard
-	-- Tiers, every upgrade) is immediately reachable/affordable (buying a
-	-- Wizard Tier zeroes Mana/Rebirths/Arcane Dust back to 0 - rejoin Play
-	-- mode afterward to re-trigger this grant for the next tier). Remove
-	-- these lines once you're done testing.
+	-- TEMP: testing only - spawns in already past Tier 3 (per direct
+	-- request) with Mana/Rebirths/Arcane Dust/Level maxed out, so
+	-- SecondIsland, the Fantasy Ruin, and the Upgrade Tree's Tile 1 are all
+	-- immediately visible/affordable without grinding through the tiers
+	-- first. Remove these lines (and the wizardTier one) once you're done
+	-- testing.
 	data.mana = 1e13
 	data.rebirths = 1e13
 	data.level = 50
 	data.arcaneDust = 1e13
+	data.wizardTier = 3
 
 	sessions[player] = data
 
