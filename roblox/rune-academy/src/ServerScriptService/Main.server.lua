@@ -466,3 +466,26 @@ Players.PlayerAdded:Connect(function(player)
 		end
 	end
 end)
+
+-- Wizard Tier 2's "Auto Mana" reward: once WizardTierHandler.hasAutoMana
+-- reports true for a player, they get a free Mana Per Pickup-equivalent
+-- grant every AUTO_MANA_INTERVAL seconds, on top of whatever they collect
+-- manually - no walking onto a ManaNode required. Reuses ManaHandler.collect
+-- outright (same effective yield, same totalManaEarned bump for the
+-- leaderboard) rather than a separate formula, so Auto Mana always tracks
+-- every multiplier/upgrade Manual pickups already do.
+local AUTO_MANA_INTERVAL = 1
+
+task.spawn(function()
+	while true do
+		task.wait(AUTO_MANA_INTERVAL)
+		for _, player in Players:GetPlayers() do
+			if WizardTierHandler.hasAutoMana(player) then
+				local newAmount = ManaHandler.collect(player)
+				if newAmount then
+					manaUpdatedEvent:FireClient(player, newAmount)
+				end
+			end
+		end
+	end
+end)

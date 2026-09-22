@@ -8,9 +8,25 @@
 -- alone, per direct request ("the entire lobby thus far resets except for
 -- the locked door that stays open").
 --
--- Only Tier 1 is defined so far; TIERS is built so more can be appended
--- later without touching the logic below.
-
+-- TIERS is built so more can be appended later without touching the logic
+-- below.
+--
+-- Tier 2's cost is derived, not guessed: the total Mana it costs to fully
+-- max every Mana-side upgrade (Mana Per Pickup to level 100, Mana Spawn
+-- Speed/Walking Speed/Collection Range each to their cap) is ~600,390
+-- Mana. Tier 1's 1e9 cost was already ~1,666x that total - it was always
+-- meant as a grind target well past simply maxing upgrades, not "cost to
+-- max everything" itself. Since Tier 1 grants a flat 20x Mana multiplier,
+-- the exact same grind now produces 20x the raw Mana per hour of
+-- playtime - scaling Tier 2's cost by that same 20x (1e9 * 20 = 2e10)
+-- keeps the actual TIME it takes to reach Tier 2 comparable to what Tier 1
+-- took, despite the much bigger raw number. Per direct request ("times
+-- everything else again"), Tier 2's own multipliers are 20x Tier 1's
+-- already-permanent multipliers (20x20=400x Mana, 20x20=400x Rebirths,
+-- 5x5=25x Arcane Dust) - stored here as their final absolute values so
+-- getManaMultiplier/etc. stay simple table lookups, no compounding logic
+-- needed. Tier 2 also unlocks passive "Auto Mana" (autoMana = true) - see
+-- hasAutoMana below and the background loop in Main.server.lua.
 local PlayerData = require(script.Parent.PlayerData)
 local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 
@@ -22,9 +38,32 @@ local TIERS = {
 		rebirthMultiplier = 20,
 		dustMultiplier = 5,
 	},
+	{
+		name = "Tier 2",
+		cost = 20e9, -- Mana - see the derivation above
+		manaMultiplier = 400,
+		rebirthMultiplier = 400,
+		dustMultiplier = 25,
+		autoMana = true,
+	},
 }
 
 local WizardTierHandler = {}
+
+-- True once the player has ever reached a tier that grants Auto Mana (Tier
+-- 2+) - scans every tier up to their current one rather than just checking
+-- the current tier's own flag, so the reward stays permanent even if a
+-- later tier's table entry doesn't repeat it.
+function WizardTierHandler.hasAutoMana(player: Player): boolean
+	local data = PlayerData.get(player)
+	local tier = data and data.wizardTier or 0
+	for i = 1, tier do
+		if TIERS[i] and TIERS[i].autoMana then
+			return true
+		end
+	end
+	return false
+end
 
 local function tierInfoFor(player: Player)
 	local data = PlayerData.get(player)
@@ -65,6 +104,7 @@ function WizardTierHandler.getState(player: Player)
 			manaMultiplier = currentTierInfo.manaMultiplier,
 			rebirthMultiplier = currentTierInfo.rebirthMultiplier,
 			dustMultiplier = currentTierInfo.dustMultiplier,
+			autoMana = currentTierInfo.autoMana or false,
 		} or nil,
 		nextTier = nextTierInfo and {
 			name = nextTierInfo.name,
@@ -72,6 +112,7 @@ function WizardTierHandler.getState(player: Player)
 			manaMultiplier = nextTierInfo.manaMultiplier,
 			rebirthMultiplier = nextTierInfo.rebirthMultiplier,
 			dustMultiplier = nextTierInfo.dustMultiplier,
+			autoMana = nextTierInfo.autoMana or false,
 		} or nil,
 	}
 end

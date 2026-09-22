@@ -314,10 +314,31 @@ design notes.
   request, `secondIslandUnlocked` is deliberately left untouched by the
   reset ("the entire lobby thus far resets except for the locked door that
   stays open"), and lifetime stats (`totalManaEarned`, `wizardTier` itself)
-  never reset either. Only Tier 1 is defined so far (`data.wizardTier`
-  starts at 0): costs 1,000,000,000 Mana, grants x20 Mana, x20 Rebirths,
-  x5 Arcane Dust - the `TIERS` table is built to hold more later without
-  any logic changes. `getManaMultiplier`/`getRebirthMultiplier`/
+  never reset either. `data.wizardTier` starts at 0; the `TIERS` table is
+  built to hold more tiers later without any logic changes.
+  Tier 1 costs 1,000,000,000 Mana, grants x20 Mana, x20 Rebirths, x5
+  Arcane Dust. Tier 2's cost and rewards are DERIVED, not guessed
+  (per direct request, "you decide based on how much everything cost
+  mana wise, you do the calculations"): the total Mana needed to fully
+  max every Mana-side upgrade (Mana Per Pickup to 100, Mana Spawn
+  Speed/Walking Speed/Collection Range each to their cap) comes out to
+  ~600,390 Mana - Tier 1's 1e9 cost was already ~1,666x that total, since
+  it was always meant as a grind target well past simply maxing upgrades.
+  Since Tier 1 grants a flat 20x Mana multiplier, the same grind now
+  produces 20x the raw Mana per hour of play - scaling Tier 2's cost by
+  that same 20x (1e9 × 20 = 20,000,000,000 Mana) keeps the actual TIME to
+  reach Tier 2 comparable to what Tier 1 took, despite the much bigger
+  number. Its rewards are "everything else again" per direct request -
+  20x Tier 1's own multipliers, stored as final absolute values (20×20=x400
+  Mana, 20×20=x400 Rebirths, 5×5=x25 Arcane Dust) - plus a brand new
+  reward, Auto Mana (`autoMana = true` on its `TIERS` entry): once
+  `WizardTierHandler.hasAutoMana` reports true (permanent from Tier 2
+  onward, checked by scanning every tier up to the player's current one,
+  not just the current tier's own flag), a background loop in
+  `Main.server.lua` calls `ManaHandler.collect` for that player every
+  `AUTO_MANA_INTERVAL` (1s) - the same effective yield/multipliers a
+  manual pickup gets, just automatic, no walking onto a node required.
+  `getManaMultiplier`/`getRebirthMultiplier`/
   `getDustMultiplier` are read by `ManaHandler`/`RebirthHandler`/
   `ArcaneDustHandler` respectively.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
@@ -472,7 +493,9 @@ design notes.
   a description box explaining the next tier's cost/reset/reward in plain
   English, and a big red "Enter" button - styled after a reference "Summer
   Tiers" board's layout (title → tier name → description → buy button),
-  minus its prev/next tier arrows since only Tier 1 exists so far. Because
+  minus its prev/next tier arrows since only Tiers 1-2 exist so far -
+  `formatBonuses` appends "+ Auto Mana (collects Mana passively, no
+  pickups needed)" whenever a tier's `autoMana` flag is set (Tier 2). Because
   buying a tier wipes almost everything (Mana, Rebirths, Level, every
   upgrade), the button requires two clicks - the first turns it orange
   with "Click again to confirm!" for a few seconds (`CONFIRM_WINDOW_SECONDS`),

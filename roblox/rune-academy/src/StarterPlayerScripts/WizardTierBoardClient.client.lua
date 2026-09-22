@@ -127,11 +127,15 @@ local awaitingConfirm = false
 local confirmResetThread = nil
 
 local function formatBonuses(tierInfo)
-	return ("x%d Mana, x%d Rebirths, x%d Arcane Dust"):format(
+	local text = ("x%d Mana, x%d Rebirths, x%d Arcane Dust"):format(
 		tierInfo.manaMultiplier,
 		tierInfo.rebirthMultiplier,
 		tierInfo.dustMultiplier
 	)
+	if tierInfo.autoMana then
+		text ..= " + Auto Mana (collects Mana passively, no pickups needed)"
+	end
+	return text
 end
 
 local function resetConfirm()
