@@ -979,12 +979,20 @@ end)
 local ETHER_COLOR = Color3.fromRGB(150, 60, 220)
 local ETHER_SHROUD_OFFSET = 15 -- studs past Tile 9, continuing the same +X chain direction
 local ETHER_BOARD_FRONT_OFFSET = 12 -- studs behind the shroud, same front/back relationship as ArcaneDustPad/its board
+-- Tile 9 sits almost exactly on the same Z line the EtherIsland bridge
+-- leaves from (secondIslandCenterZ), so without this offset the Shroud and
+-- its board land right in the walking path from the tree to that bridge -
+-- reported directly ("move the ether card and shroud over to the right so
+-- its not blocking the path to the next island"). Shifted sideways in Z,
+-- clear of both the bridge's own width and the tree's row spread; nudge if
+-- it ever reads as off toward the wrong side.
+local ETHER_AREA_Z_OFFSET = 30
 
 local tile9Position = UPGRADE_TREE_TILE_POSITIONS[9]
 local etherShroudX = tile9Position.x + ETHER_SHROUD_OFFSET
-local etherShroudZ = tile9Position.z
+local etherShroudZ = tile9Position.z + ETHER_AREA_Z_OFFSET
 local etherBoardX = etherShroudX + ETHER_BOARD_FRONT_OFFSET
-local etherBoardZ = tile9Position.z
+local etherBoardZ = etherShroudZ
 
 local existingEtherArea = Workspace:FindFirstChild("EtherArea")
 if existingEtherArea then
