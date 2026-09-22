@@ -11,7 +11,6 @@ local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
-local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 
 local MANA_PER_REBIRTH = 1000
 local MIN_MANA_TO_REBIRTH = MANA_PER_REBIRTH -- must have at least one full Rebirth's worth
@@ -28,7 +27,6 @@ function RebirthHandler.getState(player: Player)
 	local multiplier = RebirthShopHandler.getRebirthMultiplier(player)
 		* WizardTierHandler.getRebirthMultiplier(player)
 		* UpgradeTreeHandler.getRebirthMultiplier(player)
-		* RuinRuneHandler.getMultiplier(player, "rebirth")
 	return {
 		rebirths = data.rebirths or 0,
 		mana = mana,
@@ -52,7 +50,6 @@ function RebirthHandler.rebirth(player: Player)
 	local multiplier = RebirthShopHandler.getRebirthMultiplier(player)
 		* WizardTierHandler.getRebirthMultiplier(player)
 		* UpgradeTreeHandler.getRebirthMultiplier(player)
-		* RuinRuneHandler.getMultiplier(player, "rebirth")
 	data.rebirths = (data.rebirths or 0) + (mana / MANA_PER_REBIRTH) * multiplier
 	data.mana = 0
 	data.manaYieldLevel = 1

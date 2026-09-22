@@ -53,12 +53,11 @@ function RuneHandler.pull(player: Player)
 	local fortune = data.stats.Fortune or 1
 	local rank = weightedPick(fortune)
 
-	-- Rune Bulk multiplies how many of this rank a single pull actually
-	-- grants - banked here now even with no pull UI wired up yet, per
-	-- direct request ("we can do that another time I just want it on the
-	-- tile"). Two independent sources fold together: Upgrade Tree Tile 5
-	-- and the Fantasy Ruin's own Ascendant Rune tier.
-	local runeBulk = UpgradeTreeHandler.getRuneBulkMultiplier(player) * RuinRuneHandler.getMultiplier(player, "runeBulk")
+	-- Rune Bulk (Upgrade Tree Tile 5) multiplies how many of this rank a
+	-- single pull actually grants - banked here now even with no pull UI
+	-- wired up yet, per direct request ("we can do that another time I
+	-- just want it on the tile").
+	local runeBulk = UpgradeTreeHandler.getRuneBulkMultiplier(player)
 	data.runesOpened += runeBulk
 	data.runesOwned[rank.name] = (data.runesOwned[rank.name] or 0) + runeBulk
 
@@ -67,6 +66,48 @@ function RuneHandler.pull(player: Player)
 	end
 
 	return rank, nil
+end
+
+-- The Rune Altar (RuinRuneCircle on the Fantasy Ruin): stand on it and it
+-- periodically spends Mana for a chance-based Rune, no clicking involved -
+-- per direct correction ("There is no clicking on a ruin you just sit and
+-- it collects... it cost mana to sit on the rune"). Called once per tick by
+-- WorldBuilder's proximity loop for whichever player is currently standing
+-- on it; safely no-ops (returns nil) if not unlocked or Mana is too low,
+-- same "silently do nothing" shape as every other collection handler here.
+-- Separate from `pull` above (that one is the older Scroll-costed manual
+-- pull, unrelated to standing on the Altar) so RuinRuneHandler's Altar-only
+-- upgrades (Rune Luck/Bulk/Familiar) never leak into it.
+function RuneHandler.collectAtAltar(player: Player)
+	local data = PlayerData.get(player)
+	if not data or not RuinRuneHandler.isUnlocked(player) then
+		return nil
+	end
+
+	local manaCost = RuinRuneHandler.getManaCostPerTick(player)
+	if (data.mana or 0) < manaCost then
+		return nil
+	end
+	data.mana -= manaCost
+
+	local fortune = (data.stats.Fortune or 1) * RuinRuneHandler.getLuckMultiplier(player)
+	local runeBulk = UpgradeTreeHandler.getRuneBulkMultiplier(player) * RuinRuneHandler.getBulkMultiplier(player)
+	local rollCount = 1 + RuinRuneHandler.getExtraRolls(player)
+
+	local results = {}
+	for i = 1, rollCount do
+		local rank = weightedPick(fortune)
+		data.runesOpened += runeBulk
+		data.runesOwned[rank.name] = (data.runesOwned[rank.name] or 0) + runeBulk
+
+		for statName, multiplier in rank.statBoosts do
+			data.stats[statName] = (data.stats[statName] or 1) * multiplier
+		end
+
+		results[i] = { name = rank.name, amount = runeBulk }
+	end
+
+	return results, data.mana
 end
 
 return RuneHandler

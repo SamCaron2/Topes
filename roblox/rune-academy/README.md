@@ -67,7 +67,17 @@ design notes.
   amount of a currency into another at an upgradeable rate, at ANY time
   (no threshold, no upgrade reset) — Mana → Coins uses this, not a
   chain reset, since you can cash out partial Mana whenever you want.
-- `RuneHandler.lua` — server-authoritative gacha pull, Fortune-weighted odds.
+- `RuneHandler.lua` — server-authoritative gacha pull, Fortune-weighted odds
+  (`pull`, the older Scroll-costed manual pull - no UI wired to it). Also
+  `collectAtAltar`: the Rune Altar's own tick logic (stand on
+  `RuinRuneCircle`, called once per tick by `WorldBuilder`'s proximity
+  loop) - spends `RuinRuneHandler.getManaCostPerTick` Mana, then rolls
+  `1 + RuinRuneHandler.getExtraRolls` independent Runes via the same
+  `weightedPick` odds table, Fortune boosted by `RuinRuneHandler
+  .getLuckMultiplier` and bulk boosted by `UpgradeTreeHandler
+  .getRuneBulkMultiplier * RuinRuneHandler.getBulkMultiplier`; returns nil
+  (no-op) if not unlocked or Mana is too low. Kept separate from `pull` so
+  the Altar's own upgrades never leak into the unrelated Scroll pull.
 - `ResetHandler.lua` — Ascension only (per-currency resets live in
   ResourceEngine now). `GameConfig.AscensionTiers` is empty right now, so
   `ascend()` just returns "No further Ascension tiers" — safe no-op, not
@@ -247,20 +257,29 @@ design notes.
   geometry, but players can be at different Wizard Tiers simultaneously,
   so `WizardRuinClient` reveals it LOCALLY per-player (same pattern as
   `SecondIslandGateClient`) once `WizardTierHandler.hasUnlockedRuin`
-  reports true for them. The orb (`RuinOrb`) isn't purely decorative
-  anymore - it carries a `ClickDetector` (`MaxActivationDistance = 20`)
-  wired to `RuinRuneHandler`'s 5 Rune tiers, per direct request ("for this
-  rune we made on island 2 lets do 5 tiers"). Clicking it checks
-  `WizardTierHandler.hasUnlockedRuin` server-side (not just relying on the
-  orb being physically hidden/unreachable pre-Tier-3 - a `ClickDetector`
-  can still register a click on a `Transparency = 1` part) and, if true,
-  fires `OpenRuinRunesUI` at that one player, which `RuinRuneClient`
-  listens for to build/show the Runes panel. A `RuinOrbLabel` BillboardGui
-  ("Click for Runes") sits on the orb, starting disabled and enabled by
-  `WizardRuinClient.revealRuin` alongside the rest of the ruin (it isn't a
-  BasePart, so the reveal loop's `Transparency`/`CanCollide` pass skips it -
-  it needs its own `.Enabled = true`, same as `ArcaneDustPadLabel`/
-  `EtherShroudLabel`).
+  reports true for them. The orb (`RuinOrb`) stays purely decorative - the
+  rune circle underneath it (`RuinRuneCircle`) is the actual Rune Altar:
+  stand within its radius (no clicking - per direct correction, "There is
+  no clicking on a ruin you just sit and it collects") and a proximity
+  loop periodically spends Mana for a chance-based Rune via
+  `RuneHandler.collectAtAltar`, gated on `RuinRuneHandler.isUnlocked`
+  (= `hasUnlockedRuin`) server-side, same defense-in-depth reasoning as
+  every other SecondIsland collector. Checked every `RUNE_ALTAR_CHECK_
+  INTERVAL` (0.25s, finer than the tick itself) with each player's own
+  next-allowed-tick tracked separately (`RuinRuneHandler
+  .getTickIntervalSeconds` can differ per player once the Rune Speed tier
+  is bought), same per-player timer shape as `ArcaneDustPad`'s own loop.
+  On a successful tick, fires `ManaUpdated` (the new balance) and
+  `RuneAltarCollected` (one `{name, amount}` per roll that tick - more
+  than one once the Familiar tier is bought) at that player -
+  `RuneAltarClient` turns the latter into floating "+N RankName" popups.
+  Just outside the pillar ring sits `RuneAltarBoard`, the Altar's own
+  5-tier upgrade board (`RuinRuneHandler`/`RuneAltarBoardClient`) -
+  hidden/no-collide by default like every other board, but NOT a child of
+  `FantasyRuin` (it needs the "clear glass" 0.7-transparency reveal every
+  other board gets, not the ruin's own full-opacity reveal), so
+  `WizardRuinClient` reveals it explicitly via its own
+  `RevealTransparency`/`RevealCanCollide` attributes.
   In the open grass between the Fantasy Ruin and `ArcaneDustPad` (Tile 1's
   spot is the midpoint between the two - a best guess from a circled
   screenshot, same as every other placement here) sits `UpgradeTreeTiles`,
@@ -443,27 +462,31 @@ design notes.
   `getManaMultiplier`/`getRebirthMultiplier`/
   `getDustMultiplier` are read by `ManaHandler`/`RebirthHandler`/
   `ArcaneDustHandler` respectively.
-- `RuinRuneHandler.lua` — the Fantasy Ruin's own function: 5 Rune tiers,
-  unlocked by clicking `RuinOrb` (only once `WizardTierHandler
-  .hasUnlockedRuin` is true), per direct request ("for this rune we made
-  on island 2 lets do 5 tiers you can name them. Each one boosts a
-  specific tribute times a certain amount... each tier gets harder to
-  unlock"). Strictly linear like Wizard Tiers themselves - a single
+- `RuinRuneHandler.lua` — 5 upgrade tiers for the Rune Altar
+  (`RuinRuneCircle`, the Fantasy Ruin's rune circle - stand on it, no
+  clicking), bought via the nearby `RuneAltarBoard`, only reachable once
+  `WizardTierHandler.hasUnlockedRuin` is true. Per direct request ("for
+  this rune we made on island 2 lets do 5 tiers you can name them. Each
+  one boosts a specific tribute times a certain amount... each tier gets
+  harder to unlock"), corrected after an initial miss where I'd built this
+  as a click-to-open tier shop instead ("There is no clicking on a ruin
+  you just sit and it collects... it cost mana to sit on the rune").
+  Strictly linear like Wizard Tiers themselves - a single
   `data.ruinRuneTier` count (0-5), not a per-tile boolean set like the
   Upgrade Tree, since tier N+1 is only ever buyable after tier N. Paid in
   Mana, cost climbing 10x per tier (1e9 → 1e10 → 1e11 → 1e12 → 1e13), each
-  granting a permanent, one-time x2 to ONE specific resource - names and
-  targets are my call (per direct request, "this is all the info I will
-  give you"), picked from the game's own Rune rarity ladder
-  (`GameConfig.RuneRanks`) for theme, one tier per core resource: Apprentice
-  Rune (Mana x2), Adept Rune (Arcane Dust x2), Master Rune (Ether x2),
-  Archmage Rune (Rebirths x2), Ascendant Rune (Rune Bulk x2).
-  `getMultiplier(player, kind)` folds every bought tier matching `kind`
-  together, same `foldMultiplier` pattern as `UpgradeTreeHandler` - read by
-  `ManaHandler`, `ArcaneDustHandler`, `EtherHandler`, `RebirthHandler`, and
-  `RuneHandler.pull` (alongside `UpgradeTreeHandler.getRuneBulkMultiplier`
-  for Rune Bulk specifically) so every currency's multiplier chain picks up
-  its matching Rune tier automatically. `buyNextTier` checks
+  a permanent, one-time boost to the Altar itself (a flat x2, or +1 for
+  Familiar, same "cost scales, effect stays flat" convention as the
+  Upgrade Tree) - names and targets are my call (per direct request, "this
+  is all the info I will give you"), matching the reference screenshots'
+  own "Rune Speed/Rune Luck/Rune Bulk" language plus two more of my own:
+  Rune Speed (halves the tick interval), Rune Luck (x2 effective Fortune
+  for the Altar's own rolls), Rune Bulk (x2 Runes per successful roll,
+  folded together with `UpgradeTreeHandler.getRuneBulkMultiplier`),
+  Familiar (+1 free extra roll per tick), Mana Efficiency (halves the Mana
+  cost per tick). `getTickIntervalSeconds`/`getLuckMultiplier`/
+  `getBulkMultiplier`/`getExtraRolls`/`getManaCostPerTick` are each read
+  every tick by `RuneHandler.collectAtAltar`. `buyNextTier` checks
   `isUnlocked` (= `hasUnlockedRuin`) directly, not just physical/client
   reachability, same defense-in-depth reasoning as every other SecondIsland
   handler.
@@ -757,24 +780,33 @@ design notes.
   and flips `Transparency`/`CanCollide` back on for that client only if
   it's true. Also re-checks on every `PlayerWizardTiered` event, so
   reaching Tier 3 reveals the ruin immediately without needing to rejoin.
-  Also enables `RuinOrb`'s `RuinOrbLabel` BillboardGui alongside the rest
-  of the ruin (skipped by the `Transparency`/`CanCollide` loop above since
-  it isn't a BasePart).
-- `RuinRuneClient.client.lua` — the Runes panel: opened by
-  `OpenRuinRunesUI` (fired server-side the moment this player clicks
-  `RuinOrb` with the Ruin actually unlocked), a modal styled like the
-  Profile panel (dark background, gold border/stroke, dim click-blocking
-  overlay) with a "Runes" title, a "Close" button, and 5 tier cards laid
-  out in an explicit 2-column grid (not a `UIGridLayout`, so the odd 5th
-  card lands predictably on its own row) - the overall layout and the
-  per-card "name → cost → boost list" look are both from references given
-  directly. Each card shows one of 3 states read straight from
-  `RuinRuneHandler.getState`: locked (name shown, but "🔒 Discover the
-  rune" in place of cost/boost - same progressive-reveal idea as the
+  Also reveals `RuneAltarBoard` (parented under `Kiosks`, not
+  `FantasyRuin`, so the `Transparency`/`CanCollide` loop above doesn't
+  touch it) via its own `RevealTransparency`/`RevealCanCollide`
+  attributes, same "clear glass" treatment as every other board.
+- `RuneAltarBoardClient.client.lua` — `RuneAltarBoard`'s SurfaceGui: a
+  "Rune Altar" title, a subtitle stating the current Mana cost/tick
+  interval (`RuinRuneHandler.getState`'s `manaCostPerTick`/
+  `tickIntervalSeconds`, so it updates once Mana Efficiency/Rune Speed are
+  bought), and the 5 tiers laid out in an explicit 2-column grid (not a
+  `UIGridLayout`, so the odd 5th card lands predictably on its own row) -
+  the overall "card per tier" look is from references given directly.
+  Each card shows one of 3 states: locked (name shown, but "🔒 Discover
+  the rune" in place of cost/boost - same progressive-reveal idea as the
   Upgrade Tree tiles), reachable (cost + a Buy/afford-colored button,
   live-updated off `ManaUpdated` same as every other Mana-spending board),
-  or bought (its boost line + a "[MAX]" tag, no button). `BuyRuinRuneTier`
-  re-renders from the server's returned state on success.
+  or bought (its boost line + a "[MAX]" tag, no button). Waits in a
+  blocking loop on `GetSecondIslandState().unlocked` before building
+  anything, same reasoning as every other SecondIsland board.
+- `RuneAltarClient.client.lua` — floating feedback for actually standing
+  on the Rune Altar: listens for `RuneAltarCollected` (one `{name, amount}`
+  per roll that tick) and pops a small rising, fading "+N RankName"
+  `BillboardGui` above the player's head per entry (`TweenService`,
+  `POPUP_DURATION_SECONDS` = 1.2s), colored by a rarity ramp
+  (`RANK_COLORS`, my own call - `GameConfig.RuneRanks` itself carries no
+  colors) so "sit there and it collects by chance" is actually visible
+  happening in real time. Multiple entries (once the Familiar tier grants
+  extra rolls) stack a bit higher each so they don't overlap.
 - `UpgradeTreeClient.client.lua` — the info sign for whichever of
   `UpgradeTreeTile1`-`UpgradeTreeTile9` are currently reachable, styled
   like the reference upgrade cards (colored background, title, cost) but

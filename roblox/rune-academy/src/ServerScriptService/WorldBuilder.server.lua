@@ -17,6 +17,8 @@ local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local EtherHandler = require(script.Parent.EtherHandler)
 local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
+local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
+local RuneHandler = require(script.Parent.RuneHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -35,7 +37,7 @@ local xpUpdatedEvent = remotesFolder:WaitForChild("XPUpdated")
 local arcaneDustUpdatedEvent = remotesFolder:WaitForChild("ArcaneDustUpdated")
 local etherUpdatedEvent = remotesFolder:WaitForChild("EtherUpdated")
 local upgradeTreeTileBoughtEvent = remotesFolder:WaitForChild("UpgradeTreeTileBought")
-local openRuinRunesUIEvent = remotesFolder:WaitForChild("OpenRuinRunesUI")
+local runeAltarCollectedEvent = remotesFolder:WaitForChild("RuneAltarCollected")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
 -- island here and lifting spawn onto its surface lifts the whole build with
@@ -787,8 +789,13 @@ local RUIN_MOSS_COLOR = Color3.fromRGB(95, 115, 80)
 
 -- The glowing rune circle centerpiece - same flat-cylinder trick as
 -- ArcaneDustPad, just bigger, and colored to match the Wizard Tiers
--- board's purple/gold theme instead of Arcane Dust's blue.
-newRuinPart(
+-- board's purple/gold theme instead of Arcane Dust's blue. This is the
+-- actual Rune Altar now, not just decoration: stand on it (no clicking,
+-- per direct correction - "There is no clicking on a ruin you just sit
+-- and it collects") and it periodically spends Mana for a chance-based
+-- Rune, same "stand here" interaction as ArcaneDustPad but paid/gated
+-- differently - see the collection loop below and RuneHandler.collectAtAltar.
+local ruinRuneCircle = newRuinPart(
 	"RuinRuneCircle",
 	Vector3.new(0.6, 20, 20),
 	CFrame.new(ruinAreaX, ISLAND_TOP_Y + 0.3, ruinAreaZ) * CFrame.Angles(0, 0, math.rad(90)),
@@ -796,10 +803,8 @@ newRuinPart(
 	Color3.fromRGB(180, 120, 255)
 )
 
--- A floating glowing orb centered above the rune circle - the plaza's focal
--- point, visible from a distance once revealed. Not just decorative
--- anymore: clicking it opens the Runes UI (RuinRuneHandler) - per direct
--- request ("for this rune we made on island 2 lets do 5 tiers").
+-- A floating glowing orb centered above the rune circle - purely the
+-- plaza's decorative focal point, visible from a distance once revealed.
 local ruinOrb = Instance.new("Part")
 ruinOrb.Name = "RuinOrb"
 ruinOrb.Shape = Enum.PartType.Ball
@@ -811,43 +816,6 @@ ruinOrb.CFrame = CFrame.new(ruinAreaX, ISLAND_TOP_Y + 10, ruinAreaZ)
 ruinOrb.Transparency = 1
 ruinOrb.CanCollide = false
 ruinOrb.Parent = fantasyRuinFolder
-
-local ruinOrbClickDetector = Instance.new("ClickDetector")
-ruinOrbClickDetector.MaxActivationDistance = 20
-ruinOrbClickDetector.Parent = ruinOrb
-
--- Checked here too, not just relying on the orb being physically
--- unreachable/invisible pre-Tier-3 - a ClickDetector can still register a
--- click on a Transparency=1 part, so this is the actual gate, same
--- defense-in-depth reasoning as every other SecondIsland entry point.
-ruinOrbClickDetector.MouseClick:Connect(function(player)
-	if not WizardTierHandler.hasUnlockedRuin(player) then
-		return
-	end
-	openRuinRunesUIEvent:FireClient(player)
-end)
-
--- Starts disabled - WizardRuinClient enables it locally alongside revealing
--- the rest of the ruin, same treatment as ArcaneDustPadLabel/EtherShroudLabel.
-local ruinOrbLabelGui = Instance.new("BillboardGui")
-ruinOrbLabelGui.Name = "RuinOrbLabel"
-ruinOrbLabelGui.Size = UDim2.new(0, 140, 0, 24)
-ruinOrbLabelGui.StudsOffset = Vector3.new(0, 4, 0)
-ruinOrbLabelGui.MaxDistance = 25
-ruinOrbLabelGui.AlwaysOnTop = true
-ruinOrbLabelGui.Enabled = false
-ruinOrbLabelGui.Adornee = ruinOrb
-ruinOrbLabelGui.Parent = ruinOrb
-
-local ruinOrbLabelText = Instance.new("TextLabel")
-ruinOrbLabelText.Size = UDim2.new(1, 0, 1, 0)
-ruinOrbLabelText.BackgroundTransparency = 1
-ruinOrbLabelText.Font = Enum.Font.GothamBold
-ruinOrbLabelText.TextScaled = true
-ruinOrbLabelText.TextColor3 = Color3.fromRGB(255, 220, 120)
-ruinOrbLabelText.TextStrokeTransparency = 0.2
-ruinOrbLabelText.Text = "Click for Runes"
-ruinOrbLabelText.Parent = ruinOrbLabelGui
 
 -- 6 broken pillars in a ring around the rune circle, each a different
 -- height/rotation so they read as crumbling rather than a uniform circle
@@ -915,6 +883,71 @@ for i = 1, RUIN_RUBBLE_COUNT do
 		(i % 2 == 0) and RUIN_MOSS_COLOR or RUIN_STONE_COLOR
 	)
 end
+
+-- Its upgrade board (RuinRuneHandler's 5 tiers) sits just outside the
+-- pillar ring, facing back at the rune circle - same "thin along X, wide
+-- along Z" board shape as every other board here. Hidden/no-collide by
+-- default like ArcaneDustUpgradeBoard/WizardTierBoard - WizardRuinClient
+-- reveals it (via its own Reveal* attributes, same mechanism) alongside
+-- the rest of the ruin, since it's gated on the same hasUnlockedRuin check.
+local RUNE_ALTAR_BOARD_WIDTH = 30
+local runeAltarBoardX = ruinAreaX + RUIN_PILLAR_RADIUS + 6 + RUNE_ALTAR_BOARD_WIDTH / 2
+
+local runeAltarBoard = Instance.new("Part")
+runeAltarBoard.Name = "RuneAltarBoard"
+runeAltarBoard.Anchored = true
+runeAltarBoard.CanCollide = false
+runeAltarBoard.Material = Enum.Material.Glass
+runeAltarBoard.Color = Color3.fromRGB(60, 30, 80)
+runeAltarBoard.Transparency = 1
+runeAltarBoard.Size = Vector3.new(1, 18, RUNE_ALTAR_BOARD_WIDTH)
+runeAltarBoard.CFrame = CFrame.new(runeAltarBoardX, ISLAND_TOP_Y + 9, ruinAreaZ)
+runeAltarBoard:SetAttribute("RevealTransparency", 0.7) -- glass, like every other board
+runeAltarBoard:SetAttribute("RevealCanCollide", true)
+runeAltarBoard.Parent = kiosksFolder
+
+-- The Rune Altar itself (RuinRuneCircle): stand within its radius and it
+-- periodically spends Mana for a chance-based Rune - no clicking, per
+-- direct correction. Checked far more often than the tick itself
+-- (RUNE_ALTAR_CHECK_INTERVAL) so Rune Speed's halved interval still lands
+-- close to on-time; each player's own next-allowed tick is tracked
+-- separately (RuinRuneHandler.getTickIntervalSeconds can differ per
+-- player), same per-player timer pattern as ArcaneDustPad's own loop.
+local RUNE_ALTAR_RADIUS = 10 -- RuinRuneCircle is a 20-stud diameter disc
+local RUNE_ALTAR_CHECK_INTERVAL = 0.25
+local runeAltarNextTick = {} -- [player] = os.clock() of the next tick this player is allowed to collect from
+
+Players.PlayerRemoving:Connect(function(player)
+	runeAltarNextTick[player] = nil
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(RUNE_ALTAR_CHECK_INTERVAL)
+		local now = os.clock()
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+			local onAltar = rootPart
+				and (Vector2.new(rootPart.Position.X, rootPart.Position.Z) - Vector2.new(ruinAreaX, ruinAreaZ)).Magnitude
+					<= RUNE_ALTAR_RADIUS
+
+			if onAltar then
+				local nextTick = runeAltarNextTick[player]
+				if not nextTick or now >= nextTick then
+					local results, newMana = RuneHandler.collectAtAltar(player)
+					if results then
+						manaUpdatedEvent:FireClient(player, newMana)
+						runeAltarCollectedEvent:FireClient(player, results)
+					end
+					runeAltarNextTick[player] = now + RuinRuneHandler.getTickIntervalSeconds(player)
+				end
+			else
+				runeAltarNextTick[player] = nil
+			end
+		end
+	end
+end)
 
 -- ===========================================================================
 -- Upgrade Tree: walk-over tiles (UpgradeTreeHandler), only reachable once a

@@ -5,8 +5,12 @@
 -- CanCollide back on LOCALLY, same per-player pattern as
 -- SecondIslandGateClient uses for the SecondIsland gate - other players who
 -- haven't reached Tier 3 still see/walk through empty space where the ruin
--- sits. Also enables the RuinOrb's floating "Click for Runes" label, which
--- isn't a BasePart so the loop below doesn't touch it.
+-- sits. Also reveals RuneAltarBoard (the Rune Altar's own upgrade board,
+-- parented under Kiosks rather than FantasyRuin) via its own
+-- RevealTransparency/RevealCanCollide attributes, same "clear glass"
+-- treatment as every other board - it's gated on the same
+-- hasUnlockedRuin check but isn't a child of `ruinFolder`, so the loop
+-- below doesn't touch it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,6 +22,7 @@ local getWizardTierStateFunction = remotes:WaitForChild("GetWizardTierState")
 local playerWizardTieredEvent = remotes:WaitForChild("PlayerWizardTiered")
 
 local ruinFolder = Workspace:WaitForChild("FantasyRuin")
+local runeAltarBoard = Workspace:WaitForChild("Kiosks"):WaitForChild("RuneAltarBoard")
 
 local function revealRuin()
 	for _, part in ruinFolder:GetChildren() do
@@ -27,11 +32,8 @@ local function revealRuin()
 		end
 	end
 
-	local ruinOrb = ruinFolder:FindFirstChild("RuinOrb")
-	local orbLabel = ruinOrb and ruinOrb:FindFirstChild("RuinOrbLabel")
-	if orbLabel then
-		orbLabel.Enabled = true
-	end
+	runeAltarBoard.Transparency = runeAltarBoard:GetAttribute("RevealTransparency") or 0
+	runeAltarBoard.CanCollide = runeAltarBoard:GetAttribute("RevealCanCollide") or false
 end
 
 -- PlayerData might not be loaded yet the instant this script runs - retry a

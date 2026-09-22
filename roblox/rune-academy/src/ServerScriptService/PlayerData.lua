@@ -138,12 +138,14 @@ local function defaultData()
 		-- once set.
 		etherIslandUnlocked = false,
 
-		-- Runes (RuinRuneHandler): 5 tiers unlocked by clicking the Fantasy
-		-- Ruin's orb, paid in Mana - only reachable once the Ruin itself is
-		-- (Wizard Tier 3+). A single count like wizardTier, not a per-tile
-		-- boolean set like the Upgrade Tree, since these are strictly linear
-		-- (buy tier N+1 only after tier N). Each tier is a permanent x2 to
-		-- one specific resource (see RuinRuneHandler.TIERS) - never reset.
+		-- Rune Altar upgrades (RuinRuneHandler): 5 tiers bought via
+		-- RuneAltarBoard, paid in Mana - only reachable once the Fantasy
+		-- Ruin itself is (Wizard Tier 3+). A single count like wizardTier,
+		-- not a per-tile boolean set like the Upgrade Tree, since these are
+		-- strictly linear (buy tier N+1 only after tier N). Each tier
+		-- permanently upgrades the Rune Altar itself (RuinRuneCircle - stand
+		-- on it, no clicking) - tick speed, odds, Runes per roll, extra
+		-- rolls, or Mana cost per tick. Never reset.
 		ruinRuneTier = 0,
 
 		gems = 0, -- global premium currency, outside any zone/chain

@@ -110,9 +110,9 @@ local getEtherDustBoostStateFunction = newRemoteFunction("GetEtherDustBoostState
 local buyEtherDustBoostUpgradeFunction = newRemoteFunction("BuyEtherDustBoostUpgrade")
 local getEtherIslandStateFunction = newRemoteFunction("GetEtherIslandState")
 local unlockEtherIslandFunction = newRemoteFunction("UnlockEtherIsland")
-local openRuinRunesUIEvent = newRemoteEvent("OpenRuinRunesUI") -- server -> client, fired when this player clicks the Ruin's orb
 local getRuinRuneStateFunction = newRemoteFunction("GetRuinRuneState")
 local buyRuinRuneTierFunction = newRemoteFunction("BuyRuinRuneTier")
+local runeAltarCollectedEvent = newRemoteEvent("RuneAltarCollected") -- server -> client, fired at whichever player just collected a Rune from standing on the Altar
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
