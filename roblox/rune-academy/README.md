@@ -408,15 +408,31 @@ design notes.
   built) is now further nested in its own inner `do...end` too - only the
   two ClickDetector variables survive past it, pre-declared just outside
   and assigned (not re-`local`'d) inside.
-  Right next to it (`AstralShardUpgradeBoard`/`LeyShardConversionBoard`,
-  Cards 2 and 3 - see `AstralShardConversionHandler` above), continuing
-  further along the same +Z direction from `LeyShardUpgradeBoard`, at the
-  same X (coplanar, same "Left" facing) - per direct request ("to the
-  right of ley shards we want another material card... a card next to
-  that where you can convert your ley shards into that"); +Z is a guess
-  like every other board placement here, flip the sign if it lands on the
-  wrong side. Their own separate `do...end` block, same register-budget
-  reasoning as the Ley Shard section.
+  `LeyShardUpgradeBoard`'s own `SurfaceGui.Face` was flipped from "Left" to
+  "Right" per direct request, from an annotated screenshot ("Flip the
+  cards so they are facing where I highlighted in red. So they are towards
+  the edge") - it now faces away from the mat, toward the island's edge,
+  instead of back at the mat. Decor near its new facing side is cleared on
+  a radius too ("Remove bushes and trees if you need"), same
+  "destroy any decor part within a radius" precedent as RuneAltarBoard's
+  own clear-radius pass.
+  Right next to it (`LeyShardConversionBoard`/`AstralShardUpgradeBoard`,
+  Cards 3 and 2 respectively - see `AstralShardConversionHandler` above),
+  continuing further along the same +Z direction from
+  `LeyShardUpgradeBoard`, at the same X (coplanar, same flipped "Right"
+  facing) - per direct request ("to the right of ley shards we want
+  another material card... a card next to that where you can convert your
+  ley shards into that"); +Z is a guess like every other board placement
+  here, flip the sign if it lands on the wrong side. The Conversion board
+  sits first in the row (right after the Ley Shard board) with the Astral
+  Shard board past that - order swapped from the original build per direct
+  request ("switch convert shards and astral shards"). Their own separate
+  `do...end` block, same register-budget reasoning as the Ley Shard
+  section - with an extra INNER `do...end` nested around just the two
+  boards' own Part-construction locals (their register footprint alone,
+  on top of everything already declared earlier in this same file by this
+  point, was enough to hit the 200 ceiling a second time the moment decor-
+  clearing was added here too).
   Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
   around its edge, inset from the border, skipping the bridge's landing
   spot, and each given a small random `DECOR_JITTER` offset so the ring

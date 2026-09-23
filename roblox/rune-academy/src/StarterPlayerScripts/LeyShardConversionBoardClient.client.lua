@@ -37,9 +37,11 @@ local function buildBoard()
 	end
 	built = true
 
+	-- Faces away from the mat, toward the island's edge - per direct
+	-- request ("flip the cards so they are facing... towards the edge").
 	local surfaceGui = Instance.new("SurfaceGui")
 	surfaceGui.Name = "LeyShardConversionBoardGui"
-	surfaceGui.Face = Enum.NormalId.Left
+	surfaceGui.Face = Enum.NormalId.Right
 	surfaceGui.Adornee = board
 	surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	surfaceGui.PixelsPerStud = 36

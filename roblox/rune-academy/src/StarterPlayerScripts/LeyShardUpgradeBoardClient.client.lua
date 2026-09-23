@@ -50,13 +50,13 @@ local COLUMN_TOP_Y = 0.33
 
 local built = false
 
--- The mat sits at a LOWER X than this board (see WorldBuilder), so the
--- board's readable face needs to point back toward it - "Left" in
--- Roblox's NormalId naming, same relationship as every other pad+board
--- pair here; flip to Right if it renders unreadable.
+-- Faces away from the mat, toward the island's edge - "Right" in Roblox's
+-- NormalId naming - per direct request ("flip the cards so they are
+-- facing... towards the edge"), flipped from the original "Left" facing
+-- that pointed back at the mat.
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "LeyShardUpgradeBoardGui"
-surfaceGui.Face = Enum.NormalId.Left
+surfaceGui.Face = Enum.NormalId.Right
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36

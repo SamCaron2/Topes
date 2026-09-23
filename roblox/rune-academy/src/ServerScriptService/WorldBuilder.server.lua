@@ -1469,7 +1469,10 @@ do
 	leyShardMatLabelText.Parent = leyShardMatLabelGui
 
 	-- Its upgrade board, same physical style/offset relationship as every
-	-- other pad+board pair - facing back at the mat (-X, "Left").
+	-- other pad+board pair. Faces away from the mat, toward the island's
+	-- edge (+X, "Right") - per direct request ("flip the cards so they are
+	-- facing... towards the edge"), flipped from the original "Left"
+	-- facing that pointed back at the mat instead.
 	local leyShardBoard = Instance.new("Part")
 	leyShardBoard.Name = "LeyShardUpgradeBoard"
 	leyShardBoard.Anchored = true
@@ -1480,6 +1483,24 @@ do
 	leyShardBoard.Size = Vector3.new(1, 18, 34)
 	leyShardBoard.CFrame = CFrame.new(leyShardMatX + LEY_SHARD_BOARD_OFFSET, ISLAND_TOP_Y + 9, leyShardMatZ)
 	leyShardBoard.Parent = Workspace
+
+	-- Clearing decor near the board's new facing side too - per direct
+	-- request ("Remove bushes and trees if you need") - same
+	-- "destroy any decor part within a radius" precedent as
+	-- RuneAltarBoard's own clear-radius pass.
+	local BOARD_DECOR_CLEAR_RADIUS = 18
+	local etherIslandDecorFolder = Workspace:FindFirstChild("EtherIslandDecor")
+	if etherIslandDecorFolder then
+		for _, decorPart in etherIslandDecorFolder:GetChildren() do
+			if decorPart:IsA("BasePart") then
+				local dx = decorPart.Position.X - (leyShardMatX + LEY_SHARD_BOARD_OFFSET)
+				local dz = decorPart.Position.Z - leyShardMatZ
+				if (dx * dx + dz * dz) ^ 0.5 <= BOARD_DECOR_CLEAR_RADIUS then
+					decorPart:Destroy()
+				end
+			end
+		end
+	end
 end
 
 -- [player] = { nextCollectAt = os.clock() timestamp } while levitating;
@@ -1593,11 +1614,16 @@ end
 -- Shard per 1 Astral Shard. Card 2's own board is a placeholder shell for
 -- now, per direct request ("It should be the material x card with three
 -- upgrades but dont put them in yet I just want to see the card") - 3
--- empty "Coming Soon" slots, no real upgrade logic wired up yet. Both
--- boards sit in the same row as LeyShardUpgradeBoard (same X, same
--- -X/"Left" facing), continuing further along +Z - a guess like every
--- other board placement in this game; flip the sign if it lands on the
--- wrong side of the Ley Shard board instead of the right side. In its own
+-- empty "Coming Soon" slots, no real upgrade logic wired up yet. The
+-- Conversion board sits right after the Ley Shard board, with the Astral
+-- Shard board past that - order swapped from the original build per
+-- direct request ("switch convert shards and astral shards"). Both sit in
+-- the same row as LeyShardUpgradeBoard (same X), continuing further along
+-- +Z - a guess like every other board placement in this game; flip the
+-- sign if it lands on the wrong side of the Ley Shard board instead of
+-- the right side. Faces away from the mat, toward the island's edge (+X,
+-- "Right"), same flip as the Ley Shard board - per direct request ("flip
+-- the cards so they are facing... towards the edge"). In its own
 -- `do...end` block, same register-budget reasoning as the Ley Shard
 -- section above.
 do
@@ -1605,43 +1631,70 @@ do
 	local BOARD_ROW_BASE_Z = 116 -- LeyShardUpgradeBoard's own Z
 	local LEY_SHARD_BOARD_WIDTH = 34 -- LeyShardUpgradeBoard's own width, needed here to space this row out from it
 	local BOARD_GAP = 6
-
-	local existingAstralShardBoard = Workspace:FindFirstChild("AstralShardUpgradeBoard")
-	if existingAstralShardBoard then
-		existingAstralShardBoard:Destroy()
-	end
-	local existingConversionBoard = Workspace:FindFirstChild("LeyShardConversionBoard")
-	if existingConversionBoard then
-		existingConversionBoard:Destroy()
-	end
-
-	local ASTRAL_SHARD_BOARD_WIDTH = 34
-	local astralShardBoardZ = BOARD_ROW_BASE_Z + (LEY_SHARD_BOARD_WIDTH / 2 + BOARD_GAP + ASTRAL_SHARD_BOARD_WIDTH / 2)
-
-	local astralShardBoard = Instance.new("Part")
-	astralShardBoard.Name = "AstralShardUpgradeBoard"
-	astralShardBoard.Anchored = true
-	astralShardBoard.CanCollide = true
-	astralShardBoard.Material = Enum.Material.Glass
-	astralShardBoard.Color = Color3.fromRGB(40, 30, 65)
-	astralShardBoard.Transparency = 0.7 -- clear glass, matching every other board
-	astralShardBoard.Size = Vector3.new(1, 18, ASTRAL_SHARD_BOARD_WIDTH)
-	astralShardBoard.CFrame = CFrame.new(BOARD_ROW_X, ISLAND_TOP_Y + 9, astralShardBoardZ)
-	astralShardBoard.Parent = Workspace
-
 	local CONVERSION_BOARD_WIDTH = 20
-	local conversionBoardZ = astralShardBoardZ + (ASTRAL_SHARD_BOARD_WIDTH / 2 + BOARD_GAP + CONVERSION_BOARD_WIDTH / 2)
+	local ASTRAL_SHARD_BOARD_WIDTH = 34
 
-	local conversionBoard = Instance.new("Part")
-	conversionBoard.Name = "LeyShardConversionBoard"
-	conversionBoard.Anchored = true
-	conversionBoard.CanCollide = true
-	conversionBoard.Material = Enum.Material.Glass
-	conversionBoard.Color = Color3.fromRGB(30, 60, 55)
-	conversionBoard.Transparency = 0.7
-	conversionBoard.Size = Vector3.new(1, 18, CONVERSION_BOARD_WIDTH)
-	conversionBoard.CFrame = CFrame.new(BOARD_ROW_X, ISLAND_TOP_Y + 9, conversionBoardZ)
-	conversionBoard.Parent = Workspace
+	-- Only the Z positions survive past this inner block - the Part
+	-- references/existing-check locals/width constants are never needed
+	-- again once built, so nesting them away frees their registers before
+	-- the decor-clearing pass below (this file is one single Luau chunk
+	-- with a hard 200-local-register ceiling; every section from here on
+	-- has to budget its own locals carefully against everything already
+	-- declared earlier in the file).
+	local conversionBoardZ = BOARD_ROW_BASE_Z + (LEY_SHARD_BOARD_WIDTH / 2 + BOARD_GAP + CONVERSION_BOARD_WIDTH / 2)
+	local astralShardBoardZ = conversionBoardZ + (CONVERSION_BOARD_WIDTH / 2 + BOARD_GAP + ASTRAL_SHARD_BOARD_WIDTH / 2)
+
+	do
+		local existingConversionBoard = Workspace:FindFirstChild("LeyShardConversionBoard")
+		if existingConversionBoard then
+			existingConversionBoard:Destroy()
+		end
+		local existingAstralShardBoard = Workspace:FindFirstChild("AstralShardUpgradeBoard")
+		if existingAstralShardBoard then
+			existingAstralShardBoard:Destroy()
+		end
+
+		local conversionBoard = Instance.new("Part")
+		conversionBoard.Name = "LeyShardConversionBoard"
+		conversionBoard.Anchored = true
+		conversionBoard.CanCollide = true
+		conversionBoard.Material = Enum.Material.Glass
+		conversionBoard.Color = Color3.fromRGB(30, 60, 55)
+		conversionBoard.Transparency = 0.7
+		conversionBoard.Size = Vector3.new(1, 18, CONVERSION_BOARD_WIDTH)
+		conversionBoard.CFrame = CFrame.new(BOARD_ROW_X, ISLAND_TOP_Y + 9, conversionBoardZ)
+		conversionBoard.Parent = Workspace
+
+		local astralShardBoard = Instance.new("Part")
+		astralShardBoard.Name = "AstralShardUpgradeBoard"
+		astralShardBoard.Anchored = true
+		astralShardBoard.CanCollide = true
+		astralShardBoard.Material = Enum.Material.Glass
+		astralShardBoard.Color = Color3.fromRGB(40, 30, 65)
+		astralShardBoard.Transparency = 0.7 -- clear glass, matching every other board
+		astralShardBoard.Size = Vector3.new(1, 18, ASTRAL_SHARD_BOARD_WIDTH)
+		astralShardBoard.CFrame = CFrame.new(BOARD_ROW_X, ISLAND_TOP_Y + 9, astralShardBoardZ)
+		astralShardBoard.Parent = Workspace
+	end
+
+	-- Clearing decor near both boards' new facing side - per direct
+	-- request ("Remove bushes and trees if you need") - same
+	-- "destroy any decor part within a radius" precedent as
+	-- RuneAltarBoard's own clear-radius pass.
+	local BOARD_DECOR_CLEAR_RADIUS = 18
+	local etherIslandDecorFolder = Workspace:FindFirstChild("EtherIslandDecor")
+	if etherIslandDecorFolder then
+		for _, decorPart in etherIslandDecorFolder:GetChildren() do
+			if decorPart:IsA("BasePart") then
+				local dx = decorPart.Position.X - BOARD_ROW_X
+				local distConversion = (dx * dx + (decorPart.Position.Z - conversionBoardZ) ^ 2) ^ 0.5
+				local distAstral = (dx * dx + (decorPart.Position.Z - astralShardBoardZ) ^ 2) ^ 0.5
+				if distConversion <= BOARD_DECOR_CLEAR_RADIUS or distAstral <= BOARD_DECOR_CLEAR_RADIUS then
+					decorPart:Destroy()
+				end
+			end
+		end
+	end
 end
 
 -- ===========================================================================
