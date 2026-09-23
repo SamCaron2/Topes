@@ -164,6 +164,20 @@ local function defaultData()
 		leyShardSpeedLevel = 1,
 		leyShardManaBoostLevel = 1,
 
+		-- Astral Shard: Card 2 of the 3-material progression, sitting next
+		-- to the Ley Shard board on EtherIsland - per direct request ("to
+		-- the right of ley shards we want another material card"). Unlike
+		-- Ley Shard, it has NO collection mechanic of its own ("there isnt
+		-- a button or anything to get more of this material") - the only
+		-- way to get it is spending Ley Shard on the conversion board next
+		-- to it (AstralShardConversionHandler), 5,000 Ley Shard per 1
+		-- Astral Shard. Card 2's own upgrade board is a placeholder shell
+		-- for now, per direct request ("It should be the material x card
+		-- with three upgrades but dont put them in yet I just want to see
+		-- the card") - no upgrade level fields exist yet since there's
+		-- nothing to buy. Permanent, never reset.
+		astralShard = 0,
+
 		-- Rune Altar upgrades (RuinRuneHandler): 5 tiers bought via
 		-- RuneAltarBoard, paid in Mana - only reachable once the Fantasy
 		-- Ruin itself is (Wizard Tier 3+). A single count like wizardTier,

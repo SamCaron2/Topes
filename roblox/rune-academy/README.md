@@ -408,6 +408,15 @@ design notes.
   built) is now further nested in its own inner `do...end` too - only the
   two ClickDetector variables survive past it, pre-declared just outside
   and assigned (not re-`local`'d) inside.
+  Right next to it (`AstralShardUpgradeBoard`/`LeyShardConversionBoard`,
+  Cards 2 and 3 - see `AstralShardConversionHandler` above), continuing
+  further along the same +Z direction from `LeyShardUpgradeBoard`, at the
+  same X (coplanar, same "Left" facing) - per direct request ("to the
+  right of ley shards we want another material card... a card next to
+  that where you can convert your ley shards into that"); +Z is a guess
+  like every other board placement here, flip the sign if it lands on the
+  wrong side. Their own separate `do...end` block, same register-budget
+  reasoning as the Ley Shard section.
   Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
   around its edge, inset from the border, skipping the bridge's landing
   spot, and each given a small random `DECOR_JITTER` offset so the ring
@@ -771,6 +780,24 @@ design notes.
   is read by `ManaHandler` as another factor in its own multiplier chain,
   and `LeyShardHandler.collect` folds in `RuneCollectionHandler.getMultiplier`
   too, same as every other currency handler.
+- `AstralShardConversionHandler.lua` — Astral Shard, Card 2 of the 3-card
+  progression, sitting physically next to the Ley Shard board on
+  EtherIsland - per direct request ("to the right of ley shards we want
+  another material card material x"). Unlike every earlier currency, it
+  has NO collection mechanic of its own at all - "there isnt a button or
+  anything to get more of this material" - the only way to get it is
+  spending Ley Shard on the conversion board right next to Card 2
+  (`convert`), at a fixed 5,000 Ley Shard per 1 Astral Shard. `convert`
+  spends AS MANY as currently affordable in one press rather than a fixed
+  1-per-click (my own call, not specified - 5,000 apiece would otherwise
+  take many repeated presses to spend down a large balance). Card 2's own
+  upgrade board is a placeholder shell for now - per direct request ("It
+  should be the material x card with three upgrades but dont put them in
+  yet I just want to see the card") - so there's no
+  `AstralShardYieldHandler`-style module yet, just the one `astralShard`
+  balance field in `PlayerData` and this conversion path; the 3 real
+  upgrade columns (and their own handler modules) come later once asked
+  for.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -828,32 +855,35 @@ design notes.
 - `ManaHUDClient.client.lua` — a Mana counter, middle-left of the screen,
   updated live off the `ManaUpdated` RemoteEvent, an Arcane Dust counter
   below that, a Rebirths counter below that, an Ether counter below that,
-  then a Ley Shard counter below that. Styled after a typical
-  incremental-game HUD, not the original dark rounded pill: no background
-  at all, just the icon sitting a small fixed gap (`ICON_TEXT_GAP`) from a
-  bold, left-aligned number - no "Mana"/"Arcane Dust"/"Rebirths"/"Ether"/
-  "Ley Shard" word, the icon says it - colored to echo the icon's own
-  palette (violet for Mana, matching the Mana nodes' own glow; blue for
-  Arcane Dust, matching its own uploaded icon, per direct request - was a
-  gold placeholder glyph before; pink-red for Rebirths, matching the
-  Rebirth board's red theme; purple for Ether, matching the Shroud's own
-  color; teal for Ley Shard, matching the Mat's own color). The Rebirths,
-  Ether, and Ley Shard icons keep a small round white circle behind them
-  for contrast (Ether and Ley Shard have no uploaded image yet, so they
-  fall back to a placeholder glyph the same way Arcane Dust once did - a
-  star for Ether, a plain diamond for Ley Shard, both safe basic Unicode
-  symbols rather than an arrow/emoji codepoint); the Mana and Arcane Dust
-  icons have none, since both already read fine boxed on their own. The
-  Arcane Dust, Rebirths, Ether, and Ley Shard rows are all visible only
-  while their amount is actually above 0, not just "ever shown once" -
-  Arcane Dust the first time you actually stand on `ArcaneDustPad`,
-  Rebirths only once you've actually rebirthed, Ether only once you've
-  actually clicked the Shroud, Ley Shard only once you've actually
-  levitated on the Mat for one payout - and hide again if a Wizard Tier
-  purchase resets any of them back to 0, so no counter shows up before
-  it's relevant. `reflowLayout` re-stacks whichever rows are currently
-  visible with no gap in between, since these four collapsible rows aren't
-  always all present.
+  a Ley Shard counter, then an Astral Shard counter below that. Styled
+  after a typical incremental-game HUD, not the original dark rounded
+  pill: no background at all, just the icon sitting a small fixed gap
+  (`ICON_TEXT_GAP`) from a bold, left-aligned number - no "Mana"/"Arcane
+  Dust"/"Rebirths"/"Ether"/"Ley Shard"/"Astral Shard" word, the icon says
+  it - colored to echo the icon's own palette (violet for Mana, matching
+  the Mana nodes' own glow; blue for Arcane Dust, matching its own
+  uploaded icon, per direct request - was a gold placeholder glyph
+  before; pink-red for Rebirths, matching the Rebirth board's red theme;
+  purple for Ether, matching the Shroud's own color; teal for Ley Shard,
+  matching the Mat's own color; violet for Astral Shard, matching Card
+  2's own color). The Rebirths, Ether, Ley Shard, and Astral Shard icons
+  keep a small round white circle behind them for contrast (Ether, Ley
+  Shard, and Astral Shard have no uploaded image yet, so they fall back to
+  a placeholder glyph the same way Arcane Dust once did - a star for
+  Ether, a plain diamond for both Ley Shard and Astral Shard just
+  recolored, all safe basic Unicode symbols rather than an arrow/emoji
+  codepoint); the Mana and Arcane Dust icons have none, since both already
+  read fine boxed on their own. The Arcane Dust, Rebirths, Ether, Ley
+  Shard, and Astral Shard rows are all visible only while their amount is
+  actually above 0, not just "ever shown once" - Arcane Dust the first
+  time you actually stand on `ArcaneDustPad`, Rebirths only once you've
+  actually rebirthed, Ether only once you've actually clicked the Shroud,
+  Ley Shard only once you've actually levitated on the Mat for one
+  payout, Astral Shard only once you've actually converted some Ley Shard
+  into it - and hide again if a Wizard Tier purchase resets any of them
+  back to 0, so no counter shows up before it's relevant. `reflowLayout`
+  re-stacks whichever rows are currently visible with no gap in between,
+  since these five collapsible rows aren't always all present.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
   Mana counter's placement, laid out 2x2 on a high-opacity dark
   `SideMenuPanel` (not just a transparent background) behind the whole
@@ -1202,6 +1232,28 @@ design notes.
   so the UI waits on the unlock check same as `EtherUpgradeBoardClient`
   does. Rechecks on the new `PlayerEtherIslandUnlocked` event, building the
   board immediately once a player presses Unlock, no rejoin needed.
+- `AstralShardUpgradeBoardClient.client.lua` — Card 2's board, sitting
+  next to the Ley Shard board in the same row. A placeholder shell for now
+  - per direct request ("It should be the material x card with three
+  upgrades but dont put them in yet I just want to see the card") - just
+  the title banner, a live Astral Shard readout (updated off the new
+  `AstralShardUpdated` event), and 3 empty slots (a faded diamond icon,
+  "???" for the name, "Coming Soon" where a level/cost would go) - no
+  buttons at all, since there's nothing to buy yet. Same gating/rebuild
+  pattern as `LeyShardUpgradeBoardClient`.
+- `LeyShardConversionBoardClient.client.lua` — Card 3, the only way to
+  actually get Astral Shard since Card 2 has no collection mechanic of its
+  own - per direct request ("a card next to that where you can convert
+  your ley shards into that"). Shows the fixed rate ("5,000 Ley Shard = 1
+  Astral Shard"), live readouts for both currencies, and one "Convert"
+  button - red/disabled when nothing's affordable, green and labeled
+  "Convert (N)" once at least 1 Astral Shard's worth of Ley Shard is
+  banked, spending ALL currently-affordable Ley Shard in one press (my own
+  call - a fixed 1-per-click would take many repeated presses to spend
+  down a large balance). Re-fetches its own state off `LeyShardUpdated`
+  (which also fires from ordinary Mat collection, not just conversions,
+  but a state re-fetch is cheap for a 2-line readout). Same gating/rebuild
+  pattern as the other EtherIsland boards.
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.

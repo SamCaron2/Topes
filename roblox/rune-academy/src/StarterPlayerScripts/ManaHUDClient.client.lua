@@ -1,14 +1,16 @@
 -- Middle-left Mana counter (icon + amount, no word, no background pill),
 -- an Arcane Dust counter below that, a Rebirths counter below that, then
--- an Ether counter, then a Ley Shard counter below that - all four below
--- Mana start hidden until the player has at least one of each (the server
--- only fires their Updated event once they do), so Arcane Dust only shows
--- up after first stepping on ArcaneDustPad, Rebirths only once actually
--- unlocked, Ether only after first clicking the Ether Shroud, and Ley
--- Shard only after the first levitation payout on EtherIsland -
--- reflowLayout keeps the visible rows stacked with no gap either way.
--- Styled after a typical incremental-game HUD: icon sitting right next to
--- a bold number colored to match the icon, nothing else around it.
+-- an Ether counter, a Ley Shard counter, then an Astral Shard counter
+-- below that - all five below Mana start hidden until the player has at
+-- least one of each (the server only fires their Updated event once they
+-- do), so Arcane Dust only shows up after first stepping on
+-- ArcaneDustPad, Rebirths only once actually unlocked, Ether only after
+-- first clicking the Ether Shroud, Ley Shard only after the first
+-- levitation payout on EtherIsland, and Astral Shard only after the first
+-- Ley Shard -> Astral Shard conversion - reflowLayout keeps the visible
+-- rows stacked with no gap either way. Styled after a typical
+-- incremental-game HUD: icon sitting right next to a bold number colored
+-- to match the icon, nothing else around it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +24,7 @@ local rebirthsUpdatedEvent = remotes:WaitForChild("RebirthsUpdated")
 local arcaneDustUpdatedEvent = remotes:WaitForChild("ArcaneDustUpdated")
 local etherUpdatedEvent = remotes:WaitForChild("EtherUpdated")
 local leyShardUpdatedEvent = remotes:WaitForChild("LeyShardUpdated")
+local astralShardUpdatedEvent = remotes:WaitForChild("AstralShardUpdated")
 
 local MANA_ICON_ID = "rbxassetid://119417928367783"
 local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
@@ -29,6 +32,7 @@ local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the dust icon's own blue, per direct request
 local ETHER_COLOR = Color3.fromRGB(150, 60, 220) -- matches the Ether Shroud's own purple
 local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190) -- matches the Ley Shard Mat's own teal
+local ASTRAL_SHARD_COLOR = Color3.fromRGB(160, 140, 255) -- matches Card 2's own violet
 local ICON_SIZE = 46
 local ICON_TEXT_GAP = 6
 
@@ -157,8 +161,14 @@ local leyShardRow, leyShardText = createCounterRow("LeyShardCounter", 0, LEY_SHA
 leyShardRow.Visible = false
 leyShardText.Text = "0"
 
+-- Astral Shard (Card 2) also has no uploaded image yet - same diamond
+-- placeholder symbol as Ley Shard, just recolored.
+local astralShardRow, astralShardText = createCounterRow("AstralShardCounter", 0, ASTRAL_SHARD_COLOR, nil, true, "\u{25C6}")
+astralShardRow.Visible = false
+astralShardText.Text = "0"
+
 local ROW_SPACING = ICON_SIZE + 14
-local orderedRows = { manaRow, arcaneDustRow, rebirthsRow, etherRow, leyShardRow }
+local orderedRows = { manaRow, arcaneDustRow, rebirthsRow, etherRow, leyShardRow, astralShardRow }
 
 local function reflowLayout()
 	local nextY = 0
@@ -211,6 +221,15 @@ leyShardUpdatedEvent.OnClientEvent:Connect(function(amount)
 	leyShardRow.Visible = amount > 0
 	leyShardText.Text = NumberFormat.format(amount)
 	if wasVisible ~= leyShardRow.Visible then
+		reflowLayout()
+	end
+end)
+
+astralShardUpdatedEvent.OnClientEvent:Connect(function(amount)
+	local wasVisible = astralShardRow.Visible
+	astralShardRow.Visible = amount > 0
+	astralShardText.Text = NumberFormat.format(amount)
+	if wasVisible ~= astralShardRow.Visible then
 		reflowLayout()
 	end
 end)

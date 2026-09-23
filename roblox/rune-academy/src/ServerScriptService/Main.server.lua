@@ -35,6 +35,7 @@ local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
 local LeyShardHandler = require(script.Parent.LeyShardHandler)
 local LeyShardSpeedHandler = require(script.Parent.LeyShardSpeedHandler)
 local LeyShardManaBoostHandler = require(script.Parent.LeyShardManaBoostHandler)
+local AstralShardConversionHandler = require(script.Parent.AstralShardConversionHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -129,6 +130,9 @@ local getLeyShardSpeedStateFunction = newRemoteFunction("GetLeyShardSpeedState")
 local buyLeyShardSpeedUpgradeFunction = newRemoteFunction("BuyLeyShardSpeedUpgrade")
 local getLeyShardManaBoostStateFunction = newRemoteFunction("GetLeyShardManaBoostState")
 local buyLeyShardManaBoostUpgradeFunction = newRemoteFunction("BuyLeyShardManaBoostUpgrade")
+local astralShardUpdatedEvent = newRemoteEvent("AstralShardUpdated") -- server -> client, fired on join (if > 0) and every conversion
+local getAstralShardConversionStateFunction = newRemoteFunction("GetAstralShardConversionState")
+local convertLeyShardToAstralShardFunction = newRemoteFunction("ConvertLeyShardToAstralShard")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -506,6 +510,19 @@ buyLeyShardManaBoostUpgradeFunction.OnServerInvoke = function(player, mode)
 	return success, err, newState
 end
 
+getAstralShardConversionStateFunction.OnServerInvoke = function(player)
+	return AstralShardConversionHandler.getState(player)
+end
+
+convertLeyShardToAstralShardFunction.OnServerInvoke = function(player)
+	local success, err, newState = AstralShardConversionHandler.convert(player)
+	if success then
+		leyShardUpdatedEvent:FireClient(player, newState.leyShard)
+		astralShardUpdatedEvent:FireClient(player, newState.astralShard)
+	end
+	return success, err, newState
+end
+
 getRuinRuneStateFunction.OnServerInvoke = function(player)
 	return RuinRuneHandler.getState(player)
 end
@@ -656,6 +673,9 @@ Players.PlayerAdded:Connect(function(player)
 		end
 		if (data.leyShard or 0) > 0 then
 			leyShardUpdatedEvent:FireClient(player, data.leyShard)
+		end
+		if (data.astralShard or 0) > 0 then
+			astralShardUpdatedEvent:FireClient(player, data.astralShard)
 		end
 	end
 end)

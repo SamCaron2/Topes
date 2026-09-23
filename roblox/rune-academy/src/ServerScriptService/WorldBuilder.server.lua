@@ -1583,6 +1583,68 @@ end)
 end
 
 -- ===========================================================================
+-- Astral Shard: Card 2 of the 3-card wizard-material progression, and its
+-- own Ley Shard -> Astral Shard conversion board - per direct request ("to
+-- the right of ley shards we want another material card... a card next to
+-- that where you can convert your ley shards into that"). Astral Shard has
+-- NO collection mechanic of its own - "there isnt a button or anything to
+-- get more of this material" - the only way to get it is spending Ley
+-- Shard on the conversion board (AstralShardConversionHandler), 5,000 Ley
+-- Shard per 1 Astral Shard. Card 2's own board is a placeholder shell for
+-- now, per direct request ("It should be the material x card with three
+-- upgrades but dont put them in yet I just want to see the card") - 3
+-- empty "Coming Soon" slots, no real upgrade logic wired up yet. Both
+-- boards sit in the same row as LeyShardUpgradeBoard (same X, same
+-- -X/"Left" facing), continuing further along +Z - a guess like every
+-- other board placement in this game; flip the sign if it lands on the
+-- wrong side of the Ley Shard board instead of the right side. In its own
+-- `do...end` block, same register-budget reasoning as the Ley Shard
+-- section above.
+do
+	local BOARD_ROW_X = 94 -- same X as LeyShardUpgradeBoard (80 mat + 14 offset), so every board in this row is coplanar
+	local BOARD_ROW_BASE_Z = 116 -- LeyShardUpgradeBoard's own Z
+	local LEY_SHARD_BOARD_WIDTH = 34 -- LeyShardUpgradeBoard's own width, needed here to space this row out from it
+	local BOARD_GAP = 6
+
+	local existingAstralShardBoard = Workspace:FindFirstChild("AstralShardUpgradeBoard")
+	if existingAstralShardBoard then
+		existingAstralShardBoard:Destroy()
+	end
+	local existingConversionBoard = Workspace:FindFirstChild("LeyShardConversionBoard")
+	if existingConversionBoard then
+		existingConversionBoard:Destroy()
+	end
+
+	local ASTRAL_SHARD_BOARD_WIDTH = 34
+	local astralShardBoardZ = BOARD_ROW_BASE_Z + (LEY_SHARD_BOARD_WIDTH / 2 + BOARD_GAP + ASTRAL_SHARD_BOARD_WIDTH / 2)
+
+	local astralShardBoard = Instance.new("Part")
+	astralShardBoard.Name = "AstralShardUpgradeBoard"
+	astralShardBoard.Anchored = true
+	astralShardBoard.CanCollide = true
+	astralShardBoard.Material = Enum.Material.Glass
+	astralShardBoard.Color = Color3.fromRGB(40, 30, 65)
+	astralShardBoard.Transparency = 0.7 -- clear glass, matching every other board
+	astralShardBoard.Size = Vector3.new(1, 18, ASTRAL_SHARD_BOARD_WIDTH)
+	astralShardBoard.CFrame = CFrame.new(BOARD_ROW_X, ISLAND_TOP_Y + 9, astralShardBoardZ)
+	astralShardBoard.Parent = Workspace
+
+	local CONVERSION_BOARD_WIDTH = 20
+	local conversionBoardZ = astralShardBoardZ + (ASTRAL_SHARD_BOARD_WIDTH / 2 + BOARD_GAP + CONVERSION_BOARD_WIDTH / 2)
+
+	local conversionBoard = Instance.new("Part")
+	conversionBoard.Name = "LeyShardConversionBoard"
+	conversionBoard.Anchored = true
+	conversionBoard.CanCollide = true
+	conversionBoard.Material = Enum.Material.Glass
+	conversionBoard.Color = Color3.fromRGB(30, 60, 55)
+	conversionBoard.Transparency = 0.7
+	conversionBoard.Size = Vector3.new(1, 18, CONVERSION_BOARD_WIDTH)
+	conversionBoard.CFrame = CFrame.new(BOARD_ROW_X, ISLAND_TOP_Y + 9, conversionBoardZ)
+	conversionBoard.Parent = Workspace
+end
+
+-- ===========================================================================
 -- Leaderboard island: a third island, straight out along -Z (the opposite
 -- direction from SecondIsland, and the side that reads as "to the left" of
 -- the Mana Upgrades board when facing it - the kiosk row itself grows in
