@@ -10,6 +10,7 @@ local ManaBoostHandler = require(script.Parent.ManaBoostHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
+local LeyShardManaBoostHandler = require(script.Parent.LeyShardManaBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -40,10 +41,11 @@ local ManaHandler = {}
 -- that's the whole point), the Arcane Dust board's "More Mana" upgrade
 -- (1x-6x), the Wizard Tier flat multiplier (1x until Tier 1, then 20x),
 -- the Upgrade Tree's own Mana tiles (x2 each, x4 combined once both are
--- bought), and the Rune collection bonus (RuneCollectionHandler - +0.2x
--- per copy owned of each Rune rank, capped at x5 per rank, all 9 ranks'
--- own multipliers combined together). Floored to keep Mana a whole
--- number.
+-- bought), the Rune collection bonus (RuneCollectionHandler - +0.2x per
+-- copy owned of each Rune rank, capped at x5 per rank, all 9 ranks' own
+-- multipliers combined together), and the Ley Shard board's own "More
+-- Mana" column (LeyShardManaBoostHandler - 1x-5.9x, paid in Ley Shard).
+-- Floored to keep Mana a whole number.
 local function effectiveAmountForLevel(player: Player, level: number): number
 	return math.floor(
 		amountForLevel(level)
@@ -52,6 +54,7 @@ local function effectiveAmountForLevel(player: Player, level: number): number
 			* WizardTierHandler.getManaMultiplier(player)
 			* UpgradeTreeHandler.getManaMultiplier(player)
 			* RuneCollectionHandler.getMultiplier(player)
+			* LeyShardManaBoostHandler.getMultiplier(player)
 	)
 end
 

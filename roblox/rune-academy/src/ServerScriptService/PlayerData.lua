@@ -145,6 +145,25 @@ local function defaultData()
 		-- once set.
 		etherIslandUnlocked = false,
 
+		-- Ley Shard: the first of a planned 3-material progression built on
+		-- EtherIsland (this game's own wizard-flavored equivalent of a
+		-- Bronze/Silver/Gold ladder - per direct request, "instead of doing
+		-- bronze silver and gold I want to do something wizard"; naming is my
+		-- own call). Collected passively while levitating above the Ley
+		-- Shard Mat (LeyShardHandler), NOT walked-over/clicked-once like
+		-- every earlier resource - a click toggles levitation, then a tick
+		-- pays out every leyShardSpeedLevel-determined interval (1.1s at
+		-- level 1) for as long as the player stays levitating. Its own
+		-- 3-column board: "More Ley Shard" (leyShardYieldLevel, 1-100, paid
+		-- in Ley Shard), "Faster Levitation" (leyShardSpeedLevel, 1-10, paid
+		-- in Ley Shard), and "More Mana" (leyShardManaBoostLevel, 1-50, a
+		-- flat Mana Per Pickup multiplier paid in Ley Shard, mirroring
+		-- ManaBoostHandler's own Dust-funded column). Permanent, never reset.
+		leyShard = 0,
+		leyShardYieldLevel = 1,
+		leyShardSpeedLevel = 1,
+		leyShardManaBoostLevel = 1,
+
 		-- Rune Altar upgrades (RuinRuneHandler): 5 tiers bought via
 		-- RuneAltarBoard, paid in Mana - only reachable once the Fantasy
 		-- Ruin itself is (Wizard Tier 3+). A single count like wizardTier,

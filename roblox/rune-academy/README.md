@@ -366,10 +366,25 @@ design notes.
   way, just swapping which axis is the long one) since it leaves from an
   X edge rather than a Z edge. Its gate-check loop had the same
   bridge-width-only bug SecondIsland's did (fixed alongside it) - now
-  checks the full island width instead of just `BRIDGE_WIDTH`. Nothing
-  built on the island itself yet beyond grass and a decor ring - purely
-  the gate/bridge/island for now. See
+  checks the full island width instead of just `BRIDGE_WIDTH`. See
   `EtherIslandHandler`/`EtherIslandGateClient` below.
+  The first thing actually built on the island itself: the Ley Shard Mat
+  and its upgrade board (Card 1 of the planned 3-card wizard-material
+  progression - see `LeyShardHandler` above), placed at the exact world
+  coordinates given directly (X 80, Z 116), with the board 14 studs
+  further along +X, same "board sits past the interactive point" layout
+  as `ArcaneDustPad`/the Ether Shroud. Both are solid/visible from the
+  moment the island exists, not hidden/revealed per-player like
+  SecondIsland's own deeper content, since the island's own gate is
+  already what's locked - nothing further inside it needs its own
+  containment. This whole section is wrapped in its own `do...end` block,
+  unusual for this file - adding its ~20 new top-level locals to
+  everything already declared pushed this one Luau chunk (the entire file
+  is a single function) past the compiler's 200-local-register ceiling
+  ("Out of local registers... exceeded limit 200," caught with the real
+  Luau compiler); scoping them inside `do...end` lets the registers free
+  up again once the block ends, since nothing outside it references them
+  by name.
   Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
   around its edge, inset from the border, skipping the bridge's landing
   spot, and each given a small random `DECOR_JITTER` offset so the ring
@@ -698,6 +713,41 @@ design notes.
   as every other SecondIsland-hosted handler, after the bridge
   containment bug (see `WorldBuilder`) let players reach content before
   unlocking the door it was behind.
+- `LeyShardHandler.lua` / `LeyShardSpeedHandler.lua` /
+  `LeyShardManaBoostHandler.lua` — Ley Shard, the first of a planned 3-card
+  wizard-material progression built on EtherIsland (this game's own
+  wizard-flavored equivalent of a Bronze/Silver/Gold ladder - per direct
+  request: "New material x 80, 116 lets do another card and I want to
+  build a 3 card system. Lets do the first card first. Think of three
+  wizard materials that get better with each thing... instead of doing
+  bronze silver and gold I want to do something wizard, we are going to do
+  the equivalent to that." Naming for all 3 cards is my own call - "Ley
+  Shard" here; "Astral Shard" and "Celestial Shard" are the planned names
+  for cards 2 and 3, not built yet). A deliberately different collection
+  interaction from every earlier resource: instead of walking over nodes
+  or clicking a shroud repeatedly, you click the Ley Shard Mat to toggle
+  levitating above it, and while levitating you're paid automatically on a
+  timer - per direct request ("you go to the mat and you click and you
+  start levatating and you get the resource every 1.1 second"). Its own
+  3-column board: `LeyShardHandler` is "More Ley Shard" (1-100 levels, the
+  standard `amountForLevel*10` yield curve every other board uses - this
+  card's cost pressure comes from its slow trickle and the Mana Boost
+  column's own curve, not from inflating this one too);
+  `LeyShardSpeedHandler` is "Faster Levitation" (1-10 levels, exact same
+  linear-interpolation shape as `EtherClickSpeedHandler`, 1.1s at level 1
+  per direct request down to a 0.3s floor, but costed quadratically
+  instead of `EtherClickSpeedHandler`'s cheap flat curve);
+  `LeyShardManaBoostHandler` is "More Mana" (1-50 levels, a flat Mana Per
+  Pickup multiplier exactly like `ManaBoostHandler`'s own Dust-funded
+  column, 1x-5.9x, but also quadratic-costed and paid in Ley Shard instead
+  - per direct request, "the third upgrade do more mana please up to
+  50... make that pretty expensive so it might take a while," so this is
+  the card's deliberately steepest, longest-term grind). All three are
+  paid in Ley Shard itself, same "yield board funds its own upgrades"
+  convention as every earlier currency; `LeyShardManaBoostHandler.getMultiplier`
+  is read by `ManaHandler` as another factor in its own multiplier chain,
+  and `LeyShardHandler.collect` folds in `RuneCollectionHandler.getMultiplier`
+  too, same as every other currency handler.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -748,28 +798,33 @@ design notes.
   resulting state so it can be pushed to the client via `XPUpdated`.
 - `ManaHUDClient.client.lua` — a Mana counter, middle-left of the screen,
   updated live off the `ManaUpdated` RemoteEvent, an Arcane Dust counter
-  below that, a Rebirths counter below that, then an Ether counter below
-  that. Styled after a typical incremental-game HUD, not the original dark
-  rounded pill: no background at all, just the icon sitting a small fixed
-  gap (`ICON_TEXT_GAP`) from a bold, left-aligned number - no
-  "Mana"/"Arcane Dust"/"Rebirths"/"Ether" word, the icon says it - colored
-  to echo the icon's own palette (violet for Mana, matching the Mana
-  nodes' own glow; blue for Arcane Dust, matching its own uploaded icon,
-  per direct request - was a gold placeholder glyph before; pink-red for
-  Rebirths, matching the Rebirth board's red theme; purple for Ether,
-  matching the Shroud's own color). The Rebirths and Ether icons keep a
-  small round white circle behind them for contrast (Ether has no
-  uploaded image yet, so it falls back to a placeholder glyph the same
-  way Arcane Dust once did); the Mana and Arcane Dust icons have none,
-  since both already read fine boxed on their own. The Arcane Dust,
-  Rebirths, and Ether rows are all visible only while their amount is
-  actually above 0, not just "ever shown once" - Arcane Dust the first
-  time you actually stand on `ArcaneDustPad`, Rebirths only once you've
-  actually rebirthed, Ether only once you've actually clicked the Shroud -
-  and hide again if a Wizard Tier purchase resets any of them back to 0,
-  so no counter shows up before it's relevant. `reflowLayout` re-stacks
-  whichever rows are currently visible with no gap in between, since these
-  three collapsible rows aren't always all present.
+  below that, a Rebirths counter below that, an Ether counter below that,
+  then a Ley Shard counter below that. Styled after a typical
+  incremental-game HUD, not the original dark rounded pill: no background
+  at all, just the icon sitting a small fixed gap (`ICON_TEXT_GAP`) from a
+  bold, left-aligned number - no "Mana"/"Arcane Dust"/"Rebirths"/"Ether"/
+  "Ley Shard" word, the icon says it - colored to echo the icon's own
+  palette (violet for Mana, matching the Mana nodes' own glow; blue for
+  Arcane Dust, matching its own uploaded icon, per direct request - was a
+  gold placeholder glyph before; pink-red for Rebirths, matching the
+  Rebirth board's red theme; purple for Ether, matching the Shroud's own
+  color; teal for Ley Shard, matching the Mat's own color). The Rebirths,
+  Ether, and Ley Shard icons keep a small round white circle behind them
+  for contrast (Ether and Ley Shard have no uploaded image yet, so they
+  fall back to a placeholder glyph the same way Arcane Dust once did - a
+  star for Ether, a plain diamond for Ley Shard, both safe basic Unicode
+  symbols rather than an arrow/emoji codepoint); the Mana and Arcane Dust
+  icons have none, since both already read fine boxed on their own. The
+  Arcane Dust, Rebirths, Ether, and Ley Shard rows are all visible only
+  while their amount is actually above 0, not just "ever shown once" -
+  Arcane Dust the first time you actually stand on `ArcaneDustPad`,
+  Rebirths only once you've actually rebirthed, Ether only once you've
+  actually clicked the Shroud, Ley Shard only once you've actually
+  levitated on the Mat for one payout - and hide again if a Wizard Tier
+  purchase resets any of them back to 0, so no counter shows up before
+  it's relevant. `reflowLayout` re-stacks whichever rows are currently
+  visible with no gap in between, since these four collapsible rows aren't
+  always all present.
 - `SideMenuClient.client.lua` — the right-side icon menu, mirroring the
   Mana counter's placement, laid out 2x2 on a high-opacity dark
   `SideMenuPanel` (not just a transparent background) behind the whole
@@ -1100,6 +1155,24 @@ design notes.
   also waits on the same unlock check before it's ever created. Also
   rechecks on `UpgradeTreeTileBought`, building the board immediately once
   Tile 9 is bought.
+- `LeyShardUpgradeBoardClient.client.lua` — the Ley Shard board's 3-column
+  UI on EtherIsland ("More Ley Shard", "Faster Levitation", "More Mana"),
+  teal theme matching the Mat. Icons are all hand-built from plain UI
+  shapes, no image/glyph, same font-coverage-safe convention as the Mana
+  Upgrades board's own icons: a rotated-square "gem" for More Ley Shard, a
+  stopwatch (reusing the Mana board's Spawn Speed motif - "how often you
+  get paid") for Faster Levitation, and the real uploaded Mana icon for
+  More Mana, same "point at the actual currency" precedent as the Mana
+  board's own "More Mana" column. Same shared `createUpgradeColumn`
+  pattern (level/max/nextLevelCost, Buy+Max buttons) as every other board.
+  Doesn't build AT ALL until `GetEtherIslandState().unlocked` reports true
+  - the Mat and board Parts themselves are solid/visible from the moment
+  the island exists (nothing on EtherIsland needs the SecondIsland-style
+  per-player hide/reveal treatment, since the island's own gate is what's
+  locked), but a `SurfaceGui` would still render on the board regardless,
+  so the UI waits on the unlock check same as `EtherUpgradeBoardClient`
+  does. Rechecks on the new `PlayerEtherIslandUnlocked` event, building the
+  board immediately once a player presses Unlock, no rejoin needed.
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.

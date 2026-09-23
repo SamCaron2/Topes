@@ -32,6 +32,9 @@ local EtherAutoClickHandler = require(script.Parent.EtherAutoClickHandler)
 local EtherIslandHandler = require(script.Parent.EtherIslandHandler)
 local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
+local LeyShardHandler = require(script.Parent.LeyShardHandler)
+local LeyShardSpeedHandler = require(script.Parent.LeyShardSpeedHandler)
+local LeyShardManaBoostHandler = require(script.Parent.LeyShardManaBoostHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -114,10 +117,18 @@ local getEtherAutoClickStateFunction = newRemoteFunction("GetEtherAutoClickState
 local buyEtherAutoClickUpgradeFunction = newRemoteFunction("BuyEtherAutoClickUpgrade")
 local getEtherIslandStateFunction = newRemoteFunction("GetEtherIslandState")
 local unlockEtherIslandFunction = newRemoteFunction("UnlockEtherIsland")
+local playerEtherIslandUnlockedEvent = newRemoteEvent("PlayerEtherIslandUnlocked") -- server -> client, tells the Ley Shard board to build immediately once this player unlocks EtherIsland
 local getRuinRuneStateFunction = newRemoteFunction("GetRuinRuneState")
 local buyRuinRuneTierFunction = newRemoteFunction("BuyRuinRuneTier")
 local runeAltarCollectedEvent = newRemoteEvent("RuneAltarCollected") -- server -> client, fired at whichever player just collected a Rune from standing on the Altar
 local getRuneCollectionStateFunction = newRemoteFunction("GetRuneCollectionState")
+local leyShardUpdatedEvent = newRemoteEvent("LeyShardUpdated") -- server -> client, fired on join (if > 0) and every levitation tick/purchase
+local getLeyShardYieldStateFunction = newRemoteFunction("GetLeyShardYieldState")
+local buyLeyShardYieldUpgradeFunction = newRemoteFunction("BuyLeyShardYieldUpgrade")
+local getLeyShardSpeedStateFunction = newRemoteFunction("GetLeyShardSpeedState")
+local buyLeyShardSpeedUpgradeFunction = newRemoteFunction("BuyLeyShardSpeedUpgrade")
+local getLeyShardManaBoostStateFunction = newRemoteFunction("GetLeyShardManaBoostState")
+local buyLeyShardManaBoostUpgradeFunction = newRemoteFunction("BuyLeyShardManaBoostUpgrade")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -442,6 +453,55 @@ unlockEtherIslandFunction.OnServerInvoke = function(player)
 		if data then
 			etherUpdatedEvent:FireClient(player, data.ether or 0)
 		end
+		playerEtherIslandUnlockedEvent:FireClient(player)
+	end
+	return success, err, newState
+end
+
+getLeyShardYieldStateFunction.OnServerInvoke = function(player)
+	return LeyShardHandler.getYieldUpgradeState(player)
+end
+
+buyLeyShardYieldUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = LeyShardHandler.buyYieldUpgrade(player, mode)
+	if success then
+		leyShardUpdatedEvent:FireClient(player, newState.leyShard)
+	end
+	return success, err, newState
+end
+
+getLeyShardSpeedStateFunction.OnServerInvoke = function(player)
+	return LeyShardSpeedHandler.getUpgradeState(player)
+end
+
+buyLeyShardSpeedUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = LeyShardSpeedHandler.buyUpgrade(player, mode)
+	if success then
+		leyShardUpdatedEvent:FireClient(player, newState.leyShard)
+	end
+	return success, err, newState
+end
+
+getLeyShardManaBoostStateFunction.OnServerInvoke = function(player)
+	return LeyShardManaBoostHandler.getUpgradeState(player)
+end
+
+-- Paid in Ley Shard but boosts Mana - a successful buy needs to push the
+-- new Ley Shard balance to the board AND leave Mana alone (the boost only
+-- changes future pickups' effective yield, not the current balance).
+buyLeyShardManaBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = LeyShardManaBoostHandler.buyUpgrade(player, mode)
+	if success then
+		leyShardUpdatedEvent:FireClient(player, newState.leyShard)
 	end
 	return success, err, newState
 end
@@ -593,6 +653,9 @@ Players.PlayerAdded:Connect(function(player)
 		end
 		if (data.ether or 0) > 0 then
 			etherUpdatedEvent:FireClient(player, data.ether)
+		end
+		if (data.leyShard or 0) > 0 then
+			leyShardUpdatedEvent:FireClient(player, data.leyShard)
 		end
 	end
 end)

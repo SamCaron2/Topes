@@ -22,6 +22,8 @@ local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 local RuneHandler = require(script.Parent.RuneHandler)
 local WorldDecor = require(script.Parent.WorldDecor)
+local LeyShardHandler = require(script.Parent.LeyShardHandler)
+local LeyShardSpeedHandler = require(script.Parent.LeyShardSpeedHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -40,6 +42,7 @@ local arcaneDustUpdatedEvent = remotesFolder:WaitForChild("ArcaneDustUpdated")
 local etherUpdatedEvent = remotesFolder:WaitForChild("EtherUpdated")
 local upgradeTreeTileBoughtEvent = remotesFolder:WaitForChild("UpgradeTreeTileBought")
 local runeAltarCollectedEvent = remotesFolder:WaitForChild("RuneAltarCollected")
+local leyShardUpdatedEvent = remotesFolder:WaitForChild("LeyShardUpdated")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
 -- island here and lifting spawn onto its surface lifts the whole build with
@@ -1354,6 +1357,200 @@ task.spawn(function()
 		end
 	end
 end)
+
+-- ===========================================================================
+-- Ley Shard Mat: the first thing actually built on EtherIsland, and Card 1
+-- of a planned 3-card wizard-material progression - per direct request
+-- Wrapped in its own `do...end` block (unlike every other section in this
+-- file) purely so its ~20 top-level locals go out of scope once it ends,
+-- freeing their registers for reuse - this whole file is one single Luau
+-- chunk, and adding this section on top of everything already declared
+-- pushed it past the compiler's 200-local-register ceiling ("Out of local
+-- registers... exceeded limit 200," caught with the real Luau compiler).
+-- Nothing declared inside is referenced by name anywhere else in this
+-- file, so scoping it away like this costs nothing.
+do
+-- ("New material x 80, 116 lets do another card and I want to build a 3
+-- card system. Lets do the first card first"), placed at the exact world
+-- coordinates given. A totally different collection interaction from every
+-- earlier resource: click the mat to toggle levitating above it, and while
+-- levitating you're paid Ley Shard automatically on a timer (starts at
+-- 1.1s, LeyShardSpeedHandler's own upgrade shortens it) instead of
+-- walking over nodes or clicking a shroud repeatedly - per direct request
+-- ("you go to the mat and you click and you start levatating and you get
+-- the resource every 1.1 second"). Reachable only past EtherIsland's own
+-- gate, so - like the island's grass/decor themselves - this doesn't need
+-- the SecondIsland/Fantasy-Ruin style per-player hide/reveal treatment;
+-- it's solid and visible from the moment the island exists, same as
+-- EtherIsland's own terrain. `etherIslandUnlocked` is still checked
+-- directly in every handler function below, same defense-in-depth
+-- reasoning as every other gated system in this game.
+local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190) -- a teal "ley energy" glow, distinct from Mana/Dust/Ether/Rebirths' own palette
+local leyShardMatX = 80
+local leyShardMatZ = 116
+local LEY_SHARD_HOVER_HEIGHT = 6 -- studs above the mat a levitating player floats at
+local LEY_SHARD_BOARD_OFFSET = 14 -- studs further along +X from the mat, continuing the same "board sits past the interactive point" layout as ArcaneDustPad/EtherShroud
+
+local existingLeyShardMat = Workspace:FindFirstChild("LeyShardMat")
+if existingLeyShardMat then
+	existingLeyShardMat:Destroy()
+end
+local existingLeyShardBoard = Workspace:FindFirstChild("LeyShardUpgradeBoard")
+if existingLeyShardBoard then
+	existingLeyShardBoard:Destroy()
+end
+
+local leyShardMat = Instance.new("Part")
+leyShardMat.Name = "LeyShardMat"
+leyShardMat.Anchored = true
+leyShardMat.CanCollide = true
+leyShardMat.Material = Enum.Material.Neon
+leyShardMat.Color = LEY_SHARD_COLOR
+leyShardMat.Shape = Enum.PartType.Cylinder
+leyShardMat.Size = Vector3.new(0.6, 10, 10) -- Cylinder's round axis is local X; rotated below to lie flat
+leyShardMat.CFrame = CFrame.new(leyShardMatX, ISLAND_TOP_Y + 0.3, leyShardMatZ) * CFrame.Angles(0, 0, math.rad(90))
+leyShardMat.Parent = Workspace
+
+local leyShardMatClickDetector = Instance.new("ClickDetector")
+leyShardMatClickDetector.MaxActivationDistance = 15
+leyShardMatClickDetector.Parent = leyShardMat
+
+-- Static text, not per-player state - the mat is a single shared Part, so
+-- there's no clean way to reflect "you're currently levitating" here for
+-- one specific player without it also being wrong for everyone else
+-- looking at the same label.
+local leyShardMatLabelGui = Instance.new("BillboardGui")
+leyShardMatLabelGui.Name = "LeyShardMatLabel"
+leyShardMatLabelGui.Size = UDim2.new(0, 160, 0, 36)
+leyShardMatLabelGui.StudsOffset = Vector3.new(0, 3, 0)
+leyShardMatLabelGui.MaxDistance = 25
+leyShardMatLabelGui.AlwaysOnTop = true
+leyShardMatLabelGui.Adornee = leyShardMat
+leyShardMatLabelGui.Parent = leyShardMat
+
+local leyShardMatLabelText = Instance.new("TextLabel")
+leyShardMatLabelText.Size = UDim2.new(1, 0, 1, 0)
+leyShardMatLabelText.BackgroundTransparency = 1
+leyShardMatLabelText.Font = Enum.Font.GothamBold
+leyShardMatLabelText.TextScaled = true
+leyShardMatLabelText.TextColor3 = LEY_SHARD_COLOR
+leyShardMatLabelText.TextStrokeTransparency = 0.2
+leyShardMatLabelText.Text = "Click to Levitate\n(click again to stop)"
+leyShardMatLabelText.Parent = leyShardMatLabelGui
+
+-- Its upgrade board, same physical style/offset relationship as every
+-- other pad+board pair - facing back at the mat (-X, "Left").
+local LEY_SHARD_BOARD_WIDTH = 34
+local leyShardBoardX = leyShardMatX + LEY_SHARD_BOARD_OFFSET
+local leyShardBoardZ = leyShardMatZ
+
+local leyShardBoard = Instance.new("Part")
+leyShardBoard.Name = "LeyShardUpgradeBoard"
+leyShardBoard.Anchored = true
+leyShardBoard.CanCollide = true
+leyShardBoard.Material = Enum.Material.Glass
+leyShardBoard.Color = Color3.fromRGB(30, 60, 55)
+leyShardBoard.Transparency = 0.7 -- clear glass, matching every other board
+leyShardBoard.Size = Vector3.new(1, 18, LEY_SHARD_BOARD_WIDTH)
+leyShardBoard.CFrame = CFrame.new(leyShardBoardX, ISLAND_TOP_Y + 9, leyShardBoardZ)
+leyShardBoard.Parent = Workspace
+
+-- [player] = { nextCollectAt = os.clock() timestamp } while levitating;
+-- absent entirely while grounded.
+local LEY_SHARD_LEVITATING = {}
+
+local function stopLevitating(player: Player)
+	if not LEY_SHARD_LEVITATING[player] then
+		return
+	end
+	LEY_SHARD_LEVITATING[player] = nil
+
+	local character = player.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if rootPart then
+		local existingForce = rootPart:FindFirstChild("LeyShardLevitation")
+		if existingForce then
+			existingForce:Destroy()
+		end
+	end
+	if humanoid then
+		humanoid.PlatformStand = false
+	end
+end
+
+local function startLevitating(player: Player)
+	local data = PlayerData.get(player)
+	if not data or not data.etherIslandUnlocked or LEY_SHARD_LEVITATING[player] then
+		return
+	end
+
+	local character = player.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not rootPart or not humanoid or humanoid.Health <= 0 then
+		return
+	end
+
+	humanoid.PlatformStand = true -- limp floating pose, and stops WalkSpeed fighting the hold below
+
+	local hold = Instance.new("BodyPosition")
+	hold.Name = "LeyShardLevitation"
+	hold.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+	hold.P = 3000
+	hold.Position = Vector3.new(leyShardMatX, ISLAND_TOP_Y + LEY_SHARD_HOVER_HEIGHT, leyShardMatZ)
+	hold.Parent = rootPart
+
+	LEY_SHARD_LEVITATING[player] = { nextCollectAt = os.clock() + LeyShardSpeedHandler.getIntervalSeconds(player) }
+end
+
+leyShardMatClickDetector.MouseClick:Connect(function(player)
+	if LEY_SHARD_LEVITATING[player] then
+		stopLevitating(player)
+	else
+		startLevitating(player)
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	LEY_SHARD_LEVITATING[player] = nil
+end)
+
+-- Dying/respawning while levitating (fall damage is off up here, but a
+-- future hazard or /kill shouldn't leave someone banking Ley Shard forever
+-- as a ragdoll) clears the state outright - the old BodyPosition/character
+-- are already gone by the time a new one spawns, so there's nothing left
+-- to clean up on the Instance side, just the tracking table.
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function(character)
+		LEY_SHARD_LEVITATING[player] = nil
+		local humanoid = character:WaitForChild("Humanoid")
+		humanoid.Died:Connect(function()
+			LEY_SHARD_LEVITATING[player] = nil
+		end)
+	end)
+end)
+
+-- Checked well more often than the fastest possible payout interval
+-- (0.3s) so ticks land close to on-time for every levitating player.
+local LEY_SHARD_CHECK_INTERVAL = 0.1
+
+task.spawn(function()
+	while true do
+		task.wait(LEY_SHARD_CHECK_INTERVAL)
+		local now = os.clock()
+		for player, state in LEY_SHARD_LEVITATING do
+			if now >= state.nextCollectAt then
+				local newAmount = LeyShardHandler.collect(player)
+				if newAmount then
+					leyShardUpdatedEvent:FireClient(player, newAmount)
+				end
+				state.nextCollectAt = now + LeyShardSpeedHandler.getIntervalSeconds(player)
+			end
+		end
+	end
+end)
+end
 
 -- ===========================================================================
 -- Leaderboard island: a third island, straight out along -Z (the opposite

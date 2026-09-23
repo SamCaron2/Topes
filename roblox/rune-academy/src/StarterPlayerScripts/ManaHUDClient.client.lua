@@ -1,13 +1,14 @@
 -- Middle-left Mana counter (icon + amount, no word, no background pill),
 -- an Arcane Dust counter below that, a Rebirths counter below that, then
--- an Ether counter below that - all three below Mana start hidden until
--- the player has at least one of each (the server only fires their
--- Updated event once they do), so Arcane Dust only shows up after first
--- stepping on ArcaneDustPad, Rebirths only once actually unlocked, and
--- Ether only after first clicking the Ether Shroud - reflowLayout keeps
--- the visible rows stacked with no gap either way. Styled after a typical
--- incremental-game HUD: icon sitting right next to a bold number colored
--- to match the icon, nothing else around it.
+-- an Ether counter, then a Ley Shard counter below that - all four below
+-- Mana start hidden until the player has at least one of each (the server
+-- only fires their Updated event once they do), so Arcane Dust only shows
+-- up after first stepping on ArcaneDustPad, Rebirths only once actually
+-- unlocked, Ether only after first clicking the Ether Shroud, and Ley
+-- Shard only after the first levitation payout on EtherIsland -
+-- reflowLayout keeps the visible rows stacked with no gap either way.
+-- Styled after a typical incremental-game HUD: icon sitting right next to
+-- a bold number colored to match the icon, nothing else around it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,12 +21,14 @@ local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 local rebirthsUpdatedEvent = remotes:WaitForChild("RebirthsUpdated")
 local arcaneDustUpdatedEvent = remotes:WaitForChild("ArcaneDustUpdated")
 local etherUpdatedEvent = remotes:WaitForChild("EtherUpdated")
+local leyShardUpdatedEvent = remotes:WaitForChild("LeyShardUpdated")
 
 local MANA_ICON_ID = "rbxassetid://119417928367783"
 local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
 local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the dust icon's own blue, per direct request
 local ETHER_COLOR = Color3.fromRGB(150, 60, 220) -- matches the Ether Shroud's own purple
+local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190) -- matches the Ley Shard Mat's own teal
 local ICON_SIZE = 46
 local ICON_TEXT_GAP = 6
 
@@ -147,8 +150,15 @@ local etherRow, etherText = createCounterRow("EtherCounter", 0, ETHER_COLOR, nil
 etherRow.Visible = false
 etherText.Text = "0"
 
+-- Ley Shard has no uploaded image yet either - same placeholder symbol
+-- treatment, a plain diamond (a common, well-covered glyph, not a risky
+-- arrow/emoji codepoint).
+local leyShardRow, leyShardText = createCounterRow("LeyShardCounter", 0, LEY_SHARD_COLOR, nil, true, "\u{25C6}")
+leyShardRow.Visible = false
+leyShardText.Text = "0"
+
 local ROW_SPACING = ICON_SIZE + 14
-local orderedRows = { manaRow, arcaneDustRow, rebirthsRow, etherRow }
+local orderedRows = { manaRow, arcaneDustRow, rebirthsRow, etherRow, leyShardRow }
 
 local function reflowLayout()
 	local nextY = 0
@@ -192,6 +202,15 @@ etherUpdatedEvent.OnClientEvent:Connect(function(amount)
 	etherRow.Visible = amount > 0
 	etherText.Text = NumberFormat.format(amount)
 	if wasVisible ~= etherRow.Visible then
+		reflowLayout()
+	end
+end)
+
+leyShardUpdatedEvent.OnClientEvent:Connect(function(amount)
+	local wasVisible = leyShardRow.Visible
+	leyShardRow.Visible = amount > 0
+	leyShardText.Text = NumberFormat.format(amount)
+	if wasVisible ~= leyShardRow.Visible then
 		reflowLayout()
 	end
 end)
