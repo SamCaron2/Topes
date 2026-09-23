@@ -883,8 +883,25 @@ design notes.
   future currency board - then 4 columns filling the board
   edge-to-edge, built through one shared `createUpgradeColumn` helper
   so every upgrade looks and behaves alike — "More Mana", "Mana Spawn
-  Speed", "Walking Speed", and "Collection Range", each with a
-  placeholder icon, level `(x/max)`, a value preview (`+N > +N`,
+  Speed", "Walking Speed", and "Collection Range". Per direct request
+  ("lets do icons instead of these circles"), `createUpgradeColumn` now
+  takes a `buildIcon(iconFrame)` callback that draws an actual icon inside
+  each column's circle instead of leaving it blank: "More Mana" reuses the
+  real uploaded Mana icon (`buildManaIcon`, per direct request "for the
+  more mana lets do our mana icon" - and drops its circle's own fill,
+  passing `iconColor = nil`, same reasoning as `addReadoutIcon` above -
+  the icon's own sparkles poke outside a round silhouette). The other 3
+  are hand-built from plain UI shapes (`newCircle` + a few `Frame`s) - no
+  uploaded image, and no Unicode glyph either, since Roblox's default font
+  doesn't cover most symbol/emoji codepoints (confirmed the hard way
+  earlier this session with "➜"/"⬅" rendering as empty boxes), so these
+  render identically everywhere with zero font-coverage risk: a stopwatch
+  (`buildSpawnSpeedIcon` - a hollow ring, a crown button, a rotated hand)
+  for Mana Spawn Speed, a boot with 3 shrinking motion lines trailing it
+  (`buildWalkSpeedIcon`, per direct request "like a pair of boots getting
+  faster") for Walking Speed, and concentric rings around a center dot
+  (`buildCollectionRangeIcon`) for Collection Range - a pickup-radius
+  pictogram. Each column still gets a level `(x/max)`, a value preview (`+N > +N`,
   `Ns > Ns`, `Nx > Nx`, or plain `N > N` studs), cost, and Buy/Max
   buttons (white text, padded so labels don't stretch edge-to-edge, all
   text with a subtle stroke for a slight 3D look). Its UI is a
