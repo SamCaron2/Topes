@@ -782,20 +782,22 @@ for i = 1, RUIN_RUBBLE_COUNT do
 	)
 end
 
--- Its upgrade board (RuinRuneHandler's 5 tiers) sits just past the pillar
--- ring on the +Z side, near where the perimeter tree ring comes closest to
--- the ruin (per direct request, "move it to where the trees are"),
--- rotated 90° around Y so it faces back south toward the ruin/island
--- center instead of west along the ring (per direct request, "rotate the
--- card to face towards center of island") - wide along X now instead of
--- Z, same "thin one way, wide the other" board shape as every other board
--- here, just turned a quarter turn. Hidden/no-collide by default like
--- ArcaneDustUpgradeBoard/WizardTierBoard - WizardRuinClient reveals it
--- (via its own Reveal* attributes, same mechanism) alongside the rest of
--- the ruin, since it's gated on the same hasUnlockedRuin check.
+-- Its upgrade board (RuinRuneHandler's 5 tiers) sits just outside the
+-- pillar ring on the west (-X) side, right where the glowing mushroom
+-- cluster sits (per direct request, "move the rune altar left of the rune
+-- where those trees are" - the previous spot read as floating off toward
+-- the Arcane Dust/Wizard Tier board row instead of clearly beside the
+-- ruin). Rotated 90° around Y so it faces back at the ruin/island center
+-- (per an earlier direct request, "rotate the card to face towards center
+-- of island") - wide along X now instead of Z, same "thin one way, wide
+-- the other" board shape as every other board here, just turned a quarter
+-- turn. Hidden/no-collide by default like ArcaneDustUpgradeBoard/
+-- WizardTierBoard - WizardRuinClient reveals it (via its own Reveal*
+-- attributes, same mechanism) alongside the rest of the ruin, since it's
+-- gated on the same hasUnlockedRuin check.
 local RUNE_ALTAR_BOARD_WIDTH = 30
-local runeAltarBoardX = ruinAreaX - 20 -- clear of the archway (which spans roughly ruinAreaX ± 9)
-local runeAltarBoardZ = ruinAreaZ + 14 -- just past the pillar ring, at the tree ring's own approach line
+local runeAltarBoardX = ruinAreaX - 12 -- just outside the pillar ring (radius 11) on the west side
+local runeAltarBoardZ = ruinAreaZ + 8 -- level with the pillars, not out at the archway/tree-ring line
 
 local runeAltarBoard = Instance.new("Part")
 runeAltarBoard.Name = "RuneAltarBoard"

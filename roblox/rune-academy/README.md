@@ -273,20 +273,24 @@ design notes.
   `RuneAltarCollected` (one `{name, amount}` per roll that tick - more
   than one once the Familiar tier is bought) at that player -
   `RuneAltarClient` turns the latter into floating "+N RankName" popups.
-  Just past the pillar ring on the +Z side sits `RuneAltarBoard`, the
-  Altar's own 5-tier upgrade board (`RuinRuneHandler`/
-  `RuneAltarBoardClient`) - hidden/no-collide by default like every other
-  board, but NOT a child of `FantasyRuin` (it needs the "clear glass"
-  0.7-transparency reveal every other board gets, not the ruin's own
-  full-opacity reveal), so `WizardRuinClient` reveals it explicitly via its
-  own `RevealTransparency`/`RevealCanCollide` attributes. Positioned right
-  where the perimeter tree ring comes closest to the ruin and rotated 90°
-  around Y, per direct request ("rotate the card to face towards center of
-  island and move it to where the trees are") - it was originally further
+  Just outside the pillar ring on the west (-X) side, right next to the
+  glowing mushroom cluster, sits `RuneAltarBoard`, the Altar's own 5-tier
+  upgrade board (`RuinRuneHandler`/`RuneAltarBoardClient`) - hidden/
+  no-collide by default like every other board, but NOT a child of
+  `FantasyRuin` (it needs the "clear glass" 0.7-transparency reveal every
+  other board gets, not the ruin's own full-opacity reveal), so
+  `WizardRuinClient` reveals it explicitly via its own
+  `RevealTransparency`/`RevealCanCollide` attributes. Rotated 90° around Y
+  so it faces back at the ruin/island center, per direct request ("rotate
+  the card to face towards center of island") - it was originally further
   +X outside the ring facing west back at the Altar, which read as facing
-  the wrong way and sitting away from the trees. Its `SurfaceGui.Face` in
-  `RuneAltarBoardClient` moved from `Left` to `Right` to match the
-  rotation - still a guess like every other board face here.
+  the wrong way. Moved again, closer in (right beside the ring instead of
+  out past it), per direct request ("move the rune altar left of the rune
+  where those trees are") after the first move landed it reading as
+  floating off toward the Arcane Dust/Wizard Tier board row instead of
+  clearly beside the ruin. Its `SurfaceGui.Face` in `RuneAltarBoardClient`
+  is `Right` to match the rotation - still a guess like every other board
+  face here.
   In the open grass between the Fantasy Ruin and `ArcaneDustPad` (Tile 1's
   spot is the midpoint between the two - a best guess from a circled
   screenshot, same as every other placement here) sits `UpgradeTreeTiles`,
