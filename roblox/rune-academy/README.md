@@ -150,19 +150,31 @@ design notes.
   manual poll rather than the simpler `Workspace.FallenPartsDestroyHeight`
   because writing that property from a normal server Script is blocked
   ("lacking capability Plugin") - Roblox restricts it to Studio/plugin
-  contexts. Contains the 60x60 Mana collection platform (a hollow square outline,
-  4 thin Neon parts, non-collide) plus Mana cubes spawned inside it.
-  Collection is range-based, not touch-based: a `COLLECT_CHECK_INTERVAL`
-  (0.15s) poll collects any live node within a player's current
-  "Collection Range" upgrade radius (`CollectionRangeHandler`) — the
-  same radius `ManaRingClient` draws as a ring around their feet. Every
-  pickup also grants XP through `XPHandler.grantXpForPickup`, firing
-  `XPUpdated` for the bottom-middle XP bar. A
-  replacement node spawns elsewhere after a delay set by the collecting
-  player's own "Mana Spawn Speed" level. That same level also sets how
-  many nodes exist at once (3 at level 1, up to 10 at level 10, taking
-  the max across everyone online) — a `TOP_UP_INTERVAL` poll spawns more
-  as needed, not just on pickup, so a purchase (or another player's
+  contexts. Contains the 60x60 Mana collection platform (a hollow square
+  outline, 4 thin Neon parts, non-collide) plus Mana nodes spawned inside
+  it - small glowing floating potions (a rounded `Ball` body + a narrow
+  `Cylinder` neck, grouped into a `Model` with `PrimaryPart = body`)
+  instead of the old plain cube, per direct request ("floating potions
+  that are bobbing up and down"). One shared `RunService.Heartbeat` loop
+  bobs every live potion at once via `Model:PivotTo` (`MANA_NODE_BOB_
+  AMPLITUDE` = 0.35 studs, `MANA_NODE_BOB_SPEED` = 2.2 rad/s), each with
+  its own random `BobPhase` attribute so a room full of them doesn't bob
+  in perfect unison - cheaper than a per-node loop/tween, and a destroyed
+  node is just silently skipped next frame since it's no longer among
+  `manaZone`'s children. Collection is range-based, not touch-based: a
+  `COLLECT_CHECK_INTERVAL` poll (lowered from 0.15s to 0.05s per direct
+  report, "make the collection faster. It is kind of delayed" - up to 3x
+  snappier the moment a player enters range) collects any live node
+  within a player's current "Collection Range" upgrade radius
+  (`CollectionRangeHandler`, checked against `node.PrimaryPart.Position`
+  now that a node is a Model) — the same radius `ManaRingClient` draws as
+  a ring around their feet. Every pickup also grants XP through
+  `XPHandler.grantXpForPickup`, firing `XPUpdated` for the bottom-middle
+  XP bar. A replacement node spawns elsewhere after a delay set by the
+  collecting player's own "Mana Spawn Speed" level. That same level also
+  sets how many nodes exist at once (3 at level 1, up to 10 at level 10,
+  taking the max across everyone online) — a `TOP_UP_INTERVAL` poll spawns
+  more as needed, not just on pickup, so a purchase (or another player's
   higher level) adds nodes right away.
   Also places physical kiosk boards past the platform's edge, each just
   outside the previous one's far edge - `ManaUpgradeBoard` (42 studs wide,

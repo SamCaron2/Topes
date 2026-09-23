@@ -5,6 +5,7 @@
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local ManaHandler = require(script.Parent.ManaHandler)
 local ManaSpawnHandler = require(script.Parent.ManaSpawnHandler)
@@ -25,7 +26,6 @@ local WorldDecor = require(script.Parent.WorldDecor)
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
 local BORDER_HEIGHT = 0.2
-local MANA_NODE_SIZE = Vector3.new(2, 2, 2)
 local MANA_NODE_MARGIN = 3 -- keep nodes off the border line
 
 local ISLAND_SIZE = 120 -- studs, square - comfortably fits the platform + kiosk board with room to spare
@@ -156,21 +156,72 @@ local function randomPointInZone()
 	return centerX + offsetX, centerZ + offsetZ
 end
 
+-- A small glowing flask instead of a plain cube - per direct request
+-- ("floating potions that are bobbing up and down"). Two parts (a rounded
+-- body + a narrow neck) grouped into a Model so the Heartbeat loop below
+-- can move both together with one PivotTo per frame. Floats clear of the
+-- ground (BaseY well above the old cube's own resting height) since
+-- "floating" was the explicit ask, not just resting on the platform.
+local MANA_NODE_BASE_Y_OFFSET = 2
+local MANA_NODE_BOB_AMPLITUDE = 0.35 -- studs, up and down from BaseY
+local MANA_NODE_BOB_SPEED = 2.2 -- radians/second
+
 local function spawnManaNode()
 	local x, z = randomPointInZone()
+	local baseY = groundY + MANA_NODE_BASE_Y_OFFSET
 
-	local node = Instance.new("Part")
+	local node = Instance.new("Model")
 	node.Name = "ManaNode"
-	node.Anchored = true
-	node.CanCollide = false
-	node.Material = Enum.Material.Neon
-	node.Color = Color3.fromRGB(150, 80, 255)
-	node.Size = MANA_NODE_SIZE
-	node.CFrame = CFrame.new(x, groundY + MANA_NODE_SIZE.Y / 2, z)
+
+	local body = Instance.new("Part")
+	body.Name = "PotionBody"
+	body.Anchored = true
+	body.CanCollide = false
+	body.Material = Enum.Material.Neon
+	body.Color = Color3.fromRGB(150, 80, 255)
+	body.Shape = Enum.PartType.Ball
+	body.Size = Vector3.new(1.6, 1.3, 1.6)
+	body.CFrame = CFrame.new(x, baseY, z)
+	body.Parent = node
+
+	local neck = Instance.new("Part")
+	neck.Name = "PotionNeck"
+	neck.Anchored = true
+	neck.CanCollide = false
+	neck.Material = Enum.Material.Neon
+	neck.Color = Color3.fromRGB(195, 150, 255)
+	neck.Shape = Enum.PartType.Cylinder
+	neck.Size = Vector3.new(0.55, 0.45, 0.45) -- Cylinder's round axis is local X; rotated below to stand upright
+	neck.CFrame = CFrame.new(x, baseY + 0.85, z) * CFrame.Angles(0, 0, math.rad(90))
+	neck.Parent = node
+
+	node.PrimaryPart = body
+	-- Random phase so a room full of potions doesn't bob in perfect unison.
+	node:SetAttribute("BobPhase", math.random() * math.pi * 2)
+	node:SetAttribute("BaseX", x)
+	node:SetAttribute("BaseY", baseY)
+	node:SetAttribute("BaseZ", z)
 	node.Parent = manaZone
 end
 
-local function collectNode(node: BasePart, player: Player)
+-- One shared Heartbeat loop bobs every live potion up and down, rather
+-- than a per-node loop/tween - cheap even with several nodes at once,
+-- and naturally stops touching a node the instant it's destroyed (just
+-- skipped next frame since it's no longer in manaZone's children).
+RunService.Heartbeat:Connect(function()
+	for _, node in manaZone:GetChildren() do
+		if node:IsA("Model") and node.Name == "ManaNode" then
+			local baseX = node:GetAttribute("BaseX")
+			local baseY = node:GetAttribute("BaseY")
+			local baseZ = node:GetAttribute("BaseZ")
+			local phase = node:GetAttribute("BobPhase") or 0
+			local bobY = MANA_NODE_BOB_AMPLITUDE * math.sin(os.clock() * MANA_NODE_BOB_SPEED + phase)
+			node:PivotTo(CFrame.new(baseX, baseY + bobY, baseZ))
+		end
+	end
+end)
+
+local function collectNode(node: Model, player: Player)
 	node:Destroy()
 	local newAmount = ManaHandler.collect(player)
 	if newAmount then
@@ -188,20 +239,22 @@ end
 -- Collection is range-based, not touch-based: every COLLECT_CHECK_INTERVAL,
 -- any live node within a player's current "Collection Range" upgrade radius
 -- (CollectionRangeHandler) gets collected automatically, matching the ring
--- ManaRingClient draws around their feet.
-local COLLECT_CHECK_INTERVAL = 0.15
+-- ManaRingClient draws around their feet. Lowered from 0.15s to 0.05s per
+-- direct report ("make the collection faster. It is kind of delayed.") -
+-- up to 3x snappier at the moment a player enters range.
+local COLLECT_CHECK_INTERVAL = 0.05
 
 task.spawn(function()
 	while true do
 		task.wait(COLLECT_CHECK_INTERVAL)
 		for _, node in manaZone:GetChildren() do
-			if node.Name == "ManaNode" and node.Parent then
+			if node:IsA("Model") and node.Name == "ManaNode" and node.Parent and node.PrimaryPart then
 				for _, player in Players:GetPlayers() do
 					local character = player.Character
 					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 					if rootPart then
 						local radius = CollectionRangeHandler.getRadius(player)
-						if (rootPart.Position - node.Position).Magnitude <= radius then
+						if (rootPart.Position - node.PrimaryPart.Position).Magnitude <= radius then
 							collectNode(node, player)
 							break
 						end
