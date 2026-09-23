@@ -273,24 +273,26 @@ design notes.
   `RuneAltarCollected` (one `{name, amount}` per roll that tick - more
   than one once the Familiar tier is bought) at that player -
   `RuneAltarClient` turns the latter into floating "+N RankName" popups.
-  Just outside the pillar ring on the west (-X) side, right next to the
-  glowing mushroom cluster, sits `RuneAltarBoard`, the Altar's own 5-tier
-  upgrade board (`RuinRuneHandler`/`RuneAltarBoardClient`) - hidden/
-  no-collide by default like every other board, but NOT a child of
-  `FantasyRuin` (it needs the "clear glass" 0.7-transparency reveal every
-  other board gets, not the ruin's own full-opacity reveal), so
-  `WizardRuinClient` reveals it explicitly via its own
-  `RevealTransparency`/`RevealCanCollide` attributes. Rotated 90° around Y
-  so it faces back at the ruin/island center, per direct request ("rotate
-  the card to face towards center of island") - it was originally further
-  +X outside the ring facing west back at the Altar, which read as facing
-  the wrong way. Moved again, closer in (right beside the ring instead of
-  out past it), per direct request ("move the rune altar left of the rune
-  where those trees are") after the first move landed it reading as
-  floating off toward the Arcane Dust/Wizard Tier board row instead of
-  clearly beside the ruin. Its `SurfaceGui.Face` in `RuneAltarBoardClient`
-  is `Right` to match the rotation - still a guess like every other board
-  face here.
+  `RuneAltarBoard`, the Altar's own 5-tier upgrade board
+  (`RuinRuneHandler`/`RuneAltarBoardClient`), sits at the exact world
+  coordinates `(-38, 195)` (X, Z) - the first placement in this whole file
+  given as exact numbers instead of a screenshot guess, read directly off
+  `DebugPositionClient`'s live position readout while standing where it
+  should go ("-38 195 and it facing towards 194"). Two guessed placements
+  came before this (first facing the wrong way, then reading as floating
+  off toward the Arcane Dust/Wizard Tier board row instead of clearly
+  beside the ruin) - exact coordinates finally settled it. Rotated 90°
+  around Y with `SurfaceGui.Face = Right` in `RuneAltarBoardClient`, which
+  points the visible face at world -Z (i.e. towards the lower Z value,
+  194, matching the request) - hidden/no-collide by default like every
+  other board, but NOT a child of `FantasyRuin` (it needs the "clear
+  glass" 0.7-transparency reveal every other board gets, not the ruin's
+  own full-opacity reveal), so `WizardRuinClient` reveals it explicitly
+  via its own `RevealTransparency`/`RevealCanCollide` attributes. Per
+  direct request ("remove the trees if you need"), anything in
+  `SecondIslandDecor` within `RUNE_ALTAR_BOARD_CLEAR_RADIUS` (10 studs) of
+  that exact spot gets destroyed right after the board is placed, so
+  whichever mushroom/tree used to sit there doesn't clip through it.
   In the open grass between the Fantasy Ruin and `ArcaneDustPad` (Tile 1's
   spot is the midpoint between the two - a best guess from a circled
   screenshot, same as every other placement here) sits `UpgradeTreeTiles`,

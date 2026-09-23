@@ -782,22 +782,22 @@ for i = 1, RUIN_RUBBLE_COUNT do
 	)
 end
 
--- Its upgrade board (RuinRuneHandler's 5 tiers) sits just outside the
--- pillar ring on the west (-X) side, right where the glowing mushroom
--- cluster sits (per direct request, "move the rune altar left of the rune
--- where those trees are" - the previous spot read as floating off toward
--- the Arcane Dust/Wizard Tier board row instead of clearly beside the
--- ruin). Rotated 90° around Y so it faces back at the ruin/island center
--- (per an earlier direct request, "rotate the card to face towards center
--- of island") - wide along X now instead of Z, same "thin one way, wide
--- the other" board shape as every other board here, just turned a quarter
--- turn. Hidden/no-collide by default like ArcaneDustUpgradeBoard/
--- WizardTierBoard - WizardRuinClient reveals it (via its own Reveal*
--- attributes, same mechanism) alongside the rest of the ruin, since it's
--- gated on the same hasUnlockedRuin check.
+-- Its upgrade board (RuinRuneHandler's 5 tiers) sits exactly where asked -
+-- per direct request, given as exact world coordinates read off
+-- DebugPositionClient's live X/Y/Z readout while standing there ("-38 195
+-- and it facing towards 194"), rather than a guess from a screenshot like
+-- every other placement in this file. Facing -Z (towards the lower Z
+-- value, 194) needs no rotation change from the previous spot - the
+-- existing 90°-around-Y rotation + `SurfaceGui.Face = Right` in
+-- RuneAltarBoardClient already point the visible face at world -Z. Wide
+-- along X, thin along Z, same "thin one way, wide the other" board shape
+-- as every other board here. Hidden/no-collide by default like
+-- ArcaneDustUpgradeBoard/WizardTierBoard - WizardRuinClient reveals it
+-- (via its own Reveal* attributes, same mechanism) alongside the rest of
+-- the ruin, since it's gated on the same hasUnlockedRuin check.
 local RUNE_ALTAR_BOARD_WIDTH = 30
-local runeAltarBoardX = ruinAreaX - 12 -- just outside the pillar ring (radius 11) on the west side
-local runeAltarBoardZ = ruinAreaZ + 8 -- level with the pillars, not out at the archway/tree-ring line
+local runeAltarBoardX = -38
+local runeAltarBoardZ = 195
 
 local runeAltarBoard = Instance.new("Part")
 runeAltarBoard.Name = "RuneAltarBoard"
@@ -811,6 +811,20 @@ runeAltarBoard.CFrame = CFrame.new(runeAltarBoardX, ISLAND_TOP_Y + 9, runeAltarB
 runeAltarBoard:SetAttribute("RevealTransparency", 0.7) -- glass, like every other board
 runeAltarBoard:SetAttribute("RevealCanCollide", true)
 runeAltarBoard.Parent = kiosksFolder
+
+-- Clears any decor piece (tree/mushroom/etc, all its parts land within a
+-- couple studs of the same anchor point) that ended up under the board's
+-- new exact spot - per direct request, "remove the trees if you need."
+local RUNE_ALTAR_BOARD_CLEAR_RADIUS = 10
+for _, decorPart in secondIslandDecorFolder:GetChildren() do
+	if decorPart:IsA("BasePart") then
+		local dx = decorPart.Position.X - runeAltarBoardX
+		local dz = decorPart.Position.Z - runeAltarBoardZ
+		if dx * dx + dz * dz <= RUNE_ALTAR_BOARD_CLEAR_RADIUS ^ 2 then
+			decorPart:Destroy()
+		end
+	end
+end
 
 -- The Rune Altar itself (RuinRuneCircle): stand within its radius and it
 -- periodically spends Mana for a chance-based Rune - no clicking, per
