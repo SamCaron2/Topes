@@ -1391,69 +1391,96 @@ local leyShardMatZ = 116
 local LEY_SHARD_HOVER_HEIGHT = 6 -- studs above the mat a levitating player floats at
 local LEY_SHARD_BOARD_OFFSET = 14 -- studs further along +X from the mat, continuing the same "board sits past the interactive point" layout as ArcaneDustPad/EtherShroud
 
-local existingLeyShardMat = Workspace:FindFirstChild("LeyShardMat")
-if existingLeyShardMat then
-	existingLeyShardMat:Destroy()
+-- Everything purely about building the Instances lives in its own nested
+-- `do...end` (only the two ClickDetectors survive it, pre-declared below
+-- and assigned without `local` inside) - none of the Part/Gui/board
+-- locals below are ever needed again once built, so scoping them away
+-- frees their registers too, on top of the outer block's own savings.
+local leyShardMatClickDetector, leyShardCrystalClickDetector
+do
+	local existingLeyShardMat = Workspace:FindFirstChild("LeyShardMat")
+	if existingLeyShardMat then
+		existingLeyShardMat:Destroy()
+	end
+	local existingLeyShardBoard = Workspace:FindFirstChild("LeyShardUpgradeBoard")
+	if existingLeyShardBoard then
+		existingLeyShardBoard:Destroy()
+	end
+
+	local leyShardMat = Instance.new("Part")
+	leyShardMat.Name = "LeyShardMat"
+	leyShardMat.Anchored = true
+	leyShardMat.CanCollide = true
+	leyShardMat.Material = Enum.Material.Neon
+	leyShardMat.Color = LEY_SHARD_COLOR
+	leyShardMat.Shape = Enum.PartType.Cylinder
+	leyShardMat.Size = Vector3.new(0.6, 10, 10) -- Cylinder's round axis is local X; rotated below to lie flat
+	leyShardMat.CFrame = CFrame.new(leyShardMatX, ISLAND_TOP_Y + 0.3, leyShardMatZ) * CFrame.Angles(0, 0, math.rad(90))
+	leyShardMat.Parent = Workspace
+
+	leyShardMatClickDetector = Instance.new("ClickDetector")
+	leyShardMatClickDetector.MaxActivationDistance = 15
+	leyShardMatClickDetector.Parent = leyShardMat
+
+	-- A floating crystal above the mat, same idea as the Ether Shroud's own
+	-- clickable core - a flat pad right under your own feet is awkward to
+	-- actually click (your cursor has to aim straight down at the ground
+	-- you're standing on), so this gives an obvious, easy-to-click target
+	-- at a natural eye-level height instead. Both this and the mat itself
+	-- carry a ClickDetector wired to the same toggle, so either works.
+	local leyShardCrystal = Instance.new("Part")
+	leyShardCrystal.Name = "LeyShardCrystal"
+	leyShardCrystal.Shape = Enum.PartType.Ball
+	leyShardCrystal.Anchored = true
+	leyShardCrystal.CanCollide = false
+	leyShardCrystal.Material = Enum.Material.Neon
+	leyShardCrystal.Color = LEY_SHARD_COLOR
+	leyShardCrystal.Size = Vector3.new(3, 3, 3)
+	leyShardCrystal.CFrame = CFrame.new(leyShardMatX, ISLAND_TOP_Y + 5, leyShardMatZ)
+	leyShardCrystal.Parent = Workspace
+
+	leyShardCrystalClickDetector = Instance.new("ClickDetector")
+	leyShardCrystalClickDetector.MaxActivationDistance = 25
+	leyShardCrystalClickDetector.Parent = leyShardCrystal
+
+	-- Static text, not per-player state - the mat is a single shared Part,
+	-- so there's no clean way to reflect "you're currently levitating" here
+	-- for one specific player without it also being wrong for everyone
+	-- else looking at the same label. Attached to the crystal (not the
+	-- mat) so it reads at eye level, same placement as the Ether Shroud's
+	-- own label.
+	local leyShardMatLabelGui = Instance.new("BillboardGui")
+	leyShardMatLabelGui.Name = "LeyShardMatLabel"
+	leyShardMatLabelGui.Size = UDim2.new(0, 160, 0, 36)
+	leyShardMatLabelGui.StudsOffset = Vector3.new(0, 3, 0)
+	leyShardMatLabelGui.MaxDistance = 25
+	leyShardMatLabelGui.AlwaysOnTop = true
+	leyShardMatLabelGui.Adornee = leyShardCrystal
+	leyShardMatLabelGui.Parent = leyShardCrystal
+
+	local leyShardMatLabelText = Instance.new("TextLabel")
+	leyShardMatLabelText.Size = UDim2.new(1, 0, 1, 0)
+	leyShardMatLabelText.BackgroundTransparency = 1
+	leyShardMatLabelText.Font = Enum.Font.GothamBold
+	leyShardMatLabelText.TextScaled = true
+	leyShardMatLabelText.TextColor3 = LEY_SHARD_COLOR
+	leyShardMatLabelText.TextStrokeTransparency = 0.2
+	leyShardMatLabelText.Text = "Click to Levitate\n(click again to stop)"
+	leyShardMatLabelText.Parent = leyShardMatLabelGui
+
+	-- Its upgrade board, same physical style/offset relationship as every
+	-- other pad+board pair - facing back at the mat (-X, "Left").
+	local leyShardBoard = Instance.new("Part")
+	leyShardBoard.Name = "LeyShardUpgradeBoard"
+	leyShardBoard.Anchored = true
+	leyShardBoard.CanCollide = true
+	leyShardBoard.Material = Enum.Material.Glass
+	leyShardBoard.Color = Color3.fromRGB(30, 60, 55)
+	leyShardBoard.Transparency = 0.7 -- clear glass, matching every other board
+	leyShardBoard.Size = Vector3.new(1, 18, 34)
+	leyShardBoard.CFrame = CFrame.new(leyShardMatX + LEY_SHARD_BOARD_OFFSET, ISLAND_TOP_Y + 9, leyShardMatZ)
+	leyShardBoard.Parent = Workspace
 end
-local existingLeyShardBoard = Workspace:FindFirstChild("LeyShardUpgradeBoard")
-if existingLeyShardBoard then
-	existingLeyShardBoard:Destroy()
-end
-
-local leyShardMat = Instance.new("Part")
-leyShardMat.Name = "LeyShardMat"
-leyShardMat.Anchored = true
-leyShardMat.CanCollide = true
-leyShardMat.Material = Enum.Material.Neon
-leyShardMat.Color = LEY_SHARD_COLOR
-leyShardMat.Shape = Enum.PartType.Cylinder
-leyShardMat.Size = Vector3.new(0.6, 10, 10) -- Cylinder's round axis is local X; rotated below to lie flat
-leyShardMat.CFrame = CFrame.new(leyShardMatX, ISLAND_TOP_Y + 0.3, leyShardMatZ) * CFrame.Angles(0, 0, math.rad(90))
-leyShardMat.Parent = Workspace
-
-local leyShardMatClickDetector = Instance.new("ClickDetector")
-leyShardMatClickDetector.MaxActivationDistance = 15
-leyShardMatClickDetector.Parent = leyShardMat
-
--- Static text, not per-player state - the mat is a single shared Part, so
--- there's no clean way to reflect "you're currently levitating" here for
--- one specific player without it also being wrong for everyone else
--- looking at the same label.
-local leyShardMatLabelGui = Instance.new("BillboardGui")
-leyShardMatLabelGui.Name = "LeyShardMatLabel"
-leyShardMatLabelGui.Size = UDim2.new(0, 160, 0, 36)
-leyShardMatLabelGui.StudsOffset = Vector3.new(0, 3, 0)
-leyShardMatLabelGui.MaxDistance = 25
-leyShardMatLabelGui.AlwaysOnTop = true
-leyShardMatLabelGui.Adornee = leyShardMat
-leyShardMatLabelGui.Parent = leyShardMat
-
-local leyShardMatLabelText = Instance.new("TextLabel")
-leyShardMatLabelText.Size = UDim2.new(1, 0, 1, 0)
-leyShardMatLabelText.BackgroundTransparency = 1
-leyShardMatLabelText.Font = Enum.Font.GothamBold
-leyShardMatLabelText.TextScaled = true
-leyShardMatLabelText.TextColor3 = LEY_SHARD_COLOR
-leyShardMatLabelText.TextStrokeTransparency = 0.2
-leyShardMatLabelText.Text = "Click to Levitate\n(click again to stop)"
-leyShardMatLabelText.Parent = leyShardMatLabelGui
-
--- Its upgrade board, same physical style/offset relationship as every
--- other pad+board pair - facing back at the mat (-X, "Left").
-local LEY_SHARD_BOARD_WIDTH = 34
-local leyShardBoardX = leyShardMatX + LEY_SHARD_BOARD_OFFSET
-local leyShardBoardZ = leyShardMatZ
-
-local leyShardBoard = Instance.new("Part")
-leyShardBoard.Name = "LeyShardUpgradeBoard"
-leyShardBoard.Anchored = true
-leyShardBoard.CanCollide = true
-leyShardBoard.Material = Enum.Material.Glass
-leyShardBoard.Color = Color3.fromRGB(30, 60, 55)
-leyShardBoard.Transparency = 0.7 -- clear glass, matching every other board
-leyShardBoard.Size = Vector3.new(1, 18, LEY_SHARD_BOARD_WIDTH)
-leyShardBoard.CFrame = CFrame.new(leyShardBoardX, ISLAND_TOP_Y + 9, leyShardBoardZ)
-leyShardBoard.Parent = Workspace
 
 -- [player] = { nextCollectAt = os.clock() timestamp } while levitating;
 -- absent entirely while grounded.
@@ -1504,13 +1531,16 @@ local function startLevitating(player: Player)
 	LEY_SHARD_LEVITATING[player] = { nextCollectAt = os.clock() + LeyShardSpeedHandler.getIntervalSeconds(player) }
 end
 
-leyShardMatClickDetector.MouseClick:Connect(function(player)
+local function toggleLeyShardLevitation(player: Player)
 	if LEY_SHARD_LEVITATING[player] then
 		stopLevitating(player)
 	else
 		startLevitating(player)
 	end
-end)
+end
+
+leyShardMatClickDetector.MouseClick:Connect(toggleLeyShardLevitation)
+leyShardCrystalClickDetector.MouseClick:Connect(toggleLeyShardLevitation)
 
 Players.PlayerRemoving:Connect(function(player)
 	LEY_SHARD_LEVITATING[player] = nil

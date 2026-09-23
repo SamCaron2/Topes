@@ -377,14 +377,30 @@ design notes.
   moment the island exists, not hidden/revealed per-player like
   SecondIsland's own deeper content, since the island's own gate is
   already what's locked - nothing further inside it needs its own
-  containment. This whole section is wrapped in its own `do...end` block,
-  unusual for this file - adding its ~20 new top-level locals to
-  everything already declared pushed this one Luau chunk (the entire file
-  is a single function) past the compiler's 200-local-register ceiling
-  ("Out of local registers... exceeded limit 200," caught with the real
-  Luau compiler); scoping them inside `do...end` lets the registers free
-  up again once the block ends, since nothing outside it references them
-  by name.
+  containment. Also a floating `LeyShardCrystal` above the mat (a small
+  Neon ball, same idea as the Ether Shroud's own clickable core) added
+  after the first playtest reported "standing on Ley Shards and nothing is
+  happening" - the mat's own ClickDetector sat on a flat pad directly
+  under the player's own feet, which is awkward to actually click (the
+  cursor has to aim straight down at the ground you're standing on,
+  unlike every other clickable object in this game, which all sit at
+  natural eye level); the crystal gives an obvious, easy-to-aim-at target
+  instead, and both it and the mat carry their own ClickDetector wired to
+  the same toggle function, so either works. This whole section is
+  wrapped in its own `do...end` block, unusual for this file - adding its
+  ~20 new top-level locals to everything already declared pushed this one
+  Luau chunk (the entire file is a single function) past the compiler's
+  200-local-register ceiling ("Out of local registers... exceeded limit
+  200," caught with the real Luau compiler); scoping them inside
+  `do...end` lets the registers free up again once the block ends, since
+  nothing outside it references them by name. Adding the crystal pushed
+  the count over the ceiling YET AGAIN even inside that same block (a
+  `do...end` only frees registers for code AFTER it ends, not for more
+  locals piled into the same block), so the purely-instance-building part
+  of it (every Part/Gui/board local that's never touched again once
+  built) is now further nested in its own inner `do...end` too - only the
+  two ClickDetector variables survive past it, pre-declared just outside
+  and assigned (not re-`local`'d) inside.
   Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
   around its edge, inset from the border, skipping the bridge's landing
   spot, and each given a small random `DECOR_JITTER` offset so the ring
