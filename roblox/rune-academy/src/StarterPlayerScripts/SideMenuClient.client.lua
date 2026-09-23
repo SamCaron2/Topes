@@ -4,8 +4,12 @@
 -- uploaded icon images now; Profile gets the player's own live avatar
 -- headshot instead (fetched via GetUserThumbnailAsync, no upload needed -
 -- see below). Hovering grows the icon slightly to show what's highlighted.
--- Only Profile is wired to a panel so far (ProfileClient.client.lua, via
--- the OpenProfileRequested BindableEvent below) - Store/Runes/Settings
+-- Profile and Runes are wired to their own panels (ProfileClient.client.lua/
+-- RunesMenuClient.client.lua, via the OpenProfileRequested/
+-- OpenRunesRequested BindableEvents below) - per direct request ("clicking
+-- the runes button... nothing is happening"), Runes now opens the same
+-- Rune Altar tier list the physical board on SecondIsland shows, so it's
+-- checkable from anywhere, not just standing at the Altar. Store/Settings
 -- still just need to exist on screen for now.
 
 local Players = game:GetService("Players")
@@ -205,6 +209,14 @@ openProfileEvent.Parent = screenGui
 
 buttonsByName["Profile"].MouseButton1Click:Connect(function()
 	openProfileEvent:Fire()
+end)
+
+local openRunesEvent = Instance.new("BindableEvent")
+openRunesEvent.Name = "OpenRunesRequested"
+openRunesEvent.Parent = screenGui
+
+buttonsByName["Runes"].MouseButton1Click:Connect(function()
+	openRunesEvent:Fire()
 end)
 
 -- Profile gets the PLAYER'S OWN avatar headshot instead of a placeholder

@@ -717,13 +717,15 @@ design notes.
   stays reachable even while the panel's hidden.
   Hovering tweens the icon up to 1.15x size (centered growth, not
   top-anchored, so it doesn't push
-  into the label) to show what's highlighted. Only Profile is wired to a
-  panel so far - clicking it fires an `OpenProfileRequested`
-  `BindableEvent` (parented under this script's own `SideMenuHUD`
-  `ScreenGui` so `ProfileClient` can find it reliably regardless of which
-  script runs first) instead of building the panel itself, keeping the
-  icon grid and the panel it opens as separate concerns. Store/Runes/
-  Settings still just need to exist on screen for now.
+  into the label) to show what's highlighted. Profile and Runes are wired
+  to their own panels - clicking either fires an `OpenProfileRequested`/
+  `OpenRunesRequested` `BindableEvent` (both parented under this script's
+  own `SideMenuHUD` `ScreenGui` so `ProfileClient`/`RunesMenuClient` can
+  find them reliably regardless of which script runs first) instead of
+  building the panel itself, keeping the icon grid and the panels it opens
+  as separate concerns. Runes was previously unwired ("clicking the runes
+  button... nothing is happening," per direct report) - Store/Settings
+  still just need to exist on screen for now.
 - `ProfileClient.client.lua` — the Profile panel opened by that event: a
   dark modal card (dimmed background `Frame` with `Active = true` so
   clicks don't pass through to the side menu underneath) with two pages.
@@ -746,6 +748,20 @@ design notes.
   every time the panel opens rather than staying subscribed to live
   updates, since a modal stat/title screen doesn't need to track changes
   while it's closed.
+- `RunesMenuClient.client.lua` — the Runes panel opened by
+  `OpenRunesRequested`, per direct request after the side-menu Runes icon
+  turned out to do nothing at all when clicked. Same dark-modal styling as
+  `ProfileClient` and the exact same 5-tier card grid/state logic as
+  `RuneAltarBoardClient` (locked → "🔒 Discover the rune", reachable →
+  cost + Buy button, bought → its boost + "[MAX]") reading and writing the
+  same `GetRuinRuneState`/`BuyRuinRuneTier` remotes - both stay in sync
+  automatically since they're just two views onto the same server state,
+  and buying a tier here works exactly as if bought from the physical
+  board on SecondIsland. If `GetRuinRuneState` returns nil (the Fantasy
+  Ruin/Rune Altar isn't unlocked yet - Wizard Tier 3+), shows a plain
+  locked message instead of the grid rather than a button that just does
+  nothing, which was the whole complaint about the icon in the first
+  place.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
   feet, visible only while standing inside the `ManaZone` platform
   bounds (read off attributes `WorldBuilder` sets on that folder:
