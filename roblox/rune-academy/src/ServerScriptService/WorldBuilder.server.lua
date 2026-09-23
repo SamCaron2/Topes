@@ -16,6 +16,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local EtherHandler = require(script.Parent.EtherHandler)
 local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
+local EtherAutoClickHandler = require(script.Parent.EtherAutoClickHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 local RuneHandler = require(script.Parent.RuneHandler)
@@ -1084,8 +1085,10 @@ etherPlatform.Parent = etherAreaFolder
 
 -- Its upgrade board, same physical style as every other board (thin along
 -- X, wide along Z, facing inward at the shroud) - "More Ether", "Click
--- Speed", and "More Dust".
-local ETHER_BOARD_WIDTH = 30
+-- Speed", "More Dust", and "Auto Click". Widened from 30 to 40 to fit its
+-- 4th column, same "widen when a column is added" precedent as the Arcane
+-- Dust board.
+local ETHER_BOARD_WIDTH = 40
 
 local etherBoard = Instance.new("Part")
 etherBoard.Name = "EtherUpgradeBoard"
@@ -1104,9 +1107,13 @@ etherBoard:SetAttribute("RevealTransparency", 0.7)
 etherBoard:SetAttribute("RevealCanCollide", true) -- solid sign wall, matching every other board
 etherBoard.Parent = etherAreaFolder
 
-local ETHER_CLICK_COOLDOWN = {} -- [player] = os.clock() of the next click this player is allowed to grant Ether from
+local ETHER_CLICK_COOLDOWN = {} -- [player] = os.clock() of the next click/auto-click this player is allowed to grant Ether from
 
-etherClickDetector.MouseClick:Connect(function(player)
+-- Shared by an actual click and the Auto Click upgrade's background loop
+-- below, so both go through the exact same cooldown table - a player who
+-- owns Auto Click and also clicks manually doesn't get to double-dip past
+-- their own Click Speed cooldown.
+local function attemptEtherCollect(player: Player)
 	if not UpgradeTreeHandler.isEtherUnlocked(player) then
 		return
 	end
@@ -1123,10 +1130,32 @@ etherClickDetector.MouseClick:Connect(function(player)
 	end
 
 	ETHER_CLICK_COOLDOWN[player] = now + EtherClickSpeedHandler.getCooldownSeconds(player)
-end)
+end
+
+etherClickDetector.MouseClick:Connect(attemptEtherCollect)
 
 Players.PlayerRemoving:Connect(function(player)
 	ETHER_CLICK_COOLDOWN[player] = nil
+end)
+
+-- "Auto Click" (EtherAutoClickHandler): a one-time upgrade that, once
+-- bought, collects Ether for that player automatically - no more clicking
+-- the Shroud - per direct request ("a 1 time upgrade that gives you auto
+-- click on the ether"). Checked far more often than any player's own
+-- cooldown could realistically be (0.25s) so it fires close to on-time
+-- the moment each player's own cooldown clears; `attemptEtherCollect`
+-- itself is what actually throttles it, same as a real click would.
+local ETHER_AUTO_CLICK_CHECK_INTERVAL = 0.25
+
+task.spawn(function()
+	while true do
+		task.wait(ETHER_AUTO_CLICK_CHECK_INTERVAL)
+		for _, player in Players:GetPlayers() do
+			if EtherAutoClickHandler.isUnlocked(player) then
+				attemptEtherCollect(player)
+			end
+		end
+	end
 end)
 
 -- ===========================================================================

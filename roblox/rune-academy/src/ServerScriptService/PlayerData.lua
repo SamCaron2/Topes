@@ -120,16 +120,23 @@ local function defaultData()
 		-- is bought (EtherHandler). Click-collected (a shroud with a
 		-- ClickDetector, not auto-collected like Mana/walked-over like
 		-- Arcane Dust), per direct request - deliberately slower-paced than
-		-- the other two currencies. Its own 3-column board: "More Ether"
+		-- the other two currencies. Its own 4-column board: "More Ether"
 		-- (etherYieldLevel, 1-100, paid in Ether), "Click Speed"
-		-- (etherClickSpeedLevel, 1-10, paid in Ether), and "More Dust"
+		-- (etherClickSpeedLevel, 1-10, paid in Ether), "More Dust"
 		-- (etherDustBoostLevel, 1-50, paid in Ether - boosts Arcane Dust
-		-- yield, mirroring ManaBoostHandler's own Dust-funded Mana boost).
-		-- Permanent like the Upgrade Tree itself - not reset by anything.
+		-- yield, mirroring ManaBoostHandler's own Dust-funded Mana boost),
+		-- and "Auto Click" (etherAutoClickUnlocked, EtherAutoClickHandler -
+		-- a single one-time purchase, not a leveled upgrade, per direct
+		-- request "a 1 time upgrade that gives you auto click on the
+		-- ether" - once bought, a background loop collects Ether for this
+		-- player automatically at the same rate manual clicks already use,
+		-- no more clicking the Shroud required). Permanent like the
+		-- Upgrade Tree itself - not reset by anything.
 		ether = 0,
 		etherYieldLevel = 1,
 		etherClickSpeedLevel = 1,
 		etherDustBoostLevel = 1,
+		etherAutoClickUnlocked = false,
 
 		-- EtherIsland: a third island bridged from SecondIsland, gated behind
 		-- an Ether threshold instead of Mana/Rebirths/Level (EtherIslandHandler)

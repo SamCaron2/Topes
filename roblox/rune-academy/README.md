@@ -318,9 +318,18 @@ design notes.
   and the mist stays translucent (0.55) and non-collide instead of
   becoming a solid ball. Themed purple throughout, per direct request, in
   a deeper/more violet shade than the Wizard Tier board's own purple so
-  the two read as distinct. See `EtherHandler`/`EtherClickSpeedHandler`/
-  `EtherDustBoostHandler`/`EtherAreaClient`/`EtherUpgradeBoardClient`
-  below.
+  the two read as distinct. Clicking the Shroud (`attemptEtherCollect`,
+  throttled per-player by `ETHER_CLICK_COOLDOWN` and
+  `EtherClickSpeedHandler.getCooldownSeconds`) is no longer the only way
+  to collect - a background loop checks `EtherAutoClickHandler.isUnlocked`
+  for every online player every 0.25s and calls that exact same
+  `attemptEtherCollect` function for whoever owns the "Auto Click" upgrade,
+  per direct request ("a 1 time upgrade that gives you auto click on the
+  ether"). Sharing one function/cooldown table between an actual click and
+  the auto-click loop means a player with both can't double-dip past their
+  own Click Speed cooldown. See `EtherHandler`/`EtherClickSpeedHandler`/
+  `EtherDustBoostHandler`/`EtherAutoClickHandler`/`EtherAreaClient`/
+  `EtherUpgradeBoardClient` below.
   Further out past that, bridged straight off SecondIsland's own +X edge
   (continuing the same direction the tree/Shroud already extend in) sits
   `EtherIsland` - gated behind an Ether threshold instead of
@@ -606,6 +615,17 @@ design notes.
   boosting Arcane Dust, the same way Arcane Dust's own "More Mana"
   column boosts Mana. Read by `ArcaneDustHandler` alongside
   `WizardTierHandler`'s and `UpgradeTreeHandler`'s own dust multipliers.
+- `EtherAutoClickHandler.lua` — the Ether board's 4th column, "Auto
+  Click," per direct request ("add a 1 time upgrade that gives you auto
+  click on the ether"). Unlike the other 3 columns this is a SINGLE
+  one-time purchase (`data.etherAutoClickUnlocked`, a flat 5,000 Ether,
+  my own call), not a leveled one - no `getYieldUpgradeState`-shaped
+  level/max/nextLevelCost, just `isUnlocked`/`getState`/`buyUpgrade`.
+  `isUnlocked` is read every tick by `WorldBuilder`'s new auto-click
+  background loop (see below) rather than through a remote, since it runs
+  for every online player on a tight interval. `buyUpgrade` checks
+  `UpgradeTreeHandler.isEtherUnlocked` directly too, same defense-in-depth
+  reasoning as every other Ether/SecondIsland handler.
 - `EtherIslandHandler.lua` — owns EtherIsland's unlock: `meetsRequirement`/
   `getState`/`unlock`, exact same shape as `SecondIslandHandler` (an
   explicit Unlock button that actually SPENDS the requirement, not a
@@ -917,16 +937,24 @@ design notes.
   also enabling the Shroud's "Click to Collect Ether" label. Re-checks on
   every `UpgradeTreeTileBought` event, so buying Tile 9 reveals the area
   immediately without a rejoin.
-- `EtherUpgradeBoardClient.client.lua` — the Ether board's 3-column UI
-  ("More Ether", "Click Speed", "More Dust"), same `createUpgradeColumn`
-  pattern and purple theme as every other board, just costed in Ether.
-  Unlike every other board, it doesn't build AT ALL until
-  `GetEtherUnlocked` reports true - the physical board Part is already
-  hidden per-player by `EtherAreaClient`, but that alone wouldn't stop a
-  `SurfaceGui` from still rendering on top of it, so the UI itself also
-  waits on the same unlock check before it's ever created. Also rechecks
-  on `UpgradeTreeTileBought`, building the board immediately once Tile 9
-  is bought.
+- `EtherUpgradeBoardClient.client.lua` — the Ether board's 4-column UI
+  ("More Ether", "Click Speed", "More Dust", "Auto Click"), purple theme
+  like every other board. The first 3 share the leveled
+  `createUpgradeColumn` pattern (level/max/nextLevelCost, Buy+Max
+  buttons); "Auto Click" is a one-time purchase (per direct request, "a 1
+  time upgrade that gives you auto click on the ether") so it uses its own
+  simpler `createOneTimeColumn` instead - one fixed description line, one
+  button that goes from "Buy" straight to a disabled "Owned" with no
+  level/Max concept at all. Column width/gap narrowed (0.3/0.03 → 0.22/0.02)
+  and the physical board widened (30 → 40 studs) to fit the 4th column
+  edge-to-edge, same "widen when a column is added" precedent as the
+  Arcane Dust board. Unlike every other board, it doesn't build AT ALL
+  until `GetEtherUnlocked` reports true - the physical board Part is
+  already hidden per-player by `EtherAreaClient`, but that alone wouldn't
+  stop a `SurfaceGui` from still rendering on top of it, so the UI itself
+  also waits on the same unlock check before it's ever created. Also
+  rechecks on `UpgradeTreeTileBought`, building the board immediately once
+  Tile 9 is bought.
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.

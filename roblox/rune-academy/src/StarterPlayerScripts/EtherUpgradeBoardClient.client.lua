@@ -1,16 +1,22 @@
 -- Builds the Ether upgrade board (Workspace.EtherArea.EtherUpgradeBoard):
 -- a small clear icon + amount readout (no "Ether" word) above an "Ether
--- Upgrades" title banner, then 3 columns filling the board edge-to-edge -
+-- Upgrades" title banner, then 4 columns filling the board edge-to-edge -
 -- "More Ether" (100 levels), "Click Speed" (10 levels, how often the
--- Shroud pays out per click), and "More Dust" (50 levels, boosts Arcane
--- Dust yield, mirroring the Arcane Dust board's own "More Mana" column).
--- Same createUpgradeColumn pattern as every other board, just costed in
--- Ether. Themed purple throughout, per direct request. Unlike every other
--- board, this one doesn't build AT ALL until `GetEtherUnlocked` reports
--- true for this player - the physical board Part is already hidden
--- per-player by EtherAreaClient, but that alone wouldn't stop a
--- SurfaceGui from still rendering on it, so the UI itself waits on the
--- same unlock check before it ever gets created.
+-- Shroud pays out per click), "More Dust" (50 levels, boosts Arcane Dust
+-- yield, mirroring the Arcane Dust board's own "More Mana" column), and
+-- "Auto Click" (a single one-time purchase, not leveled, per direct
+-- request "a 1 time upgrade that gives you auto click on the ether" -
+-- once bought, WorldBuilder's background loop collects Ether for you
+-- automatically, no more clicking the Shroud). The first 3 share the
+-- createUpgradeColumn pattern (level/max/nextLevelCost, Buy+Max buttons);
+-- Auto Click uses its own simpler createOneTimeColumn (a single Buy
+-- button that becomes "Owned" once bought, no level/Max concept at all).
+-- Themed purple throughout, per direct request. Unlike every other board,
+-- this one doesn't build AT ALL until `GetEtherUnlocked` reports true for
+-- this player - the physical board Part is already hidden per-player by
+-- EtherAreaClient, but that alone wouldn't stop a SurfaceGui from still
+-- rendering on it, so the UI itself waits on the same unlock check before
+-- it ever gets created.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -25,6 +31,8 @@ local getEtherClickSpeedStateFunction = remotes:WaitForChild("GetEtherClickSpeed
 local buyEtherClickSpeedUpgradeFunction = remotes:WaitForChild("BuyEtherClickSpeedUpgrade")
 local getEtherDustBoostStateFunction = remotes:WaitForChild("GetEtherDustBoostState")
 local buyEtherDustBoostUpgradeFunction = remotes:WaitForChild("BuyEtherDustBoostUpgrade")
+local getEtherAutoClickStateFunction = remotes:WaitForChild("GetEtherAutoClickState")
+local buyEtherAutoClickUpgradeFunction = remotes:WaitForChild("BuyEtherAutoClickUpgrade")
 local etherUpdatedEvent = remotes:WaitForChild("EtherUpdated")
 local upgradeTreeTileBoughtEvent = remotes:WaitForChild("UpgradeTreeTileBought")
 
@@ -38,8 +46,10 @@ local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
 local COLOR_MAXED_OUT = Color3.fromRGB(90, 90, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
 
-local COLUMN_WIDTH = 0.3
-local COLUMN_GAP = 0.03
+-- Narrowed from 0.3/0.03/0.02 to fit a 4th column edge-to-edge (same
+-- total board width usage, ~0.96, just split 4 ways instead of 3).
+local COLUMN_WIDTH = 0.22
+local COLUMN_GAP = 0.02
 local COLUMN_START_X = 0.02
 local COLUMN_TOP_Y = 0.33
 
@@ -299,6 +309,134 @@ local function buildBoard()
 		end)
 	end
 
+	-- A single one-time purchase (Auto Click) - no level/Max concept, so
+	-- this is deliberately simpler than createUpgradeColumn: one detail
+	-- line (fixed, describing what it does) and one button that goes from
+	-- "Buy" to a disabled "Owned" once bought, never anything in between.
+	local function createOneTimeColumn(slotIndex: number, name: string, iconColor: Color3, detailText: string, getStateRemote, buyRemote)
+		local column = Instance.new("Frame")
+		column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
+		column.Position = UDim2.new(COLUMN_START_X + (slotIndex - 1) * (COLUMN_WIDTH + COLUMN_GAP), 0, COLUMN_TOP_Y, 0)
+		column.BackgroundTransparency = 1
+		column.Parent = background
+
+		local iconFrame = Instance.new("Frame")
+		iconFrame.AnchorPoint = Vector2.new(0.5, 0)
+		iconFrame.Size = UDim2.new(0.4, 0, 0.22, 0)
+		iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
+		iconFrame.BackgroundColor3 = iconColor
+		iconFrame.BorderSizePixel = 0
+		iconFrame.Parent = column
+
+		local iconAspect = Instance.new("UIAspectRatioConstraint")
+		iconAspect.AspectRatio = 1
+		iconAspect.Parent = iconFrame
+
+		local iconCorner = Instance.new("UICorner")
+		iconCorner.CornerRadius = UDim.new(1, 0)
+		iconCorner.Parent = iconFrame
+
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
+		nameLabel.Position = UDim2.new(0, 0, 0.28, 0)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Font = Enum.Font.GothamBold
+		nameLabel.TextScaled = true
+		nameLabel.TextColor3 = ETHER_COLOR
+		nameLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+		nameLabel.Text = name
+		nameLabel.Parent = column
+
+		local detailLabel = Instance.new("TextLabel")
+		detailLabel.Size = UDim2.new(1, 0, 0.16, 0)
+		detailLabel.Position = UDim2.new(0, 0, 0.4, 0)
+		detailLabel.BackgroundTransparency = 1
+		detailLabel.Font = Enum.Font.Gotham
+		detailLabel.TextScaled = true
+		detailLabel.TextWrapped = true
+		detailLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		detailLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+		detailLabel.Text = detailText
+		detailLabel.Parent = column
+
+		local costLabel = Instance.new("TextLabel")
+		costLabel.Size = UDim2.new(1, 0, 0.08, 0)
+		costLabel.Position = UDim2.new(0, 0, 0.6, 0)
+		costLabel.BackgroundTransparency = 1
+		costLabel.Font = Enum.Font.Gotham
+		costLabel.TextScaled = true
+		costLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		costLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+		costLabel.Text = "Cost: -"
+		costLabel.Parent = column
+
+		local buyButton = Instance.new("TextButton")
+		buyButton.Size = UDim2.new(1, 0, 0.16, 0)
+		buyButton.Position = UDim2.new(0, 0, 0.7, 0)
+		buyButton.Font = Enum.Font.GothamBold
+		buyButton.TextScaled = true
+		buyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+		buyButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+		buyButton.Text = "Buy"
+		buyButton.Parent = column
+
+		local buyCorner = Instance.new("UICorner")
+		buyCorner.CornerRadius = UDim.new(0.3, 0)
+		buyCorner.Parent = buyButton
+
+		local buyPadding = Instance.new("UIPadding")
+		buyPadding.PaddingTop = UDim.new(0.22, 0)
+		buyPadding.PaddingBottom = UDim.new(0.22, 0)
+		buyPadding.PaddingLeft = UDim.new(0.15, 0)
+		buyPadding.PaddingRight = UDim.new(0.15, 0)
+		buyPadding.Parent = buyButton
+
+		local currentEther = 0
+		local cost = nil
+		local owned = false
+
+		local function updateButtonColors()
+			if owned then
+				buyButton.Active = false
+				buyButton.Text = "Owned"
+				buyButton.BackgroundColor3 = COLOR_MAXED_OUT
+				return
+			end
+
+			local canAfford = cost ~= nil and currentEther >= cost
+			buyButton.Active = canAfford
+			buyButton.Text = "Buy"
+			buyButton.BackgroundColor3 = canAfford and COLOR_CAN_BUY or COLOR_CANT_AFFORD
+		end
+
+		local function render(state)
+			if not state then
+				return
+			end
+
+			currentEther = state.ether
+			cost = state.cost
+			owned = state.unlocked
+
+			costLabel.Text = owned and "Cost: -" or ("Cost: %s Ether"):format(NumberFormat.format(state.cost))
+			updateButtonColors()
+		end
+
+		render(getStateRemote:InvokeServer())
+
+		etherUpdatedEvent.OnClientEvent:Connect(function(amount)
+			currentEther = amount
+			updateButtonColors()
+		end)
+
+		buyButton.MouseButton1Click:Connect(function()
+			local success, _, newState = buyRemote:InvokeServer()
+			if success then
+				render(newState)
+			end
+		end)
+	end
+
 	createUpgradeColumn(1, "More Ether", ETHER_COLOR, getEtherYieldStateFunction, buyEtherYieldUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
@@ -319,6 +457,15 @@ local function buildBoard()
 		end
 		return ("%.1fx (MAX)"):format(state.multiplier)
 	end)
+
+	createOneTimeColumn(
+		4,
+		"Auto Click",
+		Color3.fromRGB(220, 140, 255),
+		"Collects Ether for you automatically - never click the Shroud again",
+		getEtherAutoClickStateFunction,
+		buyEtherAutoClickUpgradeFunction
+	)
 end
 
 local function checkAndBuild()

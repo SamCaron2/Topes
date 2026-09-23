@@ -28,6 +28,7 @@ local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local EtherHandler = require(script.Parent.EtherHandler)
 local EtherClickSpeedHandler = require(script.Parent.EtherClickSpeedHandler)
 local EtherDustBoostHandler = require(script.Parent.EtherDustBoostHandler)
+local EtherAutoClickHandler = require(script.Parent.EtherAutoClickHandler)
 local EtherIslandHandler = require(script.Parent.EtherIslandHandler)
 local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
 
@@ -108,6 +109,8 @@ local getEtherClickSpeedStateFunction = newRemoteFunction("GetEtherClickSpeedSta
 local buyEtherClickSpeedUpgradeFunction = newRemoteFunction("BuyEtherClickSpeedUpgrade")
 local getEtherDustBoostStateFunction = newRemoteFunction("GetEtherDustBoostState")
 local buyEtherDustBoostUpgradeFunction = newRemoteFunction("BuyEtherDustBoostUpgrade")
+local getEtherAutoClickStateFunction = newRemoteFunction("GetEtherAutoClickState")
+local buyEtherAutoClickUpgradeFunction = newRemoteFunction("BuyEtherAutoClickUpgrade")
 local getEtherIslandStateFunction = newRemoteFunction("GetEtherIslandState")
 local unlockEtherIslandFunction = newRemoteFunction("UnlockEtherIsland")
 local getRuinRuneStateFunction = newRemoteFunction("GetRuinRuneState")
@@ -391,6 +394,19 @@ buyEtherDustBoostUpgradeFunction.OnServerInvoke = function(player, mode)
 		return false, "Invalid request"
 	end
 	local success, err, newState = EtherDustBoostHandler.buyUpgrade(player, mode)
+	if success then
+		etherUpdatedEvent:FireClient(player, newState.ether)
+	end
+	return success, err, newState
+end
+
+getEtherAutoClickStateFunction.OnServerInvoke = function(player)
+	return EtherAutoClickHandler.getState(player)
+end
+
+-- A single one-time purchase, not a leveled upgrade - no `mode` argument.
+buyEtherAutoClickUpgradeFunction.OnServerInvoke = function(player)
+	local success, err, newState = EtherAutoClickHandler.buyUpgrade(player)
 	if success then
 		etherUpdatedEvent:FireClient(player, newState.ether)
 	end
