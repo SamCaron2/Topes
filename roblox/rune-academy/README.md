@@ -439,6 +439,18 @@ design notes.
   file is one single Luau chunk with a hard 200-local-register ceiling,
   and every section from here on has to budget its own locals carefully
   against everything already declared earlier in the file.
+  The literal (70, 104) anchor above turned out to sit only ~5 studs from
+  EtherIsland's own X edge and ~14 from its Z edge - close enough that the
+  row ended up partly hanging off the island (per report, "close but it is
+  hanging off the island"). `ROW_LEFT_ANCHOR` was nudged to (90, 124) - a
+  uniform +20/+20 translation of the same anchor, which shifts the whole
+  row together without needing to re-derive any of the direction math
+  above, since only where the row STARTS moved, not its own internal
+  layout. The decor clear radius was also widened from 18 to 30 studs -
+  trees were still showing up between/around the boards at the smaller
+  radius ("you will probably have to get rid of these trees"), since a
+  tree sitting in the GAP between two board centers can easily be farther
+  from either center than half either board's own width.
   Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
   around its edge, inset from the border, skipping the bridge's landing
   spot, and each given a small random `DECOR_JITTER` offset so the ring

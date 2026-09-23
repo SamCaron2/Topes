@@ -1599,8 +1599,17 @@ do
 	local CONVERSION_WIDTH = 20
 	local ASTRAL_SHARD_WIDTH = 34
 
+	-- Nudged +20/+20 from the originally given (70, 104) - per report
+	-- ("close but it is hanging off the island") - that anchor sat only
+	-- ~5 studs from EtherIsland's X edge and ~14 from its Z edge, so this
+	-- pulls the whole row further from that corner while keeping the same
+	-- relative layout/facing untouched (a uniform translation of the
+	-- anchor moves the entire row together, so this needs no re-deriving
+	-- of the direction math below - only where the row starts).
+	local ROW_LEFT_ANCHOR = Vector3.new(90, ISLAND_TOP_Y + 9, 124)
+
 	local aimCFrame = CFrame.lookAt(
-		Vector3.new(70, ISLAND_TOP_Y + 9, 104),
+		ROW_LEFT_ANCHOR,
 		Vector3.new(etherIslandCenterX, ISLAND_TOP_Y + 9, etherIslandCenterZ)
 	)
 	local rowRotation = aimCFrame.Rotation
@@ -1609,12 +1618,12 @@ do
 	-- A board's "left side," as experienced by a viewer standing in front
 	-- of it (its Front face points back at them, so their own left/right
 	-- are mirrored relative to the board's own RightVector) is the edge in
-	-- the SAME direction as the board's RightVector - so the given anchor
-	-- (70, 104) is offset 0 studs along -RightVector from itself, and
-	-- "to the right" of that (per direct request) continues further along
-	-- -RightVector past each board already placed.
+	-- the SAME direction as the board's RightVector - so ROW_LEFT_ANCHOR is
+	-- offset 0 studs along -RightVector from itself, and "to the right" of
+	-- that (per direct request) continues further along -RightVector past
+	-- each board already placed.
 	local function boardCFrame(distanceFromLeftAnchor: number, width: number): CFrame
-		local center = Vector3.new(70, ISLAND_TOP_Y + 9, 104) - rowRightVector * (distanceFromLeftAnchor + width / 2)
+		local center = ROW_LEFT_ANCHOR - rowRightVector * (distanceFromLeftAnchor + width / 2)
 		return CFrame.new(center) * rowRotation
 	end
 
@@ -1672,10 +1681,14 @@ do
 	end
 
 	-- Clearing decor near all 3 boards' new positions - per direct request
-	-- ("please remove any bushes if eneded") - same "destroy any decor
-	-- part within a radius" precedent as RuneAltarBoard's own clear-radius
-	-- pass.
-	local BOARD_DECOR_CLEAR_RADIUS = 18
+	-- ("please remove any bushes if eneded"/"you will probably have to get
+	-- rid of these trees"). Widened from 18 to 30 studs - trees were still
+	-- showing up between/around the boards at the smaller radius, since a
+	-- tree sitting in the GAP between two board centers can easily be
+	-- farther than half a board's own width away from either center. Same
+	-- "destroy any decor part within a radius" precedent as
+	-- RuneAltarBoard's own clear-radius pass.
+	local BOARD_DECOR_CLEAR_RADIUS = 30
 	local etherIslandDecorFolder = Workspace:FindFirstChild("EtherIslandDecor")
 	if etherIslandDecorFolder then
 		for _, decorPart in etherIslandDecorFolder:GetChildren() do
