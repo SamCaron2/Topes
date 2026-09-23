@@ -581,23 +581,33 @@ design notes.
   reachability, same defense-in-depth reasoning as every other SecondIsland
   handler. `BASE_MANA_COST_PER_TICK` raised from 1,000 to 10,000 per direct
   request ("make the rune cost more mana that just 5k").
-- `RuneCollectionHandler.lua` — a second, permanent Mana bonus from simply
+- `RuneCollectionHandler.lua` — a second, permanent bonus from simply
   OWNING copies of a Rune rank, on top of and separate from the existing
   per-pull Stat boosts in `GameConfig.RuneRanks` - per direct request
   ("everytime you get something like for example everytime you get
   apprentice you get .2x mana until it gets to 5x and it tells you that
-  too"). Each of the 9 ranks grants its OWN +0.2x Mana per copy currently
+  too"). Each of the 9 ranks grants its OWN +0.2x per copy currently
   owned (`data.runesOwned[rankName]`, already tracked by `RuneHandler` for
   every pull/collect - no new `PlayerData` field needed), capped at a flat
   x5 contribution from that one rank alone (`getRankMultiplier`); every
   rank's own multiplier then combines multiplicatively with every other
-  rank's (`getManaMultiplier`), same "multiply every source together"
-  convention as every other Mana multiplier chain in this game. `getState`
-  packages every rank's name/odds/owned count/current multiplier for the
-  new odds card below ("it tells you that too") and is exposed through a
-  new `GetRuneCollectionState` RemoteFunction in `Main.server.lua`.
-  `ManaHandler.effectiveAmountForLevel` now multiplies this in alongside
-  Rebirth Shop/Mana Boost/Wizard Tier/Upgrade Tree.
+  rank's (`getMultiplier`), same "multiply every source together"
+  convention as every other multiplier chain in this game. Originally
+  Mana-only, widened per a direct follow-up request ("have it multiply
+  other stuff to like rebirths, ether and dust please") to a single
+  combined multiplier now folded into all four currency handlers:
+  `ManaHandler.effectiveAmountForLevel`, `RebirthHandler.getState`/
+  `.rebirth` (multiplying the Mana→Rebirths conversion rate itself, same
+  spot as the Rebirth Shop/Wizard Tier/Upgrade Tree multipliers),
+  `EtherHandler.collect` (its first multiplier of any kind - Ether had
+  none before this), and `ArcaneDustHandler.collect` (alongside Wizard
+  Tier/Upgrade Tree/Ether Dust Boost). `getState` packages every rank's
+  name/odds/owned count/current multiplier for the odds card below ("it
+  tells you that too") and is exposed through a new
+  `GetRuneCollectionState` RemoteFunction in `Main.server.lua`; its
+  `totalMultiplier` field (renamed from `totalManaMultiplier` once the
+  bonus stopped being Mana-only) is shown on the card as "Total Bonus
+  (Mana/Rebirths/Ether/Dust)".
 - `UpgradeTreeHandler.lua` — the full 9-tile ground upgrade tree:
   walk-over tiles, only reachable once `WizardTierHandler` reports Tier
   3+, each a ONE-TIME purchase (not a leveled upgrade like everything

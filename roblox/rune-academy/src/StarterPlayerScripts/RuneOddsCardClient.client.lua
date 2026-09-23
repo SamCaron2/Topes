@@ -1,10 +1,13 @@
 -- Floating info card above the Rune Altar's orb, listing every Rune
--- rank's odds plus how the Mana-collection bonus is progressing for each
--- one - per direct request ("show the levels and odds to roll them as a
--- card above it... everytime you get [a rank] you get .2x mana until it
--- gets to 5x and it tells you that too"). Read-only display - the actual
--- bonus math lives server-side in RuneCollectionHandler. Gated on the
--- same hasUnlockedRuin check as every other Ruin-area script, since a
+-- rank's odds plus how its ownership bonus is progressing for each one -
+-- per direct request ("show the levels and odds to roll them as a card
+-- above it... everytime you get [a rank] you get .2x mana until it gets
+-- to 5x and it tells you that too"), later widened to also multiply
+-- Rebirths, Ether, and Arcane Dust ("have it multiply other stuff too
+-- like rebirths, ether and dust please") - hence "Total Bonus" rather
+-- than "Total Mana Bonus" on the summary line. Read-only display - the
+-- actual bonus math lives server-side in RuneCollectionHandler. Gated on
+-- the same hasUnlockedRuin check as every other Ruin-area script, since a
 -- BillboardGui renders independent of its Adornee's own Transparency.
 
 local Players = game:GetService("Players")
@@ -86,7 +89,7 @@ totalText.Font = Enum.Font.Gotham
 totalText.TextScaled = true
 totalText.TextColor3 = Color3.fromRGB(200, 200, 200)
 totalText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-totalText.Text = "Total Mana Bonus: x1.0"
+totalText.Text = "Total Bonus (Mana/Rebirths/Ether/Dust): x1.0"
 totalText.Parent = background
 
 local ROW_COUNT = 9
@@ -114,7 +117,7 @@ local function render(state)
 		return
 	end
 
-	totalText.Text = ("Total Mana Bonus: x%.1f"):format(state.totalManaMultiplier)
+	totalText.Text = ("Total Bonus (Mana/Rebirths/Ether/Dust): x%.1f"):format(state.totalMultiplier)
 
 	for i, rankState in state.ranks do
 		local label = rankLabels[i]

@@ -1,9 +1,10 @@
 -- Server-authoritative Rebirths: reset your Mana AND all four Mana-side
 -- upgrades (Mana Per Pickup, Mana Spawn Speed, Walking Speed, Collection
 -- Range) for a permanent Rebirths currency. 1,000 Mana = 1 Rebirth before
--- the Rebirth Shop's "Rebirth Multiplier" (1x-50x) scales that up, and it's
--- fractional either way - not floored. Rebirth Shop upgrades
--- (RebirthShopHandler) are NOT reset - they're the whole point of
+-- the Rebirth Shop's "Rebirth Multiplier" (1x-50x), Wizard Tier, Upgrade
+-- Tree, and the Rune collection bonus (RuneCollectionHandler) all scale
+-- that up, and it's fractional either way - not floored. Rebirth Shop
+-- upgrades (RebirthShopHandler) are NOT reset - they're the whole point of
 -- rebirthing, so each run collects Mana faster than the last.
 
 local PlayerData = require(script.Parent.PlayerData)
@@ -11,6 +12,7 @@ local WalkSpeedHandler = require(script.Parent.WalkSpeedHandler)
 local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
 local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
+local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
 
 local MANA_PER_REBIRTH = 1000
 local MIN_MANA_TO_REBIRTH = MANA_PER_REBIRTH -- must have at least one full Rebirth's worth
@@ -27,6 +29,7 @@ function RebirthHandler.getState(player: Player)
 	local multiplier = RebirthShopHandler.getRebirthMultiplier(player)
 		* WizardTierHandler.getRebirthMultiplier(player)
 		* UpgradeTreeHandler.getRebirthMultiplier(player)
+		* RuneCollectionHandler.getMultiplier(player)
 	return {
 		rebirths = data.rebirths or 0,
 		mana = mana,
@@ -50,6 +53,7 @@ function RebirthHandler.rebirth(player: Player)
 	local multiplier = RebirthShopHandler.getRebirthMultiplier(player)
 		* WizardTierHandler.getRebirthMultiplier(player)
 		* UpgradeTreeHandler.getRebirthMultiplier(player)
+		* RuneCollectionHandler.getMultiplier(player)
 	data.rebirths = (data.rebirths or 0) + (mana / MANA_PER_REBIRTH) * multiplier
 	data.mana = 0
 	data.manaYieldLevel = 1

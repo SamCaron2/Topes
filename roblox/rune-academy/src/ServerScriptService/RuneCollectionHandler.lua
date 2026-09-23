@@ -1,15 +1,18 @@
--- Server-authoritative permanent Mana bonus from OWNING Rune ranks, on top
--- of and separate from the existing per-pull Stat boosts in
+-- Server-authoritative permanent bonus from OWNING Rune ranks, on top of
+-- and separate from the existing per-pull Stat boosts in
 -- GameConfig.RuneRanks - per direct request ("everytime you get something
 -- like for example everytime you get apprentice you get .2x mana until
 -- it gets to 5x and it tells you that too"). Each of the 9 ranks grants
--- its OWN +0.2x Mana per copy currently owned (data.runesOwned[rankName],
+-- its OWN +0.2x per copy currently owned (data.runesOwned[rankName],
 -- already tracked by RuneHandler for every pull/collect), capped at a
 -- flat x5 contribution from that one rank alone; every rank's own
 -- multiplier then combines multiplicatively with every other rank's, same
--- "multiply every source together" convention as every other Mana
--- multiplier in this game (WizardTier * UpgradeTree * RebirthShop *
--- ManaBoost * ...).
+-- "multiply every source together" convention as every other multiplier
+-- chain in this game (WizardTier * UpgradeTree * RebirthShop * ManaBoost *
+-- ...). Originally Mana-only; per direct follow-up request ("have it
+-- multiply other stuff too like rebirths, ether and dust please") this one
+-- combined multiplier (`getMultiplier`) is now also folded into
+-- RebirthHandler, EtherHandler, and ArcaneDustHandler.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
@@ -33,7 +36,10 @@ function RuneCollectionHandler.getRankMultiplier(player: Player, rankName: strin
 	return math.min(1 + owned * PER_COPY_BONUS, RANK_CAP_MULTIPLIER)
 end
 
-function RuneCollectionHandler.getManaMultiplier(player: Player): number
+-- Combined bonus from every rank owned - applied to Mana (ManaHandler),
+-- Rebirths (RebirthHandler), Ether (EtherHandler), and Arcane Dust
+-- (ArcaneDustHandler) alike, per direct request.
+function RuneCollectionHandler.getMultiplier(player: Player): number
 	local multiplier = 1
 	for _, rank in GameConfig.RuneRanks do
 		multiplier *= RuneCollectionHandler.getRankMultiplier(player, rank.name)
@@ -43,8 +49,8 @@ end
 
 -- For the info card floating above the Rune Altar (RuneOddsCardClient):
 -- every rank's name, odds, how many are currently owned, and its
--- current/max Mana multiplier, in GameConfig.RuneRanks' own order - "and
--- it tells you that too."
+-- current/max multiplier, in GameConfig.RuneRanks' own order - "and it
+-- tells you that too."
 function RuneCollectionHandler.getState(player: Player)
 	local data = PlayerData.get(player)
 	if not data then
@@ -64,7 +70,7 @@ function RuneCollectionHandler.getState(player: Player)
 
 	return {
 		ranks = ranks,
-		totalManaMultiplier = RuneCollectionHandler.getManaMultiplier(player),
+		totalMultiplier = RuneCollectionHandler.getMultiplier(player),
 	}
 end
 

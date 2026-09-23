@@ -51,7 +51,7 @@ local function effectiveAmountForLevel(player: Player, level: number): number
 			* ManaBoostHandler.getMultiplier(player)
 			* WizardTierHandler.getManaMultiplier(player)
 			* UpgradeTreeHandler.getManaMultiplier(player)
-			* RuneCollectionHandler.getManaMultiplier(player)
+			* RuneCollectionHandler.getMultiplier(player)
 	)
 end
 
