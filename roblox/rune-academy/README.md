@@ -579,7 +579,25 @@ design notes.
   every tick by `RuneHandler.collectAtAltar`. `buyNextTier` checks
   `isUnlocked` (= `hasUnlockedRuin`) directly, not just physical/client
   reachability, same defense-in-depth reasoning as every other SecondIsland
-  handler.
+  handler. `BASE_MANA_COST_PER_TICK` raised from 1,000 to 10,000 per direct
+  request ("make the rune cost more mana that just 5k").
+- `RuneCollectionHandler.lua` — a second, permanent Mana bonus from simply
+  OWNING copies of a Rune rank, on top of and separate from the existing
+  per-pull Stat boosts in `GameConfig.RuneRanks` - per direct request
+  ("everytime you get something like for example everytime you get
+  apprentice you get .2x mana until it gets to 5x and it tells you that
+  too"). Each of the 9 ranks grants its OWN +0.2x Mana per copy currently
+  owned (`data.runesOwned[rankName]`, already tracked by `RuneHandler` for
+  every pull/collect - no new `PlayerData` field needed), capped at a flat
+  x5 contribution from that one rank alone (`getRankMultiplier`); every
+  rank's own multiplier then combines multiplicatively with every other
+  rank's (`getManaMultiplier`), same "multiply every source together"
+  convention as every other Mana multiplier chain in this game. `getState`
+  packages every rank's name/odds/owned count/current multiplier for the
+  new odds card below ("it tells you that too") and is exposed through a
+  new `GetRuneCollectionState` RemoteFunction in `Main.server.lua`.
+  `ManaHandler.effectiveAmountForLevel` now multiplies this in alongside
+  Rebirth Shop/Mana Boost/Wizard Tier/Upgrade Tree.
 - `UpgradeTreeHandler.lua` — the full 9-tile ground upgrade tree:
   walk-over tiles, only reachable once `WizardTierHandler` reports Tier
   3+, each a ONE-TIME purchase (not a leveled upgrade like everything
@@ -998,6 +1016,22 @@ design notes.
   colors) so "sit there and it collects by chance" is actually visible
   happening in real time. Multiple entries (once the Familiar tier grants
   extra rolls) stack a bit higher each so they don't overlap.
+- `RuneOddsCardClient.client.lua` — a floating `BillboardGui` info card
+  above the Rune Altar's orb (`Workspace.FantasyRuin.RuinOrb`), listing
+  every Rune rank's odds plus how the new ownership-based Mana bonus is
+  progressing for each one - per direct request ("also show the levels
+  and odds to roll them as a card above it... everytime you get [a rank]
+  you get .2x mana until it gets to 5x and it tells you that too", with a
+  reference screenshot of another game's own odds/RPS card). Read-only
+  display - the actual bonus math lives server-side in
+  `RuneCollectionHandler`, fetched through the new `GetRuneCollectionState`
+  RemoteFunction. Shows a "Total Mana Bonus" line plus one row per rank
+  (`"RankName  1/odds  •  Owned N  •  xM.M"`, colored via the same
+  `RANK_COLORS` ramp `RuneAltarClient` uses), refreshing on every
+  `RuneAltarCollected` tick. Gated on `GetWizardTierState().unlockedRuin`
+  via the same retry-loop pattern `WizardRuinClient` uses, since a
+  `BillboardGui` renders independent of its Adornee's own `Transparency`
+  and would otherwise show through the Ruin's own locked/hidden state.
 - `DebugPositionClient.client.lua` — DEV/TESTING ONLY, remove before
   shipping. A small always-on corner label showing this player's live
   world position (X/Y/Z, rounded to the nearest stud, `RunService

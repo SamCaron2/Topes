@@ -31,6 +31,7 @@ local EtherDustBoostHandler = require(script.Parent.EtherDustBoostHandler)
 local EtherAutoClickHandler = require(script.Parent.EtherAutoClickHandler)
 local EtherIslandHandler = require(script.Parent.EtherIslandHandler)
 local RuinRuneHandler = require(script.Parent.RuinRuneHandler)
+local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -116,6 +117,7 @@ local unlockEtherIslandFunction = newRemoteFunction("UnlockEtherIsland")
 local getRuinRuneStateFunction = newRemoteFunction("GetRuinRuneState")
 local buyRuinRuneTierFunction = newRemoteFunction("BuyRuinRuneTier")
 local runeAltarCollectedEvent = newRemoteEvent("RuneAltarCollected") -- server -> client, fired at whichever player just collected a Rune from standing on the Altar
+local getRuneCollectionStateFunction = newRemoteFunction("GetRuneCollectionState")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -457,6 +459,10 @@ buyRuinRuneTierFunction.OnServerInvoke = function(player)
 		manaUpdatedEvent:FireClient(player, newState.mana)
 	end
 	return success, err, newState
+end
+
+getRuneCollectionStateFunction.OnServerInvoke = function(player)
+	return RuneCollectionHandler.getState(player)
 end
 
 getWalkSpeedStateFunction.OnServerInvoke = function(player)

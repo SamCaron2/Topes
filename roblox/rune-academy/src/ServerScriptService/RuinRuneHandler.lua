@@ -66,7 +66,9 @@ function RuinRuneHandler.getExtraRolls(player: Player): number
 	return tierBought(player, 4) and 1 or 0
 end
 
-local BASE_MANA_COST_PER_TICK = 1000
+-- Raised from 1,000 per direct request ("make the rune cost more mana
+-- than just 5k").
+local BASE_MANA_COST_PER_TICK = 10000
 
 function RuinRuneHandler.getManaCostPerTick(player: Player): number
 	if tierBought(player, 5) then
