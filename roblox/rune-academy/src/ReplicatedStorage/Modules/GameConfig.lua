@@ -201,7 +201,7 @@ GameConfig.FanGroupId = 0
 
 -- UserIds auto-granted their title on join. Fill in with real UserIds
 -- (yours included, for Owner) before shipping.
-GameConfig.OwnerUserIds = {}
+GameConfig.OwnerUserIds = { 11620037282 } -- Sam Caron (Kharened), per direct request
 GameConfig.AdminUserIds = {}
 GameConfig.TesterUserIds = {}
 
