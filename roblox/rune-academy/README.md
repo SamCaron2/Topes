@@ -859,6 +859,13 @@ design notes.
   colors) so "sit there and it collects by chance" is actually visible
   happening in real time. Multiple entries (once the Familiar tier grants
   extra rolls) stack a bit higher each so they don't overlap.
+- `DebugPositionClient.client.lua` — DEV/TESTING ONLY, remove before
+  shipping. A small always-on corner label showing this player's live
+  world position (X/Y/Z, rounded to the nearest stud, `RunService
+  .Heartbeat`-driven) - added per direct request so future placement asks
+  can be given as exact numbers ("put it at X -260, Z 610") by standing
+  where it should go and reading this off, instead of a screenshot plus
+  guesswork each time.
 - `UpgradeTreeClient.client.lua` — the info sign for whichever of
   `UpgradeTreeTile1`-`UpgradeTreeTile9` are currently reachable, styled
   like the reference upgrade cards (colored background, title, cost) but
