@@ -408,31 +408,37 @@ design notes.
   built) is now further nested in its own inner `do...end` too - only the
   two ClickDetector variables survive past it, pre-declared just outside
   and assigned (not re-`local`'d) inside.
-  `LeyShardUpgradeBoard`'s own `SurfaceGui.Face` was flipped from "Left" to
-  "Right" per direct request, from an annotated screenshot ("Flip the
-  cards so they are facing where I highlighted in red. So they are towards
-  the edge") - it now faces away from the mat, toward the island's edge,
-  instead of back at the mat. Decor near its new facing side is cleared on
-  a radius too ("Remove bushes and trees if you need"), same
-  "destroy any decor part within a radius" precedent as RuneAltarBoard's
-  own clear-radius pass.
-  Right next to it (`LeyShardConversionBoard`/`AstralShardUpgradeBoard`,
-  Cards 3 and 2 respectively - see `AstralShardConversionHandler` above),
-  continuing further along the same +Z direction from
-  `LeyShardUpgradeBoard`, at the same X (coplanar, same flipped "Right"
-  facing) - per direct request ("to the right of ley shards we want
-  another material card... a card next to that where you can convert your
-  ley shards into that"); +Z is a guess like every other board placement
-  here, flip the sign if it lands on the wrong side. The Conversion board
-  sits first in the row (right after the Ley Shard board) with the Astral
-  Shard board past that - order swapped from the original build per direct
-  request ("switch convert shards and astral shards"). Their own separate
-  `do...end` block, same register-budget reasoning as the Ley Shard
-  section - with an extra INNER `do...end` nested around just the two
-  boards' own Part-construction locals (their register footprint alone,
-  on top of everything already declared earlier in this same file by this
-  point, was enough to hit the 200 ceiling a second time the moment decor-
-  clearing was added here too).
+  The 3 boards (`LeyShardUpgradeBoard`, `LeyShardConversionBoard`,
+  `AstralShardUpgradeBoard`, in that left-to-right order) were later
+  repositioned as their own explicit row, independent of the mat's own
+  position, per direct request with exact coordinates: "Put the left side
+  of the ley shard card on x70 z104 facing towards the miiddle of the 3rd
+  island. to the right put the convert shards card and to the rioght of
+  that the astra card shard." Built with `CFrame.lookAt` from that literal
+  anchor point toward `etherIslandCenterX`/`Z` - the board's readable
+  "Front" face (Roblox's NormalId naming; its outward normal is the local
+  -Z axis, matching `CFrame.lookAt`'s `LookVector`) ends up pointing at the
+  island's center, instead of the old axis-aligned Left/Right facing. Each
+  board's `Size` swapped from `(1, 18, width)` to `(width, 18, 1)` to
+  match - the thin dimension has to sit on local Z now, not X, for
+  "Front" to actually be a flat face. All 3 boards share ONE orientation
+  (not each individually re-aimed at the center) since the row spans about
+  as many studs as the distance to the center itself - re-aiming each one
+  separately would visibly fan them out instead of reading as a straight
+  row; only their position along the row differs, offset further along the
+  shared orientation's `-RightVector` for each board "to the right,"
+  matching how a viewer standing in front of the row (facing back at it)
+  has their own left/right mirrored relative to the boards' own
+  `RightVector`. Decor near all 3 boards' new positions is cleared on a
+  radius too ("please remove any bushes if eneded"), same "destroy any
+  decor part within a radius" precedent as RuneAltarBoard's own
+  clear-radius pass. All 3 boards' construction now lives together in one
+  `do...end` block (previously the Ley Shard board was built alongside the
+  mat, and Convert/Astral Shard were a separate block) with an inner
+  nested `do...end` around just the 3 Parts' own construction locals - this
+  file is one single Luau chunk with a hard 200-local-register ceiling,
+  and every section from here on has to budget its own locals carefully
+  against everything already declared earlier in the file.
   Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
   around its edge, inset from the border, skipping the bridge's landing
   spot, and each given a small random `DECOR_JITTER` offset so the ring

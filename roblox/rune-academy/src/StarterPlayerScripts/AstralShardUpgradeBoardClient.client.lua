@@ -37,11 +37,13 @@ local function buildBoard()
 	end
 	built = true
 
-	-- Faces away from the mat, toward the island's edge - per direct
-	-- request ("flip the cards so they are facing... towards the edge").
+	-- Faces toward the middle of EtherIsland via the board's own CFrame
+	-- (built with CFrame.lookAt in WorldBuilder) - "Front" in Roblox's
+	-- NormalId naming - per direct request ("facing towards the miiddle
+	-- of the 3rd island").
 	local surfaceGui = Instance.new("SurfaceGui")
 	surfaceGui.Name = "AstralShardUpgradeBoardGui"
-	surfaceGui.Face = Enum.NormalId.Right
+	surfaceGui.Face = Enum.NormalId.Front
 	surfaceGui.Adornee = board
 	surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	surfaceGui.PixelsPerStud = 36

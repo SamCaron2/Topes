@@ -50,13 +50,15 @@ local COLUMN_TOP_Y = 0.33
 
 local built = false
 
--- Faces away from the mat, toward the island's edge - "Right" in Roblox's
--- NormalId naming - per direct request ("flip the cards so they are
--- facing... towards the edge"), flipped from the original "Left" facing
--- that pointed back at the mat.
+-- Faces toward the middle of EtherIsland via the board's own CFrame
+-- (built with CFrame.lookAt in WorldBuilder) - "Front" in Roblox's
+-- NormalId naming, since CFrame.lookAt's LookVector (the direction toward
+-- the island's center) is the local -Z axis, matching Front's outward
+-- normal - per direct request ("facing towards the miiddle of the 3rd
+-- island").
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "LeyShardUpgradeBoardGui"
-surfaceGui.Face = Enum.NormalId.Right
+surfaceGui.Face = Enum.NormalId.Front
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36
