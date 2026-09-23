@@ -20,6 +20,14 @@ local BASE_WALK_SPEED = 16
 local MAX_MULTIPLIER = 1.5
 local COST_PER_LEVEL = UpgradeCost.costForLevel(19) -- = 190 Mana right now
 
+-- TEMP: testing only - per direct request ("make my sprint speed times 4
+-- just so I can move around the map faster when I quality check each
+-- time"), multiplies the real, level-based WalkSpeed on top of everything
+-- above. Doesn't touch walkSpeedLevel/costForLevel/the upgrade board's own
+-- displayed 1x-1.5x range at all - purely a QA convenience layered on at
+-- the very end. Remove this multiplier once you're done testing.
+local TEMP_QA_SPEED_MULTIPLIER = 4
+
 local function multiplierForLevel(level: number): number
 	local t = (level - 1) / (MAX_SPEED_LEVEL - 1)
 	return 1 + (MAX_MULTIPLIER - 1) * t
@@ -42,7 +50,7 @@ local function applyWalkSpeed(player: Player)
 	if not (data and humanoid) then
 		return
 	end
-	humanoid.WalkSpeed = walkSpeedForLevel(data.walkSpeedLevel or 1)
+	humanoid.WalkSpeed = walkSpeedForLevel(data.walkSpeedLevel or 1) * TEMP_QA_SPEED_MULTIPLIER
 end
 
 -- Exposed so RebirthHandler can re-apply Humanoid.WalkSpeed right after

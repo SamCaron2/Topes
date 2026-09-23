@@ -250,6 +250,17 @@ function PlayerData.load(player: Player)
 	data.dustTreeTile8 = true
 	data.dustTreeTile9 = true
 
+	-- TEMP: testing only - per direct request ("spawn me in with more all
+	-- ley shard card uogrades maxed just to see how much I gain"), also
+	-- skips straight past the EtherIsland gate (its own real unlock still
+	-- costs 1e9 Ether normally) and maxes all 3 Ley Shard columns, so the
+	-- Mat/board are immediately usable/testable at full strength. Remove
+	-- these lines once you're done testing.
+	data.etherIslandUnlocked = true
+	data.leyShardYieldLevel = 100
+	data.leyShardSpeedLevel = 10
+	data.leyShardManaBoostLevel = 50
+
 	sessions[player] = data
 
 	local leaderstats = Instance.new("Folder")

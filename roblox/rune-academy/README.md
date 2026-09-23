@@ -63,6 +63,13 @@ design notes.
   `defaultData()` builds every zone/currency's save-data shape straight
   from `GameConfig.Zones` (add a currency to config, its save slot exists
   automatically — no separate PlayerData change needed).
+  `PlayerData.load` also has a block of TEMP testing-only overrides,
+  clearly marked for removal, that force-set generous currency amounts and
+  skip past every prior milestone on EVERY join (regardless of what's
+  actually saved) so later-game content stays immediately reachable while
+  testing - most recently extended per direct request ("spawn me in with
+  more all ley shard card uogrades maxed just to see how much I gain") to
+  also skip the EtherIsland gate and max all 3 Ley Shard columns.
 - `ResourceEngine.lua` — the generic engine every currency runs on:
   server-authoritative collect (click/stand, distance + debounce checked),
   buy upgrade (one/max), self-prestige, chain reset, sell (see below), and
@@ -772,7 +779,13 @@ design notes.
   real progress rather than a quick fill-in upgrade, so the first
   purchase alone costs as much as reaching level 20 on "More Mana"
   (`UpgradeCost.costForLevel(19)` = 190 Mana right now), climbing by
-  that same amount every level after.
+  that same amount every level after. Also carries a TEMP testing-only
+  `TEMP_QA_SPEED_MULTIPLIER` (x4), clearly marked for removal, layered on
+  top of the real level-based speed at the point it's actually applied to
+  the Humanoid - per direct request ("make my sprint speed times 4 just so
+  I can move around the map faster when I quality check each time"). Only
+  affects the live `Humanoid.WalkSpeed`; `walkSpeedLevel`/`costForLevel`/
+  the upgrade board's own displayed 1x-1.5x range are untouched by it.
 - `CollectionRangeHandler.lua` — the "Collection Range" upgrade (level
   1-12, radius linear 3 studs → 9 studs - halved from 18, which felt
   too strong). Also on its own cost curve
