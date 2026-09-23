@@ -101,7 +101,10 @@ design notes.
   instant Ascension, tracks Robux spent for the leaderboard, and guards
   against double-granting a retried purchase.
 - `TitleHandler.lua` — unlocks and equips Titles (`GameConfig.Titles`),
-  mirrors the equipped one onto Player attributes.
+  mirrors the equipped one onto Player attributes (`Title`/`TitleColor`/
+  `TitleRainbow`) - read client-side by `TitleDisplayClient` to draw the
+  floating username/title label above each player's head, no remote round
+  trip needed.
 - `LeaderboardHandler.lua` — the 4 global leaderboards (Playtime, Robux
   Spent, Total Mana, Runes Opened) shown on the Leaderboard island's sign
   boards, backed by one `OrderedDataStore` per stat so rankings persist
@@ -796,6 +799,24 @@ design notes.
   from `GetProfile` every time the panel opens rather than staying
   subscribed to live updates, since a modal stat/title screen doesn't need
   to track changes while it's closed.
+- `TitleDisplayClient.client.lua` — the floating username + equipped
+  title above every player's head, own included, per direct request ("I
+  want it to say your username above your head and underneath the
+  username is your title. Have it be [None] if they don't equip
+  anything") - this is exactly what `TitleHandler`'s own comments already
+  described but never actually got built until now. Reads Player
+  attributes only (`Title`/`TitleColor`/`TitleRainbow`) for every player,
+  own included, live via `GetAttributeChangedSignal` so (re)equipping
+  updates the label immediately for anyone standing nearby - no remote
+  round trip. Shows `[None]` in gray when `Title` is unset. A rainbow
+  title (`TitleRainbow`, e.g. the "Rich" title) is driven by one shared
+  `RunService.Heartbeat` loop cycling every displayed rainbow label
+  through the same hue clock (`RAINBOW_CYCLE_SECONDS` = 3), rather than a
+  separate loop per player - implements the "animated hue cycle
+  client-side" `GameConfig.Titles` itself already promised in a comment.
+  Sets `Humanoid.NameDisplayDistance = 0` on every character so Roblox's
+  own default floating nameplate doesn't also show, stacking a second
+  username tag on top of this one.
 - `RunesMenuClient.client.lua` — the Runes panel opened by
   `OpenRunesRequested`, per direct request after the side-menu Runes icon
   turned out to do nothing at all when clicked. Same dark-modal styling as
