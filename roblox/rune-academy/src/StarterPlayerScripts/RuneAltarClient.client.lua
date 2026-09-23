@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local ClientSettings = require(ReplicatedStorage.Modules.ClientSettings)
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -70,7 +71,7 @@ local function showPopup(text: string, color: Color3, verticalOffset: number)
 end
 
 runeAltarCollectedEvent.OnClientEvent:Connect(function(results)
-	if type(results) ~= "table" then
+	if type(results) ~= "table" or not ClientSettings.collectionPopupsEnabled then
 		return
 	end
 	for i, result in results do

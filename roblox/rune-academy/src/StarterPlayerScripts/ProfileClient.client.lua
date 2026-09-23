@@ -1,10 +1,13 @@
 -- The Profile panel: opened by clicking the Profile icon in the side menu
--- (SideMenuClient fires OpenProfileRequested). Two pages in one panel -
--- "Profile" (avatar, name, and the 4 stats requested: Time Played, Total
--- Mana, Runes Opened, Robux Spent) and "Titles" (every GameConfig.Titles
--- entry, locked ones grayed out with their unlock condition, unlocked
--- ones with an Equip/Unequip button) - a "Titles" button on the Profile
--- page switches to it, a "Back" button on the Titles page returns. Both
+-- (SideMenuClient fires OpenProfileRequested). Two pages toggled by a
+-- "Stats"/"Titles" tab bar at the top (per direct request - was
+-- previously a one-way "Titles ➜" button + a separate "⬅ Back" button,
+-- and those arrow glyphs weren't in Roblox's default font, rendering as
+-- an empty box next to the text) - "Stats" (avatar, name, and the 4
+-- stats requested: Time Played, Total Mana, Runes Opened, Robux Spent;
+-- named "Stats" per direct request, was unnamed before) and "Titles"
+-- (every GameConfig.Titles entry, locked ones grayed out with their
+-- unlock condition, unlocked ones with an Equip/Unequip button). Both
 -- pages pull from the existing GetProfile/EquipTitle remotes, which were
 -- already wired server-side but never called from any client script until
 -- now.
@@ -24,8 +27,8 @@ local GOLD = Color3.fromRGB(255, 220, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
 local COLOR_LOCKED = Color3.fromRGB(90, 90, 90)
 local COLOR_EQUIP = Color3.fromRGB(70, 190, 60)
-local COLOR_UNEQUIP = Color3.fromRGB(200, 55, 55)
-local COLOR_EQUIPPED_TAG = Color3.fromRGB(255, 210, 60)
+local COLOR_TITLE_LOCKED_BUTTON = Color3.fromRGB(200, 55, 55)
+local COLOR_EQUIPPED_TAG = Color3.fromRGB(40, 200, 120)
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ProfileUI"
@@ -79,10 +82,49 @@ closeButton.MouseButton1Click:Connect(function()
 	screenGui.Enabled = false
 end)
 
+-- Tab bar: "Stats"/"Titles", replacing the old one-way "Titles ➜" +
+-- "⬅ Back" buttons. Built before either page so both can reference it.
+local TAB_COLOR_ACTIVE = Color3.fromRGB(90, 15, 15)
+local TAB_COLOR_INACTIVE = Color3.fromRGB(50, 45, 65)
+
+local tabBar = Instance.new("Frame")
+tabBar.Position = UDim2.new(0, 20, 0, 12)
+tabBar.Size = UDim2.new(0, 220, 0, 36)
+tabBar.BackgroundTransparency = 1
+tabBar.Parent = panel
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.Padding = UDim.new(0, 8)
+tabLayout.Parent = tabBar
+
+local function createTabButton(text: string): TextButton
+	local tabButton = Instance.new("TextButton")
+	tabButton.Size = UDim2.new(0, 106, 1, 0)
+	tabButton.BackgroundColor3 = TAB_COLOR_INACTIVE
+	tabButton.Font = Enum.Font.GothamBold
+	tabButton.TextScaled = true
+	tabButton.TextColor3 = GOLD
+	tabButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+	tabButton.Text = text
+	tabButton.Parent = tabBar
+
+	local tabButtonCorner = Instance.new("UICorner")
+	tabButtonCorner.CornerRadius = UDim.new(0.3, 0)
+	tabButtonCorner.Parent = tabButton
+
+	return tabButton
+end
+
+local statsTabButton = createTabButton("Stats")
+local titlesTabButton = createTabButton("Titles")
+
 -- ===========================================================================
--- Profile page: avatar + name, then the 4 requested stats.
+-- Stats page (named "Stats" per direct request - was unnamed before):
+-- avatar + name, then the 4 requested stats.
 local profilePage = Instance.new("Frame")
-profilePage.Size = UDim2.new(1, 0, 1, 0)
+profilePage.Position = UDim2.new(0, 0, 0, 40)
+profilePage.Size = UDim2.new(1, 0, 1, -40)
 profilePage.BackgroundTransparency = 1
 profilePage.Parent = panel
 
@@ -174,22 +216,6 @@ local totalManaValue = createStatRow(2, "Total Mana")
 local runesOpenedValue = createStatRow(3, "Runes Opened")
 local robuxSpentValue = createStatRow(4, "Robux Spent")
 
-local titlesPageButton = Instance.new("TextButton")
-titlesPageButton.AnchorPoint = Vector2.new(0.5, 1)
-titlesPageButton.Position = UDim2.new(0.5, 0, 1, -24)
-titlesPageButton.Size = UDim2.new(0, 200, 0, 44)
-titlesPageButton.BackgroundColor3 = Color3.fromRGB(90, 15, 15)
-titlesPageButton.Font = Enum.Font.GothamBold
-titlesPageButton.TextScaled = true
-titlesPageButton.TextColor3 = GOLD
-titlesPageButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-titlesPageButton.Text = "Titles ➜"
-titlesPageButton.Parent = profilePage
-
-local titlesPageButtonCorner = Instance.new("UICorner")
-titlesPageButtonCorner.CornerRadius = UDim.new(0.3, 0)
-titlesPageButtonCorner.Parent = titlesPageButton
-
 local function formatPlaytime(seconds: number): string
 	local hours = math.floor(seconds / 3600)
 	local minutes = math.floor((seconds % 3600) / 60)
@@ -210,41 +236,20 @@ end
 -- Titles page: every GameConfig.Titles entry, locked ones grayed out with
 -- their unlock condition spelled out, unlocked ones with an Equip/Unequip
 -- button.
+-- Navigation back to Stats is the tab bar now (no more separate "⬅ Back"
+-- button), and the active tab already reads "Titles," so no separate
+-- header label either - both removed the tofu-box arrow glyph and the
+-- redundant "Titles" text in one go.
 local titlesPage = Instance.new("Frame")
-titlesPage.Size = UDim2.new(1, 0, 1, 0)
+titlesPage.Position = UDim2.new(0, 0, 0, 40)
+titlesPage.Size = UDim2.new(1, 0, 1, -40)
 titlesPage.BackgroundTransparency = 1
 titlesPage.Visible = false
 titlesPage.Parent = panel
 
-local backButton = Instance.new("TextButton")
-backButton.Position = UDim2.new(0, 12, 0, 12)
-backButton.Size = UDim2.new(0, 90, 0, 32)
-backButton.BackgroundColor3 = Color3.fromRGB(60, 20, 90)
-backButton.Font = Enum.Font.GothamBold
-backButton.TextScaled = true
-backButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-backButton.Text = "⬅ Back"
-backButton.Parent = titlesPage
-
-local backButtonCorner = Instance.new("UICorner")
-backButtonCorner.CornerRadius = UDim.new(0.3, 0)
-backButtonCorner.Parent = backButton
-
-local titlesHeader = Instance.new("TextLabel")
-titlesHeader.AnchorPoint = Vector2.new(0.5, 0)
-titlesHeader.Position = UDim2.new(0.5, 0, 0, 14)
-titlesHeader.Size = UDim2.new(0, 200, 0, 30)
-titlesHeader.BackgroundTransparency = 1
-titlesHeader.Font = Enum.Font.GothamBold
-titlesHeader.TextScaled = true
-titlesHeader.TextColor3 = GOLD
-titlesHeader.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-titlesHeader.Text = "Titles"
-titlesHeader.Parent = titlesPage
-
 local titlesScroll = Instance.new("ScrollingFrame")
-titlesScroll.Position = UDim2.new(0, 20, 0, 58)
-titlesScroll.Size = UDim2.new(1, -40, 1, -78)
+titlesScroll.Position = UDim2.new(0, 20, 0, 8)
+titlesScroll.Size = UDim2.new(1, -40, 1, -28)
 titlesScroll.BackgroundTransparency = 1
 titlesScroll.BorderSizePixel = 0
 titlesScroll.ScrollBarThickness = 6
@@ -293,19 +298,24 @@ local function updateTitleRowVisual(title)
 
 	row.nameLabel.TextColor3 = unlocked and title.color or COLOR_LOCKED
 
+	-- Always visible now (per direct request) - a red "Locked" button when
+	-- not yet earned, turning into a green Equip/Equipped button once it
+	-- is, rather than hiding the button entirely while locked.
+	row.actionButton.Visible = true
+	row.conditionLabel.Visible = not unlocked
+
 	if not unlocked then
-		row.actionButton.Visible = false
-		row.conditionLabel.Visible = true
+		row.actionButton.Active = false
+		row.actionButton.Text = "Locked"
+		row.actionButton.BackgroundColor3 = COLOR_TITLE_LOCKED_BUTTON
 	elseif equipped then
-		row.actionButton.Visible = true
+		row.actionButton.Active = true
 		row.actionButton.Text = "Equipped"
 		row.actionButton.BackgroundColor3 = COLOR_EQUIPPED_TAG
-		row.conditionLabel.Visible = false
 	else
-		row.actionButton.Visible = true
+		row.actionButton.Active = true
 		row.actionButton.Text = "Equip"
 		row.actionButton.BackgroundColor3 = COLOR_EQUIP
-		row.conditionLabel.Visible = false
 	end
 end
 
@@ -387,16 +397,23 @@ local function renderTitlesPage()
 end
 
 -- ===========================================================================
-titlesPageButton.MouseButton1Click:Connect(function()
+local function selectStatsTab()
+	profilePage.Visible = true
+	titlesPage.Visible = false
+	statsTabButton.BackgroundColor3 = TAB_COLOR_ACTIVE
+	titlesTabButton.BackgroundColor3 = TAB_COLOR_INACTIVE
+end
+
+local function selectTitlesTab()
 	profilePage.Visible = false
 	titlesPage.Visible = true
+	statsTabButton.BackgroundColor3 = TAB_COLOR_INACTIVE
+	titlesTabButton.BackgroundColor3 = TAB_COLOR_ACTIVE
 	renderTitlesPage()
-end)
+end
 
-backButton.MouseButton1Click:Connect(function()
-	titlesPage.Visible = false
-	profilePage.Visible = true
-end)
+statsTabButton.MouseButton1Click:Connect(selectStatsTab)
+titlesTabButton.MouseButton1Click:Connect(selectTitlesTab)
 
 local sideMenuHUD = player:WaitForChild("PlayerGui"):WaitForChild("SideMenuHUD")
 local openProfileEvent = sideMenuHUD:WaitForChild("OpenProfileRequested")
@@ -408,8 +425,7 @@ openProfileEvent.Event:Connect(function()
 	end
 
 	screenGui.Enabled = true
-	profilePage.Visible = true
-	titlesPage.Visible = false
+	selectStatsTab()
 
 	local profile = getProfileFunction:InvokeServer()
 	currentProfile = profile

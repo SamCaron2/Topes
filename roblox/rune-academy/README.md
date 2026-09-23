@@ -47,6 +47,18 @@ design notes.
   (`ManaHUDClient`, `ManaUpgradeBoardClient`'s readout/costs/yield
   preview) - use it for any other currency display that could reach
   seven figures too.
+- `ClientSettings.lua` — client-only, session-only settings (not saved
+  server-side, reset on rejoin - nothing server-authoritative depends on
+  them), per direct request ("add some relevant settings in the settings
+  section"). Every client that `require`s this gets its own separate copy
+  (module caching is per-client for LocalScripts), so one player's
+  settings never affect another's. Two flags: `reducedEffects` (turns off
+  the glow mushrooms' `PointLight`s, this game's only real-time lights -
+  read by `GraphicsSettingsClient`, fired through
+  `ReducedEffectsChanged` since applying it needs to happen the instant
+  it's toggled) and `collectionPopupsEnabled` (the Rune Altar's floating
+  "+N RankName" text - read directly by `RuneAltarClient`, no event
+  needed since it's already checked fresh every time a Rune is collected).
 - `PlayerData.lua` — DataStore load/save/autosave, leaderstats, and
   `defaultData()` builds every zone/currency's save-data shape straight
   from `GameConfig.Zones` (add a currency to config, its save slot exists
@@ -737,37 +749,53 @@ design notes.
   stays reachable even while the panel's hidden.
   Hovering tweens the icon up to 1.15x size (centered growth, not
   top-anchored, so it doesn't push
-  into the label) to show what's highlighted. Profile and Runes are wired
-  to their own panels - clicking either fires an `OpenProfileRequested`/
-  `OpenRunesRequested` `BindableEvent` (both parented under this script's
-  own `SideMenuHUD` `ScreenGui` so `ProfileClient`/`RunesMenuClient` can
+  into the label) to show what's highlighted. Profile, Runes, and Settings
+  are all wired to their own panels - clicking any of the three fires an
+  `OpenProfileRequested`/`OpenRunesRequested`/`OpenSettingsRequested`
+  `BindableEvent` (all parented under this script's own `SideMenuHUD`
+  `ScreenGui` so `ProfileClient`/`RunesMenuClient`/`SettingsClient` can
   find them reliably regardless of which script runs first) instead of
   building the panel itself, keeping the icon grid and the panels it opens
-  as separate concerns. Runes was previously unwired ("clicking the runes
-  button... nothing is happening," per direct report) - Store/Settings
-  still just need to exist on screen for now.
+  as separate concerns. Runes and Settings were both previously unwired
+  ("clicking the runes button... nothing is happening" / "add some
+  relevant settings in the settings section," per direct reports) - only
+  Store still just needs to exist on screen for now (nothing to sell yet).
 - `ProfileClient.client.lua` — the Profile panel opened by that event: a
   dark modal card (dimmed background `Frame` with `Active = true` so
-  clicks don't pass through to the side menu underneath) with two pages.
-  The "Profile" page - what was originally asked for, per DESIGN.md's
-  "Main profile screen" - shows the player's own avatar/name up top, then
-  the 4 stats specifically requested: Time Played, Total Mana (now
-  exposed by `GetProfile` as `totalManaEarned`, the same lifetime figure
-  the leaderboard uses - not the live spendable `mana` balance also in
-  that payload), Runes Opened, and Robux Spent. A "Titles ➜" button
-  switches to the "Titles" page: every `GameConfig.Titles` entry (all 14),
-  colored by its own title color when unlocked or grayed out when not,
-  each locked one showing `describeCondition` - a plain-English rendering
-  of its `condition` (none of the config entries carry a human-readable
+  clicks don't pass through to the side menu underneath) with two pages
+  toggled by a `statsTabButton`/`titlesTabButton` tab bar at the top
+  (`TAB_COLOR_ACTIVE`/`TAB_COLOR_INACTIVE` highlight whichever's open) -
+  originally a one-way "Titles ➜" button plus a separate "⬅ Back" button,
+  replaced per direct request after those arrow glyphs turned out not to
+  be in Roblox's default font, rendering as an empty box next to the text.
+  The "Stats" page (named per direct request - was unnamed before) - what
+  was originally asked for, per DESIGN.md's "Main profile screen" - shows
+  the player's own avatar/name up top, then the 4 stats specifically
+  requested: Time Played, Total Mana (now exposed by `GetProfile` as
+  `totalManaEarned`, the same lifetime figure the leaderboard uses - not
+  the live spendable `mana` balance also in that payload), Runes Opened,
+  and Robux Spent. The "Titles" page lists every `GameConfig.Titles` entry
+  (all 14), colored by its own title color when unlocked or grayed out
+  when not, each with a button to its right - always visible now, per
+  direct request ("there should be a button... that says locked when you
+  have not earned them and when you have earned the titles the red locked
+  button turns into a green equipped button"): a red, inactive "Locked"
+  button (`COLOR_TITLE_LOCKED_BUTTON`) when not yet unlocked (with
+  `describeCondition`'s plain-English rendering of its `condition` still
+  shown below it - none of the config entries carry a human-readable
   string, so this builds one: "Play for 7 days", "Spend R$1,000 total",
   "Join the group", "Own the ElitePass gamepass", "Join during launch
-  week", "Granted manually") - and each unlocked one getting an
-  Equip/Equipped button that calls the already-existing (but previously
-  uncalled from any client) `EquipTitle` remote. A "⬅ Back" button
-  returns to the Profile page. Both pages re-fetch fresh from `GetProfile`
-  every time the panel opens rather than staying subscribed to live
-  updates, since a modal stat/title screen doesn't need to track changes
-  while it's closed.
+  week", "Granted manually"), a green "Equip" button once unlocked, or a
+  green "Equipped" tag (`COLOR_EQUIPPED_TAG`, changed from its old gold to
+  green per that same request) for whichever one is currently worn -
+  calling the already-existing (but previously uncalled from any client)
+  `EquipTitle` remote either way. Only one title can ever be equipped at a
+  time - already guaranteed by `data.equippedTitle` being a single value
+  server-side (`TitleHandler.equipTitle` just overwrites it), so no new
+  code was needed for that part of the request. Both pages re-fetch fresh
+  from `GetProfile` every time the panel opens rather than staying
+  subscribed to live updates, since a modal stat/title screen doesn't need
+  to track changes while it's closed.
 - `RunesMenuClient.client.lua` — the Runes panel opened by
   `OpenRunesRequested`, per direct request after the side-menu Runes icon
   turned out to do nothing at all when clicked. Same dark-modal styling as
@@ -782,6 +810,29 @@ design notes.
   locked message instead of the grid rather than a button that just does
   nothing, which was the whole complaint about the icon in the first
   place.
+- `SettingsClient.client.lua` — the Settings panel opened by
+  `OpenSettingsRequested`, per direct request ("add some relevant
+  settings in the settings section") after the side-menu Settings icon
+  turned out to be unwired too, same gap Runes had. Same dark-modal
+  styling as every other panel; a generic `createToggleRow(layoutOrder,
+  name, description, getValue, setValue)` builds each row (label +
+  description on the left, an On/Off pill button on the right, green when
+  on/gray when off) so a future 3rd setting is one more call, not a
+  copy-pasted block. Two rows, both from `ClientSettings`: "Reduce
+  Effects" and "Collection Popups" - picked as the two settings that
+  actually change something already built in this game, rather than
+  inventing toggles for systems (music, graphics quality) that don't
+  exist yet.
+- `GraphicsSettingsClient.client.lua` — applies `ClientSettings
+  .reducedEffects` by walking `SecondIslandDecor`/`EtherIslandDecor`/
+  `LeaderboardDecor` (checked by name, not required to exist yet - the
+  latter two build later in `WorldBuilder` and might not have finished)
+  and setting every descendant `PointLight`'s `Enabled` to match - purely
+  a local rendering toggle, same "per-client Instance property change"
+  pattern as every gate/board reveal in this game, so it never affects
+  what anyone else sees. Applies once immediately (decor is built once at
+  server start and never rebuilt, so no need to keep watching for new
+  lights) and again on every `ReducedEffectsChanged` fire.
 - `ManaRingClient.client.lua` — a small dashed ring under the player's
   feet, visible only while standing inside the `ManaZone` platform
   bounds (read off attributes `WorldBuilder` sets on that folder:
