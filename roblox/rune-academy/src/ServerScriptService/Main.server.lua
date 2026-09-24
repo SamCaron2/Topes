@@ -36,6 +36,8 @@ local LeyShardHandler = require(script.Parent.LeyShardHandler)
 local LeyShardSpeedHandler = require(script.Parent.LeyShardSpeedHandler)
 local LeyShardManaBoostHandler = require(script.Parent.LeyShardManaBoostHandler)
 local AstralShardConversionHandler = require(script.Parent.AstralShardConversionHandler)
+local AstralShardLeyBoostHandler = require(script.Parent.AstralShardLeyBoostHandler)
+local AstralShardConversionBoostHandler = require(script.Parent.AstralShardConversionBoostHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -133,6 +135,11 @@ local buyLeyShardManaBoostUpgradeFunction = newRemoteFunction("BuyLeyShardManaBo
 local astralShardUpdatedEvent = newRemoteEvent("AstralShardUpdated") -- server -> client, fired on join (if > 0) and every conversion
 local getAstralShardConversionStateFunction = newRemoteFunction("GetAstralShardConversionState")
 local convertLeyShardToAstralShardFunction = newRemoteFunction("ConvertLeyShardToAstralShard")
+local playerLeyShardConvertedEvent = newRemoteEvent("PlayerLeyShardConverted") -- server -> client, tells the Ley Shard board to re-fetch all 3 columns (converting resets them)
+local getAstralShardLeyBoostStateFunction = newRemoteFunction("GetAstralShardLeyBoostState")
+local buyAstralShardLeyBoostUpgradeFunction = newRemoteFunction("BuyAstralShardLeyBoostUpgrade")
+local getAstralShardConversionBoostStateFunction = newRemoteFunction("GetAstralShardConversionBoostState")
+local buyAstralShardConversionBoostUpgradeFunction = newRemoteFunction("BuyAstralShardConversionBoostUpgrade")
 
 collectNodeEvent.OnServerEvent:Connect(function(player, zoneKey, currencyKey, part)
 	if type(zoneKey) == "string" and type(currencyKey) == "string" then
@@ -514,10 +521,46 @@ getAstralShardConversionStateFunction.OnServerInvoke = function(player)
 	return AstralShardConversionHandler.getState(player)
 end
 
+-- A successful convert also resets all 3 Ley Shard board levels back to 1
+-- (AstralShardConversionHandler.convert itself does the reset) - tell the
+-- Ley Shard board to re-fetch every column so it doesn't keep showing
+-- stale pre-reset levels/costs, same "broadcast a re-fetch signal" pattern
+-- as playerRebirthedEvent/playerWizardTieredEvent.
 convertLeyShardToAstralShardFunction.OnServerInvoke = function(player)
 	local success, err, newState = AstralShardConversionHandler.convert(player)
 	if success then
 		leyShardUpdatedEvent:FireClient(player, newState.leyShard)
+		astralShardUpdatedEvent:FireClient(player, newState.astralShard)
+		playerLeyShardConvertedEvent:FireClient(player)
+	end
+	return success, err, newState
+end
+
+getAstralShardLeyBoostStateFunction.OnServerInvoke = function(player)
+	return AstralShardLeyBoostHandler.getUpgradeState(player)
+end
+
+buyAstralShardLeyBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = AstralShardLeyBoostHandler.buyUpgrade(player, mode)
+	if success then
+		astralShardUpdatedEvent:FireClient(player, newState.astralShard)
+	end
+	return success, err, newState
+end
+
+getAstralShardConversionBoostStateFunction.OnServerInvoke = function(player)
+	return AstralShardConversionBoostHandler.getUpgradeState(player)
+end
+
+buyAstralShardConversionBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = AstralShardConversionBoostHandler.buyUpgrade(player, mode)
+	if success then
 		astralShardUpdatedEvent:FireClient(player, newState.astralShard)
 	end
 	return success, err, newState

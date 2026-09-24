@@ -14,7 +14,11 @@
 -- Parts themselves are already solid/visible (nothing on EtherIsland needs
 -- per-player hiding, since the island's own gate is what's locked), but a
 -- SurfaceGui would still render on the board even for someone who
--- shouldn't be able to buy anything yet.
+-- shouldn't be able to buy anything yet. Converting Ley Shard into Astral
+-- Shard (the Conversion board) resets all 3 of these columns back to
+-- level 1 - per direct request ("when you exchange them it totally
+-- resets your ley shard upgrades all 3") - so this also re-fetches every
+-- column on the new `PlayerLeyShardConverted` event.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -31,6 +35,7 @@ local buyLeyShardSpeedUpgradeFunction = remotes:WaitForChild("BuyLeyShardSpeedUp
 local getLeyShardManaBoostStateFunction = remotes:WaitForChild("GetLeyShardManaBoostState")
 local buyLeyShardManaBoostUpgradeFunction = remotes:WaitForChild("BuyLeyShardManaBoostUpgrade")
 local leyShardUpdatedEvent = remotes:WaitForChild("LeyShardUpdated")
+local playerLeyShardConvertedEvent = remotes:WaitForChild("PlayerLeyShardConverted")
 
 local board = Workspace:WaitForChild("LeyShardUpgradeBoard")
 
@@ -423,6 +428,15 @@ local function createUpgradeColumn(slotIndex: number, name: string, buildIcon: (
 			render(newState)
 		end
 	end)
+
+	-- Returned so buildBoard can re-fetch this column on demand - converting
+	-- Ley Shard into Astral Shard resets all 3 of these levels, and the
+	-- board needs to reflect that immediately rather than keep showing
+	-- stale pre-reset levels/costs until the next manual interaction.
+	local function refresh()
+		render(getStateRemote:InvokeServer())
+	end
+	return refresh
 end
 
 local function buildBoard()
@@ -434,29 +448,42 @@ local function buildBoard()
 	background.Parent = surfaceGui
 	surfaceGui.Parent = board
 
-	createUpgradeColumn(1, "More Ley Shard", buildLeyShardIcon, getLeyShardYieldStateFunction, buyLeyShardYieldUpgradeFunction, function(state)
-		if state.nextLevelCost then
-			return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
-		end
-		return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
-	end)
+	local columnRefreshFunctions = {
+		createUpgradeColumn(1, "More Ley Shard", buildLeyShardIcon, getLeyShardYieldStateFunction, buyLeyShardYieldUpgradeFunction, function(state)
+			if state.nextLevelCost then
+				return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
+			end
+			return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
+		end),
 
-	createUpgradeColumn(2, "Faster Levitation", buildSpeedIcon, getLeyShardSpeedStateFunction, buyLeyShardSpeedUpgradeFunction, function(state)
-		if state.nextLevelCost then
-			return ("%.1fs > %.1fs"):format(state.intervalSeconds, state.nextIntervalSeconds)
-		end
-		return ("%.1fs (MAX)"):format(state.intervalSeconds)
-	end)
+		createUpgradeColumn(2, "Faster Levitation", buildSpeedIcon, getLeyShardSpeedStateFunction, buyLeyShardSpeedUpgradeFunction, function(state)
+			if state.nextLevelCost then
+				return ("%.1fs > %.1fs"):format(state.intervalSeconds, state.nextIntervalSeconds)
+			end
+			return ("%.1fs (MAX)"):format(state.intervalSeconds)
+		end),
 
-	createUpgradeColumn(3, "More Mana", buildManaIcon, getLeyShardManaBoostStateFunction, buyLeyShardManaBoostUpgradeFunction, function(state)
-		if state.nextLevelCost then
-			return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
-		end
-		return ("%.1fx (MAX)"):format(state.multiplier)
-	end)
+		createUpgradeColumn(3, "More Mana", buildManaIcon, getLeyShardManaBoostStateFunction, buyLeyShardManaBoostUpgradeFunction, function(state)
+			if state.nextLevelCost then
+				return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
+			end
+			return ("%.1fx (MAX)"):format(state.multiplier)
+		end),
+	}
 
 	leyShardUpdatedEvent.OnClientEvent:Connect(function(amount)
 		currencyReadoutText.Text = NumberFormat.format(amount)
+	end)
+
+	-- Converting Ley Shard into Astral Shard resets all 3 columns above
+	-- back to level 1 - re-fetch every one so the board doesn't keep
+	-- showing stale pre-reset levels/costs, same "re-fetch on an external
+	-- reset event" pattern as ManaUpgradeBoardClient's own
+	-- playerRebirthedEvent handling.
+	playerLeyShardConvertedEvent.OnClientEvent:Connect(function()
+		for _, refresh in columnRefreshFunctions do
+			refresh()
+		end
 	end)
 end
 

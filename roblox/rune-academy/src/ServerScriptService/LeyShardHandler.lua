@@ -14,10 +14,16 @@
 -- every 1.1 second"). This module is just the "More Ley Shard" yield
 -- track (1-100 levels); LeyShardSpeedHandler/LeyShardManaBoostHandler are
 -- this card's other two columns. Mirrors ManaHandler/EtherHandler's own
--- yield-curve shape for consistency.
+-- yield-curve shape for consistency. Also folds in
+-- AstralShardLeyBoostHandler's own multiplier - Card 2's "More Ley Shard"
+-- upgrade, paid in Astral Shard, and (unlike this file's own
+-- leyShardYieldLevel) NOT wiped when Ley Shard gets converted into Astral
+-- Shard, so it's the one thing that survives every reset and speeds up
+-- every later grind.
 
 local PlayerData = require(script.Parent.PlayerData)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
+local AstralShardLeyBoostHandler = require(script.Parent.AstralShardLeyBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -48,7 +54,9 @@ function LeyShardHandler.collect(player: Player): number?
 	end
 
 	local level = data.leyShardYieldLevel or 1
-	local amount = math.floor(amountForLevel(level) * RuneCollectionHandler.getMultiplier(player))
+	local amount = math.floor(
+		amountForLevel(level) * RuneCollectionHandler.getMultiplier(player) * AstralShardLeyBoostHandler.getMultiplier(player)
+	)
 	data.leyShard = (data.leyShard or 0) + amount
 	return data.leyShard
 end

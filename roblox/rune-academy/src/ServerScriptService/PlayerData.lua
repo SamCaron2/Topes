@@ -170,13 +170,19 @@ local function defaultData()
 		-- Ley Shard, it has NO collection mechanic of its own ("there isnt
 		-- a button or anything to get more of this material") - the only
 		-- way to get it is spending Ley Shard on the conversion board next
-		-- to it (AstralShardConversionHandler), 5,000 Ley Shard per 1
-		-- Astral Shard. Card 2's own upgrade board is a placeholder shell
-		-- for now, per direct request ("It should be the material x card
-		-- with three upgrades but dont put them in yet I just want to see
-		-- the card") - no upgrade level fields exist yet since there's
-		-- nothing to buy. Permanent, never reset.
+		-- to it (AstralShardConversionHandler), 1,000 Ley Shard per unit
+		-- (lowered from an original 5,000). Converting is also the
+		-- deliberate "prestige" trigger this whole 2-card system is built
+		-- around - per direct request ("when you exchange them it totally
+		-- resets your ley shard upgrades all 3") - every conversion wipes
+		-- leyShardYieldLevel/leyShardSpeedLevel/leyShardManaBoostLevel
+		-- above back to 1, but leaves everything below completely alone,
+		-- so a permanent boost survives every reset and makes each later
+		-- grind back up the Ley Shard board faster than the last. Permanent,
+		-- never reset.
 		astralShard = 0,
+		astralShardLeyBoostLevel = 1, -- Card 2's "More Ley Shard" (AstralShardLeyBoostHandler), 1-50, a flat Ley Shard yield multiplier paid in Astral Shard
+		astralConversionBoostLevel = 1, -- Card 2's "More Astral Shards" (AstralShardConversionBoostHandler), 1-50, boosts how many Astral Shard each conversion grants
 
 		-- Rune Altar upgrades (RuinRuneHandler): 5 tiers bought via
 		-- RuneAltarBoard, paid in Mana - only reachable once the Fantasy

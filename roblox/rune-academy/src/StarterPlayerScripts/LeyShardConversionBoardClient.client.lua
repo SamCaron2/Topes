@@ -1,13 +1,20 @@
 -- Builds Card 3 (Workspace.LeyShardConversionBoard): the only way to
 -- actually get Astral Shard, since Card 2 has no collection mechanic of
 -- its own - per direct request ("a card next to that where you can
--- convert your ley shards into that"). Shows the fixed rate (5,000 Ley
--- Shard = 1 Astral Shard), live Ley Shard/Astral Shard readouts, and one
--- "Convert" button that spends AS MANY as currently affordable in one
--- press (my own call - not specified - since a fixed 1-per-click would
--- take many repeated presses to spend down a large Ley Shard balance).
--- Same "doesn't build at all until unlocked" gating as every other
--- EtherIsland board.
+-- convert your ley shards into that"). Shows the live rate (1,000 Ley
+-- Shard = N Astral Shard, N climbing with Card 2's own "More Astral
+-- Shards" upgrade - lowered from an original flat 5,000-per-1 per direct
+-- request, "Lets make it actually 1k ley shards for astral"), live Ley
+-- Shard/Astral Shard readouts, a reset warning, and one "Convert" button
+-- that spends AS MANY 1,000-Ley-Shard units as currently affordable in
+-- one press (my own call - not specified - since a fixed 1-per-click
+-- would take many repeated presses to spend down a large Ley Shard
+-- balance). Converting also totally resets the Ley Shard board's own 3
+-- levels back to 1 (AstralShardConversionHandler.convert does this
+-- server-side) - per direct request, "when you exchange them it totally
+-- resets your ley shard upgrades all 3" - hence the warning text. Same
+-- "doesn't build at all until unlocked" gating as every other EtherIsland
+-- board.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -87,7 +94,7 @@ local function buildBoard()
 	rateText.TextScaled = true
 	rateText.TextColor3 = Color3.fromRGB(255, 255, 255)
 	rateText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-	rateText.Text = "5,000 Ley Shard = 1 Astral Shard"
+	rateText.Text = "1,000 Ley Shard = - Astral Shard"
 	rateText.Parent = background
 
 	local leyShardReadout = Instance.new("TextLabel")
@@ -111,6 +118,21 @@ local function buildBoard()
 	astralShardReadout.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 	astralShardReadout.Text = "Astral Shard: -"
 	astralShardReadout.Parent = background
+
+	-- Per direct request ("when you exchange them it totally resets your
+	-- ley shard upgrades all 3") - the Ley Shard board's own 3 levels get
+	-- wiped every time Convert is pressed, so this is called out directly
+	-- rather than left as a surprise.
+	local warningText = Instance.new("TextLabel")
+	warningText.Size = UDim2.new(0.9, 0, 0.08, 0)
+	warningText.Position = UDim2.new(0.05, 0, 0.6, 0)
+	warningText.BackgroundTransparency = 1
+	warningText.Font = Enum.Font.GothamBold
+	warningText.TextScaled = true
+	warningText.TextColor3 = Color3.fromRGB(255, 120, 120)
+	warningText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+	warningText.Text = "Resets your Ley Shard upgrades!"
+	warningText.Parent = background
 
 	local convertButton = Instance.new("TextButton")
 	convertButton.Size = UDim2.new(0.7, 0, 0.16, 0)
@@ -141,6 +163,10 @@ local function buildBoard()
 
 		leyShardReadout.Text = ("Ley Shard: %s"):format(NumberFormat.format(state.leyShard))
 		astralShardReadout.Text = ("Astral Shard: %s"):format(NumberFormat.format(state.astralShard))
+		rateText.Text = ("%s Ley Shard = %.1f Astral Shard"):format(
+			NumberFormat.format(state.costPerAstralShard),
+			state.astralPerUnit
+		)
 
 		if state.convertibleNow > 0 then
 			convertButton.Active = true

@@ -807,7 +807,12 @@ design notes.
   convention as every earlier currency; `LeyShardManaBoostHandler.getMultiplier`
   is read by `ManaHandler` as another factor in its own multiplier chain,
   and `LeyShardHandler.collect` folds in `RuneCollectionHandler.getMultiplier`
-  too, same as every other currency handler.
+  too, same as every other currency handler. `LeyShardHandler.collect` also
+  folds in `AstralShardLeyBoostHandler.getMultiplier` (Card 2's own "More
+  Ley Shard" upgrade, paid in Astral Shard) - unlike this file's own
+  `leyShardYieldLevel`, that one is NOT wiped when Ley Shard gets converted
+  into Astral Shard (see `AstralShardConversionHandler` below), so it's
+  the one thing that survives every reset and speeds up every later grind.
 - `AstralShardConversionHandler.lua` — Astral Shard, Card 2 of the 3-card
   progression, sitting physically next to the Ley Shard board on
   EtherIsland - per direct request ("to the right of ley shards we want
@@ -815,17 +820,47 @@ design notes.
   has NO collection mechanic of its own at all - "there isnt a button or
   anything to get more of this material" - the only way to get it is
   spending Ley Shard on the conversion board right next to Card 2
-  (`convert`), at a fixed 5,000 Ley Shard per 1 Astral Shard. `convert`
-  spends AS MANY as currently affordable in one press rather than a fixed
-  1-per-click (my own call, not specified - 5,000 apiece would otherwise
-  take many repeated presses to spend down a large balance). Card 2's own
-  upgrade board is a placeholder shell for now - per direct request ("It
-  should be the material x card with three upgrades but dont put them in
-  yet I just want to see the card") - so there's no
-  `AstralShardYieldHandler`-style module yet, just the one `astralShard`
-  balance field in `PlayerData` and this conversion path; the 3 real
-  upgrade columns (and their own handler modules) come later once asked
-  for.
+  (`convert`), at 1,000 Ley Shard per unit (lowered from an original
+  5,000 per direct request, "Lets make it actually 1k ley shards for
+  astral"), each unit worth `AstralShardConversionBoostHandler`'s own
+  current multiplier's worth of Astral Shard. `convert` spends AS MANY
+  units as currently affordable in one press rather than a fixed
+  1-per-click (my own call, not specified).
+  **Converting is also this whole system's "prestige" trigger** - per
+  direct request ("when you exchange them it totally resets your ley
+  shard upgrades all 3"): every successful `convert` wipes
+  `leyShardYieldLevel`/`leyShardSpeedLevel`/`leyShardManaBoostLevel` back
+  to 1, while leaving everything Astral-Shard-funded completely alone.
+  That's the whole design: per direct request, "So to max out ley shards
+  it takes a bit but when you exchange for astral shards and buy more ley
+  shards it goes by quicker the second time" - `AstralShardLeyBoostHandler`/
+  `AstralShardConversionBoostHandler` are the two permanent boosts that
+  make that true.
+  - `AstralShardLeyBoostHandler.lua` — Card 2's first real upgrade, "More
+    Ley Shard": a flat Ley Shard yield multiplier (1x-5.9x, same ramp as
+    `ManaBoostHandler`/`LeyShardManaBoostHandler`), read by
+    `LeyShardHandler`. NOT one of the 3 levels wiped by converting - the
+    whole point is that it survives every reset.
+  - `AstralShardConversionBoostHandler.lua` — Card 2's second real
+    upgrade, "More Astral Shards": a flat multiplier on how many Astral
+    Shard each conversion grants, read by
+    `AstralShardConversionHandler.convert`/`getState`. +3.2x per level -
+    per direct request's own example ("1000 ley shards after a couple
+    upgrades maybe lets say gives you 30 astral shards instead of 1"),
+    landing almost exactly on that at level 10 (1 + 9*3.2 = 29.8x),
+    reaching ~157.8x at level 50.
+  - Both are 50 levels, paid in Astral Shard, with the SAME exponential
+    cost curve (`math.ceil(1.15^(level-1))`, starting at exactly 1 Astral
+    Shard for level 1) - per direct request, "dont make the cost be 1
+    then 2 then 3 then 4 make it spaceed out how you think the game
+    should flow and keep someones attention." Card 2's own 3rd column
+    stays an empty "Coming Soon" placeholder for now - per direct
+    request, "lets just start with those two upgrades."
+  - A new `PlayerLeyShardConverted` RemoteEvent (fired by `Main.server.lua`
+    after a successful `convert`) tells the Ley Shard board to re-fetch
+    all 3 of its columns immediately, so it doesn't keep showing stale
+    pre-reset levels/costs - same "broadcast a re-fetch signal" pattern as
+    `playerRebirthedEvent`/`playerWizardTieredEvent`.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -1267,28 +1302,41 @@ design notes.
   ground level (the board Part spans `ISLAND_TOP_Y` to `ISLAND_TOP_Y+18`
   with no gap below it) - so the Buy/Max buttons, positioned near the
   bottom of each column, were rendering into the ground itself.
+  `createUpgradeColumn` now also returns a `refresh` function (mirroring
+  `ManaUpgradeBoardClient`'s own `columnRefreshFunctions` pattern), so all
+  3 columns re-fetch immediately on the new `PlayerLeyShardConverted`
+  event - converting on the board next door resets all 3 of these levels
+  back to 1, and the board needs to reflect that right away rather than
+  wait for the next manual interaction.
 - `AstralShardUpgradeBoardClient.client.lua` — Card 2's board, sitting
-  next to the Ley Shard board in the same row. A placeholder shell for now
-  - per direct request ("It should be the material x card with three
-  upgrades but dont put them in yet I just want to see the card") - just
-  the title banner, a live Astral Shard readout (updated off the new
-  `AstralShardUpdated` event), and 3 empty slots (a faded diamond icon,
-  "???" for the name, "Coming Soon" where a level/cost would go) - no
-  buttons at all, since there's nothing to buy yet. Same gating/rebuild
+  next to the Ley Shard board in the same row. 2 real upgrade columns now
+  - per direct request ("lets just start with those two upgrades") -
+  "More Ley Shard" and "More Astral Shards" (see
+  `AstralShardConversionHandler` above), both using the same
+  `createUpgradeColumn` template every other board uses, just with a
+  shared `buildGemIcon(color)` helper that recolors the same diamond shape
+  per column (teal for Ley Shard, violet for Astral Shard) instead of a
+  separate icon-builder function per column. The 3rd slot stays the
+  original empty "Coming Soon" placeholder (faded diamond, "???", no
+  buttons) until a 3rd upgrade is actually asked for. Same gating/rebuild
   pattern as `LeyShardUpgradeBoardClient`.
 - `LeyShardConversionBoardClient.client.lua` — Card 3, the only way to
   actually get Astral Shard since Card 2 has no collection mechanic of its
   own - per direct request ("a card next to that where you can convert
-  your ley shards into that"). Shows the fixed rate ("5,000 Ley Shard = 1
-  Astral Shard"), live readouts for both currencies, and one "Convert"
-  button - red/disabled when nothing's affordable, green and labeled
-  "Convert (N)" once at least 1 Astral Shard's worth of Ley Shard is
-  banked, spending ALL currently-affordable Ley Shard in one press (my own
-  call - a fixed 1-per-click would take many repeated presses to spend
-  down a large balance). Re-fetches its own state off `LeyShardUpdated`
-  (which also fires from ordinary Mat collection, not just conversions,
-  but a state re-fetch is cheap for a 2-line readout). Same gating/rebuild
-  pattern as the other EtherIsland boards.
+  your ley shards into that"). Shows the LIVE rate ("1,000 Ley Shard = N
+  Astral Shard," N climbing with Card 2's "More Astral Shards" upgrade -
+  lowered from an original flat "5,000 Ley Shard = 1 Astral Shard" per
+  direct request), live readouts for both currencies, a red warning line
+  ("Resets your Ley Shard upgrades!" - per direct request, "when you
+  exchange them it totally resets your ley shard upgrades all 3"), and one
+  "Convert" button - red/disabled when nothing's affordable, green and
+  labeled "Convert (N)" once at least 1 Astral Shard's worth of Ley Shard
+  is banked, spending ALL currently-affordable Ley Shard in one press (my
+  own call - a fixed 1-per-click would take many repeated presses to
+  spend down a large balance). Re-fetches its own state off
+  `LeyShardUpdated` (which also fires from ordinary Mat collection, not
+  just conversions, but a state re-fetch is cheap for a small readout).
+  Same gating/rebuild pattern as the other EtherIsland boards.
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.
