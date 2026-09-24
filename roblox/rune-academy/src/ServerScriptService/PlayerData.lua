@@ -287,57 +287,15 @@ function PlayerData.load(player: Player)
 		data.firstJoinedAt = os.time()
 	end
 
-	-- TEMP: testing only - spawns in already past Tier 3 with every
-	-- Upgrade Tree tile already bought (per direct request), so
-	-- SecondIsland, the Fantasy Ruin, and the Ether Shroud/board are all
-	-- immediately visible/testable without grinding through the tiers or
-	-- tree first. Remove all of these lines once you're done testing.
-	data.mana = 1e13
-	data.rebirths = 1e13
-	data.level = 50
-	data.arcaneDust = 1e13
-	data.ether = 1e13
-	data.wizardTier = 3
-	-- Also needed for UpgradeTreeHandler.isUnlocked (requires BOTH
-	-- wizardTier >= 3 AND this) - without it, every fresh Studio session
-	-- left the floor tile upgrades looking "greyed out" (no sign at all,
-	-- since UpgradeTreeClient never builds one while unlocked is false)
-	-- until the SecondIslandGate was manually re-unlocked by hand each time.
-	data.secondIslandUnlocked = true
-	data.dustTreeTile1 = true
-	data.dustTreeTile2 = true
-	data.dustTreeTile3 = true
-	data.dustTreeTile4 = true
-	data.dustTreeTile5 = true
-	data.dustTreeTile6 = true
-	data.dustTreeTile7 = true
-	data.dustTreeTile8 = true
-	data.dustTreeTile9 = true
-
-	-- TEMP: testing only - per direct request ("spawn me in with more all
-	-- ley shard card uogrades maxed just to see how much I gain"), also
-	-- skips straight past the EtherIsland gate (its own real unlock still
-	-- costs 1e9 Ether normally) and maxes all 3 Ley Shard columns, so the
-	-- Mat/board are immediately usable/testable at full strength. Remove
-	-- these lines once you're done testing.
-	data.etherIslandUnlocked = true
-	data.leyShardYieldLevel = 100
-	data.leyShardSpeedLevel = 10
-	data.leyShardManaBoostLevel = 50
-
-	-- TEMP: testing only - per direct request ("spawn me in already
-	-- completing these cards"), also skips straight past floor Tiles 4-5
-	-- (Celestial Shard's own real unlock still costs 5,000,000 Astral
-	-- Shard normally) and maxes all 3 Celestial Shard columns, so the
-	-- converter card and board are immediately usable/testable at full
-	-- strength. Remove these lines once you're done testing.
-	data.leyShardFloorTile4 = true
-	data.leyShardFloorTile5 = true
-	data.astralShard = 1e13
-	data.celestialShard = 1e13
-	data.celestialConversionBoostLevel = 50
-	data.celestialAstralBoostLevel = 25
-	data.celestialManaBoostLevel = 50
+	-- The 3 "TEMP: testing only" blocks that used to sit here (forcing
+	-- every player straight to Tier 3/EtherIsland/Celestial Shard with
+	-- everything maxed) were removed per direct request ("I want my
+	-- friends to playtest this... I want them with no advantage so start
+	-- at very beginning") - they applied to EVERY player unconditionally,
+	-- which would have handed playtesters the same head start instead of
+	-- the real, unlock-by-unlock progression. Every player, including the
+	-- developer's own account, now starts from `defaultData()` above with
+	-- nothing forced - genuinely starting at the very beginning.
 
 	sessions[player] = data
 

@@ -96,20 +96,21 @@ from that earlier design.
   leaderstats now too - `Mana`/`Rebirths` NumberValues, replacing the old
   Ascensions/Scrolls/Gems placeholders (removed along with the rest of
   that scrapped system during the Power Store cleanup).
-  `PlayerData.load` also has a block of TEMP testing-only overrides,
-  clearly marked for removal, that force-set generous currency amounts and
-  skip past every prior milestone on EVERY join (regardless of what's
-  actually saved) so later-game content stays immediately reachable while
-  testing - most recently extended per direct request ("spawn me in with
-  more all ley shard card uogrades maxed just to see how much I gain") to
-  also skip the EtherIsland gate and max all 3 Ley Shard columns. Also now
-  sets `secondIslandUnlocked = true` - missing this one was a real bug,
-  not just a convenience gap: `UpgradeTreeHandler.isUnlocked` requires
-  BOTH `wizardTier >= 3` (already forced) AND this, so every fresh Studio
-  session (no DataStore persistence without publishing + API access) left
-  the floor tile upgrades looking "greyed out" - no sign at all, since
-  `UpgradeTreeClient` never builds one while `unlocked` is false - until
-  the SecondIslandGate was manually re-unlocked by hand each time.
+  `PlayerData.load` used to also have 3 blocks of TEMP testing-only
+  overrides that force-set generous currency amounts and skipped past
+  every prior milestone on EVERY join (regardless of what's actually
+  saved), so later-game content stayed immediately reachable while
+  building/testing each new card - most recently including "spawn me in
+  with more all ley shard card uogrades maxed" (skip EtherIsland's gate,
+  max all 3 Ley Shard columns) and "spawn me in already completing these
+  cards" (skip floor Tiles 4-5, max all 3 Celestial Shard columns). All 3
+  blocks were removed per direct request once real playtesting was ready
+  to start ("I want my friends to playtest this... I want them with no
+  advantage so start at very beginning") - they applied to every player
+  unconditionally, which would have handed playtesters the same
+  developer-only head start instead of the real progression. Every
+  player, including the developer's own account, now starts from
+  `defaultData()` with nothing forced.
 - `RuneHandler.lua` — `collectAtAltar`: the Rune Altar's own tick logic
   (stand on `RuinRuneCircle`, called once per tick by `WorldBuilder`'s
   proximity loop) - spends `RuinRuneHandler.getManaCostPerTick` Mana, then
