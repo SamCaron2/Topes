@@ -44,6 +44,7 @@ local etherUpdatedEvent = remotesFolder:WaitForChild("EtherUpdated")
 local upgradeTreeTileBoughtEvent = remotesFolder:WaitForChild("UpgradeTreeTileBought")
 local runeAltarCollectedEvent = remotesFolder:WaitForChild("RuneAltarCollected")
 local leyShardUpdatedEvent = remotesFolder:WaitForChild("LeyShardUpdated")
+local astralShardUpdatedEvent = remotesFolder:WaitForChild("AstralShardUpdated")
 local leyShardFloorTileBoughtEvent = remotesFolder:WaitForChild("LeyShardFloorTileBought")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
@@ -1780,7 +1781,11 @@ do
 						if onTile and LeyShardFloorTileHandler.buyTile(player, tile.id) then
 							local data = PlayerData.get(player)
 							if data then
-								leyShardUpdatedEvent:FireClient(player, data.leyShard or 0)
+								if tile.currency == "astralShard" then
+									astralShardUpdatedEvent:FireClient(player, data.astralShard or 0)
+								else
+									leyShardUpdatedEvent:FireClient(player, data.leyShard or 0)
+								end
 							end
 							leyShardFloorTileBoughtEvent:FireClient(player, tile.id)
 						end

@@ -902,13 +902,24 @@ design notes.
   unlock those tiles right when they get to this island" -
   "shrouds"/"shrods" read as "Shard"): Tile 2 costs 25,000 Ley Shard and
   also doubles Ley Shard yield (stacking multiplicatively with Tile 1, so
-  both bought = 4x); Tile 3 costs 100,000 Ley Shard and doubles the
-  Astral Shard conversion rate instead. Both new costs are my own call
-  for "a decent amount," not specified - steep enough that a
-  fresh-to-EtherIsland player can't just walk up and buy them. Each tile
-  `requires` the one before it (Tile 2 needs Tile 1 bought, Tile 3 needs
-  Tile 2), same `requires`-array gating `UpgradeTreeHandler.TILES` already
-  used - a tile only becomes reachable, and only gets a sign built for it
+  both bought = 4x); Tile 3 doubles the Astral Shard conversion rate
+  instead. Both new costs are my own call for "a decent amount," not
+  specified - steep enough that a fresh-to-EtherIsland player can't just
+  walk up and buy them. Tile 3 was originally priced in Ley Shard too
+  (100,000), then changed to be priced in Astral Shard itself instead -
+  per direct follow-up request ("Make tile 3 cost a resonable amount of
+  astral shard not ley shard") - 50 Astral Shard (my own call for
+  "reasonable," not specified: enough to need a couple of conversions
+  saved up, not a single one). Each tile now carries its own `currency`
+  field (`"leyShard"` for Tiles 1-2, `"astralShard"` for Tile 3),
+  independent of its `kind`, so `buyTile`/`getState` debit and display the
+  right balance per tile; `WorldBuilder` fires `AstralShardUpdated`
+  instead of `LeyShardUpdated` on a successful Tile 3 purchase, and
+  `LeyShardFloorTileClient` tracks both balances and shows the right unit
+  label ("Ley Shard" vs. "Astral Shard") per sign. Each tile `requires`
+  the one before it (Tile 2 needs Tile 1 bought, Tile 3 needs Tile 2),
+  same `requires`-array gating `UpgradeTreeHandler.TILES` already used - a
+  tile only becomes reachable, and only gets a sign built for it
   client-side, once its prerequisite is bought.
   Every tile also carries a `kind` (`"leyShard"` for Tiles 1-2,
   `"astralConversion"` for Tile 3, same convention as

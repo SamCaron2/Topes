@@ -10,6 +10,10 @@
 -- then "Now two more floor tiles above that is one for times 2 ley
 -- shrouds and 2x astra shrouds"). Color follows the same rule: red (can't
 -- afford yet), yellow (affordable - walk over it to buy), green (bought).
+-- Tile 3 is priced in Astral Shard instead of Ley Shard (per direct
+-- follow-up request, "Make tile 3 cost a resonable amount of astral
+-- shard not ley shard") - each tile's `currency` from the server state
+-- says which balance/label to show and compare against.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +26,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getLeyShardFloorTileStateFunction = remotes:WaitForChild("GetLeyShardFloorTileState")
 local leyShardFloorTileBoughtEvent = remotes:WaitForChild("LeyShardFloorTileBought")
 local leyShardUpdatedEvent = remotes:WaitForChild("LeyShardUpdated")
+local astralShardUpdatedEvent = remotes:WaitForChild("AstralShardUpdated")
 local playerEtherIslandUnlockedEvent = remotes:WaitForChild("PlayerEtherIslandUnlocked")
 
 local tilesFolder = Workspace:WaitForChild("LeyShardFloorTiles")
@@ -32,8 +37,21 @@ local COLOR_BOUGHT = Color3.fromRGB(70, 190, 60) -- green - bought
 local TEXT_STROKE_TRANSPARENCY = 0.3
 local TILE_COUNT = 3
 
+local CURRENCY_LABEL = {
+	leyShard = "Ley Shard",
+	astralShard = "Astral Shard",
+}
+
 local currentLeyShard = 0
-local signs = {} -- [tileId] = { background = Frame, costText = TextLabel, cost = number, bought = boolean }
+local currentAstralShard = 0
+local signs = {} -- [tileId] = { background = Frame, costText = TextLabel, cost = number, currency = string, bought = boolean }
+
+local function balanceFor(currency: string): number
+	if currency == "astralShard" then
+		return currentAstralShard
+	end
+	return currentLeyShard
+end
 
 local function updateSign(tileId: number)
 	local sign = signs[tileId]
@@ -47,9 +65,9 @@ local function updateSign(tileId: number)
 		return
 	end
 
-	local canAfford = currentLeyShard >= sign.cost
+	local canAfford = balanceFor(sign.currency) >= sign.cost
 	sign.background.BackgroundColor3 = canAfford and COLOR_READY or COLOR_LOCKED
-	sign.costText.Text = ("Cost: %s Ley Shard"):format(NumberFormat.format(sign.cost))
+	sign.costText.Text = ("Cost: %s %s"):format(NumberFormat.format(sign.cost), CURRENCY_LABEL[sign.currency] or "Ley Shard")
 end
 
 local function updateAllSigns()
@@ -105,6 +123,7 @@ local function buildSign(tileId: number, tilePart: BasePart, tileInfo)
 		background = background,
 		costText = costText,
 		cost = tileInfo.cost,
+		currency = tileInfo.currency,
 		bought = tileInfo.bought,
 	}
 	updateSign(tileId)
@@ -116,6 +135,7 @@ local function render(state)
 	end
 
 	currentLeyShard = state.leyShard
+	currentAstralShard = state.astralShard
 
 	if not state.unlocked then
 		return
@@ -138,6 +158,11 @@ render(getLeyShardFloorTileStateFunction:InvokeServer())
 
 leyShardUpdatedEvent.OnClientEvent:Connect(function(amount)
 	currentLeyShard = amount
+	updateAllSigns()
+end)
+
+astralShardUpdatedEvent.OnClientEvent:Connect(function(amount)
+	currentAstralShard = amount
 	updateAllSigns()
 end)
 
