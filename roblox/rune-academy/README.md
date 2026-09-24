@@ -1382,6 +1382,24 @@ design notes.
   also waits on the same unlock check before it's ever created. Also
   rechecks on `UpgradeTreeTileBought`, building the board immediately once
   Tile 9 is bought.
+  **Icons** - per direct request ("On island 2 for more ether do our ether
+  logo. Also the left side showing the ether count use that ether icon
+  too. For click speed use the click speed icon. For more dust use the
+  dust icon. For auto click use the black arround icon (auto click)"):
+  both `createUpgradeColumn` and `createOneTimeColumn` gained the same
+  `buildIcon(iconFrame)` callback the other boards use, backed by a shared
+  `buildImageIcon(imageId)` factory. All 4 columns now show a real
+  uploaded image with no colored backdrop (`iconColor = nil`) instead of a
+  plain colored circle: "More Ether" gets the uploaded purple `eth_purple`
+  logo (the Ethereum diamond, recolored purple per an earlier direct
+  request and re-uploaded), "Click Speed" the uploaded click-speed icon (a
+  pointing finger with motion lines), "More Dust" the same real Arcane
+  Dust icon the Arcane Dust board uses, and "Auto Click" the uploaded
+  black arrow/radar icon. The currency readout pill also gained the same
+  icon-badge treatment as every other board's readout (previously bare
+  text only) - the `eth_purple` logo overlapping its left edge, per the
+  same request's second half ("the left side showing the ether count use
+  that ether icon too").
 - `LeyShardUpgradeBoardClient.client.lua` — the Ley Shard board's 3-column
   UI on EtherIsland ("More Ley Shard", "Faster Levitation", "More Mana"),
   teal theme matching the Mat. Icons are all hand-built from plain UI

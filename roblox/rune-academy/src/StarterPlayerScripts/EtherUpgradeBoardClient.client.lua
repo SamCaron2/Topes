@@ -39,6 +39,10 @@ local upgradeTreeTileBoughtEvent = remotes:WaitForChild("UpgradeTreeTileBought")
 local board = Workspace:WaitForChild("EtherArea"):WaitForChild("EtherUpgradeBoard")
 
 local ETHER_COLOR = Color3.fromRGB(150, 60, 220)
+local ETHER_ICON_ID = "rbxassetid://84621843997198" -- eth_purple
+local CLICK_SPEED_ICON_ID = "rbxassetid://74450095422625"
+local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
+local AUTO_CLICK_ICON_ID = "rbxassetid://72531564781023"
 
 local COLOR_CAN_BUY = Color3.fromRGB(70, 190, 60)
 local COLOR_CANT_AFFORD = Color3.fromRGB(200, 55, 55)
@@ -93,8 +97,13 @@ local function buildBoard()
 	currencyReadoutCorner.CornerRadius = UDim.new(0.3, 0)
 	currencyReadoutCorner.Parent = currencyReadout
 
+	-- Sized/positioned to leave room for the icon badge on the left -
+	-- UIPadding on a TextLabel doesn't inset its own rendered Text, so the
+	-- space has to be carved out here instead - same as every other
+	-- board's own readout icon.
 	local currencyReadoutText = Instance.new("TextLabel")
-	currencyReadoutText.Size = UDim2.new(1, 0, 1, 0)
+	currencyReadoutText.Size = UDim2.new(1, -26, 1, 0)
+	currencyReadoutText.Position = UDim2.new(0, 26, 0, 0)
 	currencyReadoutText.BackgroundTransparency = 1
 	currencyReadoutText.Font = Enum.Font.GothamBold
 	currencyReadoutText.TextScaled = true
@@ -102,6 +111,24 @@ local function buildBoard()
 	currencyReadoutText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 	currencyReadoutText.Text = "-"
 	currencyReadoutText.Parent = currencyReadout
+
+	-- Per direct request ("the left side showing the ether count use that
+	-- ether icon too") - the uploaded eth_purple logo, overlapping the
+	-- readout pill's left edge same as every other board's currency icon.
+	local currencyReadoutIcon = Instance.new("Frame")
+	currencyReadoutIcon.AnchorPoint = Vector2.new(0, 0.5)
+	currencyReadoutIcon.Position = UDim2.new(0, -22, 0.5, 0)
+	currencyReadoutIcon.Size = UDim2.new(0, 40, 0, 40)
+	currencyReadoutIcon.BackgroundTransparency = 1
+	currencyReadoutIcon.ZIndex = 2
+	currencyReadoutIcon.Parent = currencyReadout
+
+	local currencyReadoutImage = Instance.new("ImageLabel")
+	currencyReadoutImage.Size = UDim2.new(1, 0, 1, 0)
+	currencyReadoutImage.BackgroundTransparency = 1
+	currencyReadoutImage.Image = ETHER_ICON_ID
+	currencyReadoutImage.ZIndex = 3
+	currencyReadoutImage.Parent = currencyReadoutIcon
 
 	etherUpdatedEvent.OnClientEvent:Connect(function(amount)
 		currencyReadoutText.Text = NumberFormat.format(amount)
@@ -129,7 +156,30 @@ local function buildBoard()
 	titleText.Text = "Ether Upgrades"
 	titleText.Parent = titleBanner
 
-	local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3, getStateRemote, buyRemote, formatDetail)
+	-- Per direct request ("for more ether do our ether logo... For click
+	-- speed use the click speed icon. For more dust use the dust icon. For
+	-- auto click use the black arround icon (auto click)") - all 4 columns
+	-- now show a real uploaded image instead of a plain colored circle,
+	-- same `buildImageIcon` pattern as every other board's reused-image
+	-- icons.
+	local function buildImageIcon(imageId: string): (Frame) -> ()
+		return function(iconFrame: Frame)
+			local icon = Instance.new("ImageLabel")
+			icon.Size = UDim2.new(1, 0, 1, 0)
+			icon.BackgroundTransparency = 1
+			icon.Image = imageId
+			icon.Parent = iconFrame
+
+			local iconPadding = Instance.new("UIPadding")
+			iconPadding.PaddingTop = UDim.new(0.12, 0)
+			iconPadding.PaddingBottom = UDim.new(0.12, 0)
+			iconPadding.PaddingLeft = UDim.new(0.12, 0)
+			iconPadding.PaddingRight = UDim.new(0.12, 0)
+			iconPadding.Parent = icon
+		end
+	end
+
+	local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3?, buildIcon: (Frame) -> (), getStateRemote, buyRemote, formatDetail)
 		local column = Instance.new("Frame")
 		column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
 		column.Position = UDim2.new(COLUMN_START_X + (slotIndex - 1) * (COLUMN_WIDTH + COLUMN_GAP), 0, COLUMN_TOP_Y, 0)
@@ -140,7 +190,10 @@ local function buildBoard()
 		iconFrame.AnchorPoint = Vector2.new(0.5, 0)
 		iconFrame.Size = UDim2.new(0.4, 0, 0.22, 0)
 		iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
-		iconFrame.BackgroundColor3 = iconColor
+		-- nil iconColor (real-icon-image columns) means no filled backdrop -
+		-- same reasoning as every other board's own image icon columns.
+		iconFrame.BackgroundTransparency = iconColor and 0 or 1
+		iconFrame.BackgroundColor3 = iconColor or Color3.fromRGB(255, 255, 255)
 		iconFrame.BorderSizePixel = 0
 		iconFrame.Parent = column
 
@@ -151,6 +204,8 @@ local function buildBoard()
 		local iconCorner = Instance.new("UICorner")
 		iconCorner.CornerRadius = UDim.new(1, 0)
 		iconCorner.Parent = iconFrame
+
+		buildIcon(iconFrame)
 
 		local nameLabel = Instance.new("TextLabel")
 		nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
@@ -313,7 +368,7 @@ local function buildBoard()
 	-- this is deliberately simpler than createUpgradeColumn: one detail
 	-- line (fixed, describing what it does) and one button that goes from
 	-- "Buy" to a disabled "Owned" once bought, never anything in between.
-	local function createOneTimeColumn(slotIndex: number, name: string, iconColor: Color3, detailText: string, getStateRemote, buyRemote)
+	local function createOneTimeColumn(slotIndex: number, name: string, iconColor: Color3?, buildIcon: (Frame) -> (), detailText: string, getStateRemote, buyRemote)
 		local column = Instance.new("Frame")
 		column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
 		column.Position = UDim2.new(COLUMN_START_X + (slotIndex - 1) * (COLUMN_WIDTH + COLUMN_GAP), 0, COLUMN_TOP_Y, 0)
@@ -324,7 +379,8 @@ local function buildBoard()
 		iconFrame.AnchorPoint = Vector2.new(0.5, 0)
 		iconFrame.Size = UDim2.new(0.4, 0, 0.22, 0)
 		iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
-		iconFrame.BackgroundColor3 = iconColor
+		iconFrame.BackgroundTransparency = iconColor and 0 or 1
+		iconFrame.BackgroundColor3 = iconColor or Color3.fromRGB(255, 255, 255)
 		iconFrame.BorderSizePixel = 0
 		iconFrame.Parent = column
 
@@ -335,6 +391,8 @@ local function buildBoard()
 		local iconCorner = Instance.new("UICorner")
 		iconCorner.CornerRadius = UDim.new(1, 0)
 		iconCorner.Parent = iconFrame
+
+		buildIcon(iconFrame)
 
 		local nameLabel = Instance.new("TextLabel")
 		nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
@@ -437,21 +495,21 @@ local function buildBoard()
 		end)
 	end
 
-	createUpgradeColumn(1, "More Ether", ETHER_COLOR, getEtherYieldStateFunction, buyEtherYieldUpgradeFunction, function(state)
+	createUpgradeColumn(1, "More Ether", nil, buildImageIcon(ETHER_ICON_ID), getEtherYieldStateFunction, buyEtherYieldUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
 		end
 		return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
 	end)
 
-	createUpgradeColumn(2, "Click Speed", Color3.fromRGB(190, 140, 255), getEtherClickSpeedStateFunction, buyEtherClickSpeedUpgradeFunction, function(state)
+	createUpgradeColumn(2, "Click Speed", nil, buildImageIcon(CLICK_SPEED_ICON_ID), getEtherClickSpeedStateFunction, buyEtherClickSpeedUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("Every %.1fs > %.1fs"):format(state.cooldownSeconds, state.nextCooldownSeconds)
 		end
 		return ("Every %.1fs (MAX)"):format(state.cooldownSeconds)
 	end)
 
-	createUpgradeColumn(3, "More Dust", Color3.fromRGB(120, 90, 220), getEtherDustBoostStateFunction, buyEtherDustBoostUpgradeFunction, function(state)
+	createUpgradeColumn(3, "More Dust", nil, buildImageIcon(ARCANE_DUST_ICON_ID), getEtherDustBoostStateFunction, buyEtherDustBoostUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
 		end
@@ -461,7 +519,8 @@ local function buildBoard()
 	createOneTimeColumn(
 		4,
 		"Auto Click",
-		Color3.fromRGB(220, 140, 255),
+		nil,
+		buildImageIcon(AUTO_CLICK_ICON_ID),
 		"Collects Ether for you automatically - never click the Shroud again",
 		getEtherAutoClickStateFunction,
 		buyEtherAutoClickUpgradeFunction
