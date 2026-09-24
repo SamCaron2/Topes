@@ -171,10 +171,32 @@ local function defaultData()
 		-- for times 2 ley shrouds and 2x astra shrouds. Make them cost a
 		-- decent amount" for Tiles 2-3, each requiring the one before it).
 		-- Boolean flags, not levels - once bought, permanent, NOT reset by
-		-- converting Ley Shard into Astral Shard.
+		-- converting Ley Shard into Astral Shard. Tiles 4-5 (per direct
+		-- follow-up request, "Please do a fourth and fith tile... cost 5
+		-- million astra shards and that unlocks the third upgrade car[d]...
+		-- Then the 5th tile... cost 1million ley shards and that will
+		-- unlock Auto Ley shards") double as unlock flags too, same
+		-- convention as dustTreeTile9 below: leyShardFloorTile4 also means
+		-- "has this player unlocked Celestial Shard" (Card 3), and
+		-- leyShardFloorTile5 also means "has Auto Ley Shard" (auto-collect
+		-- Ley Shard + auto-convert some into Astral Shard on a timer
+		-- without spending it - see AstralShardConversionHandler
+		-- .autoConvertTick and WorldBuilder's own background loop).
 		leyShardFloorTile1 = false,
 		leyShardFloorTile2 = false,
 		leyShardFloorTile3 = false,
+		leyShardFloorTile4 = false,
+		leyShardFloorTile5 = false,
+
+		-- Card 3 of the wizard-material progression - per direct request
+		-- ("You have to name this final shard"), named "Celestial Shard"
+		-- per this game's own long-planned naming (see LeyShardHandler.lua's
+		-- own header comment: "Astral Shard" and "Celestial Shard" are the
+		-- planned names for cards 2 and 3"). Unlocked by leyShardFloorTile4
+		-- above; per direct request ("For the time being it wont have any
+		-- upgrades") it has no collection mechanic or upgrades yet, just a
+		-- placeholder currency/board - CelestialShardHandler.lua.
+		celestialShard = 0,
 
 		-- Rune Altar upgrades (RuinRuneHandler): 5 tiers bought via
 		-- RuneAltarBoard, paid in Mana - only reachable once the Fantasy

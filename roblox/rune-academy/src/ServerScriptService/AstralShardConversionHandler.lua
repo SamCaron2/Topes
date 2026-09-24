@@ -87,4 +87,39 @@ function AstralShardConversionHandler.convert(player: Player)
 	return true, nil, AstralShardConversionHandler.getState(player)
 end
 
+-- "Auto Ley Shard" (LeyShardFloorTileHandler.hasAutoLeyShard, Tile 5 on
+-- EtherIsland's floor) - a periodic, no-cost version of `convert` above,
+-- called by WorldBuilder's own background loop on its own timer rather
+-- than a button press. Computes the SAME astralGained a manual convert
+-- would (same units/multiplier math) but does NOT spend the Ley Shard
+-- units OR reset the 3 Ley Shard board levels - per direct request ("that
+-- will unlock Auto Ley shards where you auto collect instead of having to
+-- levatate and also That in turn auto collects astra shards to while keep
+-- the amount of ley shards you have... it auto collects and auto cashes
+-- ley shards in for astra shards while keeping ley shards"). Since
+-- nothing is ever spent, this is a straight ongoing bonus on top of
+-- normal Ley Shard collection - WorldBuilder throttles how often this
+-- fires (not every collect tick) so the free rate stays sane.
+function AstralShardConversionHandler.autoConvertTick(player: Player): number?
+	local data = PlayerData.get(player)
+	if not data or not data.etherIslandUnlocked then
+		return nil
+	end
+
+	local units = math.floor((data.leyShard or 0) / LEY_SHARD_COST_PER_ASTRAL_SHARD)
+	if units < 1 then
+		return nil
+	end
+
+	local astralGained = math.floor(
+		units * AstralShardConversionBoostHandler.getMultiplier(player) * LeyShardFloorTileHandler.getAstralConversionMultiplier(player)
+	)
+	if astralGained < 1 then
+		return nil
+	end
+
+	data.astralShard = (data.astralShard or 0) + astralGained
+	return data.astralShard
+end
+
 return AstralShardConversionHandler

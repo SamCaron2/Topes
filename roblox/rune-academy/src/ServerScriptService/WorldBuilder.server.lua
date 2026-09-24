@@ -1714,10 +1714,14 @@ end
 -- spacing in Z - the exact same diamond-chain shape
 -- UPGRADE_TREE_TILE_POSITIONS' own Tiles 2-3 use relative to its Tile 1,
 -- not just the same spacing constant.
--- LeyShardFloorTileHandler.TILES is a list so a 4th tile later is just
--- one more entry plus one more position here. In its own `do...end`
--- block, same register-budget reasoning as every other late-file section
--- here.
+-- LeyShardFloorTileHandler.TILES is a list, so Tiles 4-5 (per direct
+-- follow-up request, "Please do a fourth and fith tile above the other
+-- two tile... Then the 5th tile to the right") are just two more entries
+-- plus two more positions here - continuing the SAME diamond-chain shape
+-- one more row forward (+X) from Tiles 2-3, "above" them per the request,
+-- with Tile 5 offset to +Z of Tile 4 ("to the right" - my own call for
+-- which side, not verifiable from here). In its own `do...end` block,
+-- same register-budget reasoning as every other late-file section here.
 do
 	local LEY_SHARD_FLOOR_TILE_WIDTH = 9
 	local LEY_SHARD_FLOOR_TILE_DEPTH = 6
@@ -1726,6 +1730,8 @@ do
 		[1] = { x = 107, z = 134 },
 		[2] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING, z = 134 - LEY_SHARD_FLOOR_TILE_SPACING / 2 },
 		[3] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING, z = 134 + LEY_SHARD_FLOOR_TILE_SPACING / 2 },
+		[4] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING * 2, z = 134 - LEY_SHARD_FLOOR_TILE_SPACING / 2 },
+		[5] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING * 2, z = 134 + LEY_SHARD_FLOOR_TILE_SPACING / 2 },
 	}
 	local LEY_SHARD_FLOOR_TILE_RADIUS = math.max(LEY_SHARD_FLOOR_TILE_WIDTH, LEY_SHARD_FLOOR_TILE_DEPTH) / 2
 	local LEY_SHARD_FLOOR_TILE_CHECK_INTERVAL = 0.5
@@ -1803,6 +1809,107 @@ do
 				end
 			end
 		end
+	end)
+end
+
+-- Card 3's own board, Celestial Shard (CelestialShardHandler) -
+-- unlocked by Tile 4 above. Per direct request with exact opposite
+-- corners ("this fill be at these cordinates (left side of card
+-- starts at x155 z154 and right side is around x154 z140"), which
+-- puts its long axis along Z (not X, unlike the 3-board row) - built
+-- the same way RuinRuneHandler's own board turns 90 degrees to run along a
+-- different axis than its neighbors (Size's "width" dimension stays
+-- local-X, then a 90-degree CFrame.Angles Y-rotation swings that to point
+-- along world Z). Gold-tinted glass, per direct request ("Maybe make
+-- this shard color gold"). No upgrade columns yet - per direct
+-- request ("For the time being it wont have any upgrades") -
+-- CelestialShardBoardClient just shows a "Coming Soon" shell once
+-- unlocked, same precedent as Card 2's own board when it first went
+-- up with 3 empty placeholder slots.
+do
+	local CELESTIAL_SHARD_BOARD_X = 154.5 -- halfway between the given 155/154 corners
+	local CELESTIAL_SHARD_BOARD_Z = (154 + 140) / 2
+	local CELESTIAL_SHARD_BOARD_WIDTH = 154 - 140 -- 14 studs, spanning the given Z range
+
+	local existingCelestialShardBoard = Workspace:FindFirstChild("CelestialShardBoard")
+	if existingCelestialShardBoard then
+		existingCelestialShardBoard:Destroy()
+	end
+
+	local celestialShardBoard = Instance.new("Part")
+	celestialShardBoard.Name = "CelestialShardBoard"
+	celestialShardBoard.Anchored = true
+	celestialShardBoard.CanCollide = true
+	celestialShardBoard.Material = Enum.Material.Glass
+	celestialShardBoard.Color = Color3.fromRGB(80, 65, 20)
+	celestialShardBoard.Transparency = 0.7
+	celestialShardBoard.Size = Vector3.new(CELESTIAL_SHARD_BOARD_WIDTH, 18, 1)
+	celestialShardBoard.CFrame = CFrame.new(CELESTIAL_SHARD_BOARD_X, ISLAND_TOP_Y + 9, CELESTIAL_SHARD_BOARD_Z)
+		* CFrame.Angles(0, math.rad(90), 0)
+	celestialShardBoard.Parent = Workspace
+end
+
+-- "Auto Ley Shard" (LeyShardFloorTileHandler.hasAutoLeyShard, Tile 5) -
+-- once bought, collects Ley Shard automatically (no more clicking the
+-- Mat to levitate) AND periodically converts some of it into Astral
+-- Shard without spending the Ley Shard balance
+-- (AstralShardConversionHandler.autoConvertTick) - per direct request,
+-- "it auto collects and auto cashes ley shards in for astra shards
+-- while keeping ley shards." A separate tracking table from
+-- LEY_SHARD_LEVITATING above (not the same one) since this should
+-- never force the floating/PlatformStand pose - the player just walks
+-- around normally while it collects in the background. Requires
+-- AstralShardConversionHandler locally rather than adding it to this
+-- file's own top-level requires - this file sits right at Luau's
+-- 200-local-register ceiling already, and one more permanent top-level
+-- local tipped it over.
+do
+	local AstralShardConversionHandler = require(script.Parent.AstralShardConversionHandler)
+
+	local AUTO_LEY_SHARD_STATE = {} -- [player] = { nextCollectAt, nextConvertAt }
+	local AUTO_LEY_SHARD_CHECK_INTERVAL = 0.1
+	-- How often the free Astral Shard trickle ticks - my own call, not
+	-- specified: since the Ley Shard balance is never spent here,
+	-- ticking this as fast as collection itself would produce an
+	-- absurd Astral Shard rate. Tune freely.
+	local AUTO_LEY_SHARD_CONVERT_INTERVAL = 10
+
+	task.spawn(function()
+		while true do
+			task.wait(AUTO_LEY_SHARD_CHECK_INTERVAL)
+			local now = os.clock()
+			for _, player in Players:GetPlayers() do
+				if LeyShardFloorTileHandler.hasAutoLeyShard(player) then
+					local state = AUTO_LEY_SHARD_STATE[player]
+					if not state then
+						state = { nextCollectAt = now, nextConvertAt = now }
+						AUTO_LEY_SHARD_STATE[player] = state
+					end
+
+					if now >= state.nextCollectAt then
+						local newLeyShard = LeyShardHandler.collect(player)
+						if newLeyShard then
+							leyShardUpdatedEvent:FireClient(player, newLeyShard)
+						end
+						state.nextCollectAt = now + LeyShardSpeedHandler.getIntervalSeconds(player)
+					end
+
+					if now >= state.nextConvertAt then
+						local newAstralShard = AstralShardConversionHandler.autoConvertTick(player)
+						if newAstralShard then
+							astralShardUpdatedEvent:FireClient(player, newAstralShard)
+						end
+						state.nextConvertAt = now + AUTO_LEY_SHARD_CONVERT_INTERVAL
+					end
+				else
+					AUTO_LEY_SHARD_STATE[player] = nil
+				end
+			end
+		end
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		AUTO_LEY_SHARD_STATE[player] = nil
 	end)
 end
 

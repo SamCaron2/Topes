@@ -1,19 +1,21 @@
--- Renders the info sign for EtherIsland's own Ley Shard floor tiles (3 of
+-- Renders the info sign for EtherIsland's own Ley Shard floor tiles (5 of
 -- them now, each requiring the one before it bought first, same as the
 -- SecondIsland tree - a tile's sign only exists once reachable) - exact
 -- same styling/behavior as UpgradeTreeClient (colored background, title,
 -- cost, painted flat onto the tile's own Top face with a SurfaceGui, not
 -- a BillboardGui), just reading LeyShardFloorTileHandler's state (gated
 -- on EtherIsland being unlocked, not Wizard Tier 3+) and costed/paid in
--- Ley Shard instead of Arcane Dust - per direct request ("x107 z134 start
--- a floor tile upgrade. Lets do for 1k ley shards times your ley by 2,"
--- then "Now two more floor tiles above that is one for times 2 ley
--- shrouds and 2x astra shrouds"). Color follows the same rule: red (can't
--- afford yet), yellow (affordable - walk over it to buy), green (bought).
--- Tile 3 is priced in Astral Shard instead of Ley Shard (per direct
--- follow-up request, "Make tile 3 cost a resonable amount of astral
--- shard not ley shard") - each tile's `currency` from the server state
--- says which balance/label to show and compare against.
+-- Ley Shard or Astral Shard instead of Arcane Dust - per direct request
+-- ("x107 z134 start a floor tile upgrade. Lets do for 1k ley shards times
+-- your ley by 2," then "Now two more floor tiles above that is one for
+-- times 2 ley shrouds and 2x astra shrouds," then "Please do a fourth
+-- and fith tile... cost 5 million astra shards and that unlocks the
+-- third upgrade car[d]... Then the 5th tile... cost 1million ley shards
+-- and that will unlock Auto Ley shards"). Color follows the same rule:
+-- red (can't afford yet), yellow (affordable - walk over it to buy),
+-- green (bought). Each tile's `currency` from the server state says which
+-- balance/label to show and compare against, per-tile rather than
+-- assuming Ley Shard throughout.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -35,7 +37,7 @@ local COLOR_LOCKED = Color3.fromRGB(200, 55, 55) -- red - not enough Ley Shard y
 local COLOR_READY = Color3.fromRGB(230, 200, 40) -- yellow - affordable, walk over it
 local COLOR_BOUGHT = Color3.fromRGB(70, 190, 60) -- green - bought
 local TEXT_STROKE_TRANSPARENCY = 0.3
-local TILE_COUNT = 3
+local TILE_COUNT = 5
 
 local CURRENCY_LABEL = {
 	leyShard = "Ley Shard",

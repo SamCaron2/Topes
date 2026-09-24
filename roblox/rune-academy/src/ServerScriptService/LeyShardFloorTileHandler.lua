@@ -27,6 +27,22 @@
 -- conversion rate). A separate `currency` field (independent of `kind`)
 -- says what each tile is PAID in - "leyShard" for Tiles 1-2, "astralShard"
 -- for Tile 3 - so buyTile/getState can debit/display the right balance.
+--
+-- Tiles 4-5 (per direct follow-up request, "Please do a fourth and fith
+-- tile above the other two tile cost 5 million astra shards and that
+-- unlocks the third upgrade car[d]... Then the 5th tile to the right with
+-- cost 1million ley shards and that will unlock Auto Ley shards") are
+-- `kind = "unlock"` (no `multiplier` field at all, same as
+-- UpgradeTreeHandler's own Tile 9) since they don't boost a yield/rate -
+-- they gate something else entirely. Tile 4 (5,000,000 Astral Shard)
+-- flips on Card 3, Celestial Shard (see CelestialShardHandler.lua) -
+-- `isCelestialShardUnlocked` below. Tile 5 (1,000,000 Ley Shard) flips on
+-- "Auto Ley Shard" - `hasAutoLeyShard` below, read by WorldBuilder's own
+-- background loop to auto-collect Ley Shard AND auto-convert some of it
+-- into Astral Shard on a timer, without spending the Ley Shard balance
+-- (per direct request, "it auto collects and auto cashes ley shards in
+-- for astra shards while keeping ley shards" - see
+-- AstralShardConversionHandler.autoConvertTick).
 
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -34,6 +50,8 @@ local TILES = {
 	{ id = 1, fieldName = "leyShardFloorTile1", cost = 1000, currency = "leyShard", kind = "leyShard", multiplier = 2, label = "Ley Shard x2", requires = {} },
 	{ id = 2, fieldName = "leyShardFloorTile2", cost = 25000, currency = "leyShard", kind = "leyShard", multiplier = 2, label = "Ley Shard x2", requires = { 1 } },
 	{ id = 3, fieldName = "leyShardFloorTile3", cost = 1000, currency = "astralShard", kind = "astralConversion", multiplier = 2, label = "Astral Shard x2", requires = { 2 } },
+	{ id = 4, fieldName = "leyShardFloorTile4", cost = 5000000, currency = "astralShard", kind = "unlock", label = "Unlocks Celestial Shard", requires = { 3 } },
+	{ id = 5, fieldName = "leyShardFloorTile5", cost = 1000000, currency = "leyShard", kind = "unlock", label = "Auto Ley Shard", requires = { 4 } },
 }
 
 local LeyShardFloorTileHandler = {}
@@ -96,6 +114,22 @@ end
 -- Astral Shard each conversion grants (Tile 3).
 function LeyShardFloorTileHandler.getAstralConversionMultiplier(player: Player): number
 	return foldMultiplier(player, "astralConversion")
+end
+
+-- Read by CelestialShardHandler/CelestialShardBoardClient - true once
+-- Tile 4 is bought (the tile's own boolean doubles as the unlock flag,
+-- same convention as UpgradeTreeHandler.dustTreeTile9 doubling as "has
+-- this player unlocked Ether").
+function LeyShardFloorTileHandler.isCelestialShardUnlocked(player: Player): boolean
+	local data = PlayerData.get(player)
+	return data ~= nil and data.leyShardFloorTile4 == true
+end
+
+-- Read by WorldBuilder's own background loop - true once Tile 5 is
+-- bought.
+function LeyShardFloorTileHandler.hasAutoLeyShard(player: Player): boolean
+	local data = PlayerData.get(player)
+	return data ~= nil and data.leyShardFloorTile5 == true
 end
 
 function LeyShardFloorTileHandler.getState(player: Player)

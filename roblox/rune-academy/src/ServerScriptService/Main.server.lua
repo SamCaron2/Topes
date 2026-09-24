@@ -38,6 +38,7 @@ local AstralShardConversionHandler = require(script.Parent.AstralShardConversion
 local AstralShardLeyBoostHandler = require(script.Parent.AstralShardLeyBoostHandler)
 local AstralShardConversionBoostHandler = require(script.Parent.AstralShardConversionBoostHandler)
 local LeyShardFloorTileHandler = require(script.Parent.LeyShardFloorTileHandler)
+local CelestialShardHandler = require(script.Parent.CelestialShardHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -132,6 +133,7 @@ local getAstralShardConversionBoostStateFunction = newRemoteFunction("GetAstralS
 local buyAstralShardConversionBoostUpgradeFunction = newRemoteFunction("BuyAstralShardConversionBoostUpgrade")
 local getLeyShardFloorTileStateFunction = newRemoteFunction("GetLeyShardFloorTileState")
 local leyShardFloorTileBoughtEvent = newRemoteEvent("LeyShardFloorTileBought") -- server -> client, fired the instant a tile is bought (args: tileId), same pattern as upgradeTreeTileBoughtEvent
+local getCelestialShardStateFunction = newRemoteFunction("GetCelestialShardState")
 
 requestPurchaseEvent.OnServerEvent:Connect(function(player, kind, key)
 	if type(kind) == "string" and type(key) == "string" then
@@ -473,6 +475,10 @@ end
 
 getLeyShardFloorTileStateFunction.OnServerInvoke = function(player)
 	return LeyShardFloorTileHandler.getState(player)
+end
+
+getCelestialShardStateFunction.OnServerInvoke = function(player)
+	return CelestialShardHandler.getState(player)
 end
 
 getRuinRuneStateFunction.OnServerInvoke = function(player)

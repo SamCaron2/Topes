@@ -931,6 +931,43 @@ from that earlier design.
     all 3 of its columns immediately, so it doesn't keep showing stale
     pre-reset levels/costs - same "broadcast a re-fetch signal" pattern as
     `playerRebirthedEvent`/`playerWizardTieredEvent`.
+  - `autoConvertTick` - added for "Auto Ley Shard" (EtherIsland floor
+    Tile 5, see `LeyShardFloorTileHandler.lua` below), per direct request
+    ("that will unlock Auto Ley shards where you auto collect instead of
+    having to levatate and also That in turn auto collects astra shards
+    to while keep the amount of ley shards you have... it auto collects
+    and auto cashes ley shards in for astra shards while keeping ley
+    shards"). Computes the SAME `astralGained` a manual `convert` press
+    would (identical units/multiplier math), but does NOT spend the Ley
+    Shard units or reset the 3 Ley Shard board levels - a periodic,
+    no-cost bonus on top of normal collection instead of a player-pressed
+    prestige action. Called by `WorldBuilder`'s own background loop on its
+    own timer (every 10 seconds, my own call - ticking this as fast as
+    collection itself would produce an absurd free Astral Shard rate
+    since nothing is ever spent), separate from the per-player Ley Shard
+    auto-collect timer that reuses `LeyShardHandler.collect` outright.
+- `CelestialShardHandler.lua` — Card 3 of the wizard-material
+  progression, unlocked by EtherIsland floor Tile 4 (5,000,000 Astral
+  Shard - see `LeyShardFloorTileHandler.lua` below). Per direct request
+  ("You have to name this final shard"), named "Celestial Shard" - this
+  game's own long-planned name for Card 3, per `LeyShardHandler.lua`'s
+  own header comment from when Card 1 was first built ("'Astral Shard'
+  and 'Celestial Shard' are the planned names for cards 2 and 3 later").
+  Per direct request ("For the time being it wont have any upgrades")
+  this is deliberately just a placeholder shell - `getState` returns only
+  `unlocked`/`celestialShard` (a new `PlayerData.celestialShard` field,
+  stuck at 0 - no collection mechanic exists yet either), no upgrade
+  columns at all, same "build the card, wire the mechanic later"
+  precedent Card 2's own board followed when it first went up. Its board
+  (`CelestialShardBoardClient.client.lua`) just shows the (currently
+  always-0) currency readout under a gold-themed "Celestial Shard" title
+  over a "Coming Soon" message - per direct request, "Maybe make this
+  shard color gold." `WorldBuilder` places the physical board at the
+  exact given opposite corners ("left side of card starts at x155 z154
+  and right side is around x154 z140"), which run along Z rather than X
+  unlike the main 3-board row - rotated 90° around Y, same technique
+  `RuinRuneHandler`'s own board already uses to run along a different
+  axis than its neighbors.
 - `LeyShardFloorTileHandler.lua` — EtherIsland's own walk-over floor
   tiles, paid in Ley Shard - the exact same one-time-purchase mechanic
   as the SecondIsland Upgrade Tree (`UpgradeTreeHandler`), just its own
@@ -1002,8 +1039,28 @@ from that earlier design.
   `UpgradeTreeClient`'s own sign-rendering logic (same red/can't-afford,
   yellow/affordable, green/bought rule), just reading this handler's
   state and gated on EtherIsland being unlocked instead of Wizard Tier
-  3+, now looping over all 3 tiles and only building a sign for one once
-  it's reachable.
+  3+, now looping over all 5 tiles (see below) and only building a sign
+  for one once it's reachable.
+  **Extended to a 5-tile chain** per a direct follow-up request ("Please
+  do a fourth and fith tile above the other two tile cost 5 million astra
+  shards and that unlocks the third upgrade car[d]... Then the 5th tile
+  to the right with cost 1million ley shards and that will unlock Auto
+  Ley shards"). Tiles 4-5 are `kind = "unlock"` (no `multiplier` field at
+  all, same as `UpgradeTreeHandler`'s own Tile 9) since they don't boost a
+  rate - they gate something else entirely:
+  - Tile 4 (5,000,000 Astral Shard) flips `leyShardFloorTile4`, which
+    doubles as "has this player unlocked Celestial Shard" (Card 3 - see
+    `CelestialShardHandler.lua` below), read via the new
+    `isCelestialShardUnlocked`.
+  - Tile 5 (1,000,000 Ley Shard) flips `leyShardFloorTile5`, which
+    doubles as "has Auto Ley Shard," read via the new `hasAutoLeyShard` -
+    both the same "the tile's own boolean doubles as the unlock flag"
+    convention `UpgradeTreeHandler.dustTreeTile9` already established for
+    Ether.
+  `WorldBuilder` places Tiles 4-5 one more diamond-chain row forward (+X)
+  from Tiles 2-3, "above" them per the request, with Tile 5 offset to +Z
+  of Tile 4 for "to the right" (my own call for which side, not
+  verifiable from here).
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
@@ -1556,6 +1613,21 @@ from that earlier design.
   `LeyShardUpdated` (which also fires from ordinary Mat collection, not
   just conversions, but a state re-fetch is cheap for a small readout).
   Same gating/rebuild pattern as the other EtherIsland boards.
+- `CelestialShardBoardClient.client.lua` — Card 3's board, unlocked by
+  EtherIsland floor Tile 4 (see `CelestialShardHandler.lua` and
+  `LeyShardFloorTileHandler.lua` above). Same blocking-loop-until-unlocked
+  pattern as every other gated board here (polls `GetCelestialShardState`
+  every second rather than waiting on a push event, since there's no
+  dedicated "just unlocked" broadcast for this one - `LeyShardFloorTileBought`
+  already covers re-fetching the readout after unlock cheaply enough).
+  Gold-themed (`GOLD = Color3.fromRGB(255, 215, 0)`, the same value
+  `GameConfig.Titles`' own gold entries use) per direct request ("Maybe
+  make this shard color gold") - a currency readout (always 0 for now)
+  under a "Celestial Shard" title banner, then a "Coming Soon" message
+  filling the rest of the board, per direct request ("For the time being
+  it wont have any upgrades"). Rotated 90° in `WorldBuilder` like
+  `RuinRuneBoard`'s own board, so its `SurfaceGui.Face` is `Right` too -
+  the same guess that board's own client makes for its readable face.
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.
