@@ -1728,7 +1728,11 @@ do
 		tilePart.Material = Enum.Material.Marble
 		tilePart.Color = Color3.fromRGB(90, 220, 190)
 		tilePart.Size = Vector3.new(LEY_SHARD_FLOOR_TILE_WIDTH, 0.4, LEY_SHARD_FLOOR_TILE_DEPTH)
-		tilePart.CFrame = CFrame.new(position.x, ISLAND_TOP_Y + 0.2, position.z)
+		-- Missing this 180° flip (present on the SecondIsland Upgrade
+		-- Tree's own tiles) was the bug - per report ("Flip the tree card
+		-- 180 facing wrong way") - its sign text read upside-down/backwards
+		-- from the direction a player naturally approaches it.
+		tilePart.CFrame = CFrame.new(position.x, ISLAND_TOP_Y + 0.2, position.z) * CFrame.Angles(0, math.rad(180), 0)
 		tilePart.Parent = leyShardFloorTileFolder
 	end
 

@@ -901,10 +901,15 @@ design notes.
   entry, no code changes. `WorldBuilder` places Tile 1 at the exact given
   coordinates (X 107, Z 134) with the exact same proximity-check-and-buy
   loop shape as the Upgrade Tree's own tiles, and clears nearby decor on a
-  radius too. `LeyShardFloorTileClient.client.lua` is `UpgradeTreeClient`'s
-  own sign-rendering logic (same red/can't-afford, yellow/affordable,
-  green/bought rule), just reading this handler's state and gated on
-  EtherIsland being unlocked instead of Wizard Tier 3+.
+  radius too - including the same 180° `CFrame.Angles` flip the Upgrade
+  Tree's own tiles use, missed on the first pass (per report, "Flip the
+  tree card 180 facing wrong way") - without it, the sign's text (painted
+  on the tile's Top face) reads upside-down/backwards from the direction
+  a player naturally approaches it. `LeyShardFloorTileClient.client.lua`
+  is `UpgradeTreeClient`'s own sign-rendering logic (same red/can't-
+  afford, yellow/affordable, green/bought rule), just reading this
+  handler's state and gated on EtherIsland being unlocked instead of
+  Wizard Tier 3+.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and
