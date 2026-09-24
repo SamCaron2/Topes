@@ -199,12 +199,22 @@ local function defaultData()
 
 		-- Power Store bookkeeping (StoreHandler/GamePassBoostHandler) -
 		-- generic, not tied to any one grant shape, so these survived the
-		-- Gems/Scrolls/Ascension/Titles cleanup below untouched.
+		-- Gems/Scrolls/Ascension cleanup below untouched.
 		robuxSpent = 0,
 		ownedPasses = {}, -- [gamePassKey] = true, gates one-time gamepass grants from reapplying
 		purchaseHistory = {}, -- bounded list of processed receiptInfo.PurchaseId, guards against double-granting a dev product
 
 		playtimeSeconds = 0,
+
+		-- Titles (TitleHandler.lua) - briefly removed alongside Gems/
+		-- Scrolls/Ascension during the Power Store cleanup, then restored
+		-- per direct follow-up report ("Where did titles go on profile
+		-- section? My username and title also have stopped appearing") -
+		-- the floating username/title display was a real feature in use,
+		-- unlike the actually-dead Gems/Scrolls/Ascension system.
+		unlockedTitles = {}, -- [titleKey] = true
+		equippedTitle = nil,
+		firstJoinedAt = nil, -- os.time() the first time this player's data was ever loaded; drives the OG title
 	}
 end
 
@@ -243,6 +253,10 @@ function PlayerData.load(player: Player)
 	else
 		data = defaultData()
 	end
+	if not data.firstJoinedAt then
+		data.firstJoinedAt = os.time()
+	end
+
 	-- TEMP: testing only - spawns in already past Tier 3 with every
 	-- Upgrade Tree tile already bought (per direct request), so
 	-- SecondIsland, the Fantasy Ruin, and the Ether Shroud/board are all

@@ -18,6 +18,7 @@ local XPHandler = require(script.Parent.XPHandler)
 local RuneHandler = require(script.Parent.RuneHandler)
 local StoreHandler = require(script.Parent.StoreHandler) -- self-wires MarketplaceService on require
 local GamePassBoostHandler = require(script.Parent.GamePassBoostHandler)
+local TitleHandler = require(script.Parent.TitleHandler)
 local LeaderboardHandler = require(script.Parent.LeaderboardHandler)
 local SecondIslandHandler = require(script.Parent.SecondIslandHandler)
 local ManaBoostHandler = require(script.Parent.ManaBoostHandler)
@@ -59,6 +60,7 @@ end
 local requestPurchaseEvent = newRemoteEvent("RequestPurchase")
 local getStoreCatalogFunction = newRemoteFunction("GetStoreCatalog")
 local getProfileFunction = newRemoteFunction("GetProfile")
+local equipTitleFunction = newRemoteFunction("EquipTitle")
 local manaUpdatedEvent = newRemoteEvent("ManaUpdated") -- server -> client, fired on join and every pickup/purchase
 local getManaYieldStateFunction = newRemoteFunction("GetManaYieldState")
 local buyManaYieldUpgradeFunction = newRemoteFunction("BuyManaYieldUpgrade")
@@ -158,7 +160,16 @@ getProfileFunction.OnServerInvoke = function(player)
 		robuxSpent = data.robuxSpent or 0,
 		runesOpened = data.runesOpened,
 		runesOwned = data.runesOwned,
+		unlockedTitles = data.unlockedTitles,
+		equippedTitle = data.equippedTitle,
 	}
+end
+
+equipTitleFunction.OnServerInvoke = function(player, key)
+	if key ~= nil and type(key) ~= "string" then
+		return false, "Invalid title key"
+	end
+	return TitleHandler.equipTitle(player, key)
 end
 
 getManaYieldStateFunction.OnServerInvoke = function(player)

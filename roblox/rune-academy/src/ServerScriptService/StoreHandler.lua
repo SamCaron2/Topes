@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local PlayerData = require(script.Parent.PlayerData)
+local TitleHandler = require(script.Parent.TitleHandler)
 
 local StoreHandler = {}
 
@@ -132,6 +133,7 @@ function StoreHandler.processReceipt(receiptInfo)
 	applyGrant(data, product.grants)
 	fireCurrencyUpdates(player, data, product.grants)
 	data.robuxSpent = (data.robuxSpent or 0) + receiptInfo.CurrencySpent
+	TitleHandler.checkUnlocks(player) -- covers robuxSpent-threshold titles (Supporter/Boss/Rich/...)
 
 	table.insert(data.purchaseHistory, receiptInfo.PurchaseId)
 	while #data.purchaseHistory > PURCHASE_HISTORY_LIMIT do
@@ -197,6 +199,7 @@ function StoreHandler.grantGamePass(player: Player, pass)
 		data.robuxSpent = (data.robuxSpent or 0) + productInfo.PriceInRobux
 	end
 
+	TitleHandler.checkUnlocks(player) -- covers robuxSpent thresholds and the EliteGP gamePassOwned condition
 	PlayerData.save(player)
 end
 

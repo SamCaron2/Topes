@@ -3,15 +3,19 @@
 Incremental/idle Roblox game. A wizard-themed progression across 4
 islands (Starting Island, SecondIsland, EtherIsland, LeaderboardIsland),
 built from scratch after an earlier Mana/Coins-era design (generic
-`ResourceEngine`/`Zones`, Gems/Scrolls/Ascension/Titles) was scrapped -
-see `## What's still here` below for the full, current file-by-file
-breakdown of everything that actually exists today. A handful of that
-scrapped design's files (`ResourceEngine.lua`, `ResetHandler.lua`,
-`TitleHandler.lua`, `FriendBoostHandler.lua`, `TitleDisplayClient.client.lua`,
-plus the Gems/Scrolls/Ascension/Titles fields in `PlayerData`/
-`GameConfig`) were finally removed during the Power Store build-out (see
-`StoreHandler.lua` below) once it became clear nothing in the current
-game used them.
+`ResourceEngine`/`Zones`, Gems/Scrolls/Ascension) was scrapped - see
+`## File-by-file breakdown` below for the full, current breakdown of
+everything that actually exists today. A handful of that scrapped
+design's files (`ResourceEngine.lua`, `ResetHandler.lua`,
+`FriendBoostHandler.lua`, plus the Gems/Scrolls/Ascension fields in
+`PlayerData`/`GameConfig`) were removed during the Power Store build-out
+(see `StoreHandler.lua` below) once it became clear nothing in the
+current game used them. Titles (`TitleHandler.lua`/
+`TitleDisplayClient.client.lua`) were initially removed in that same
+pass too, then restored per direct follow-up report ("Where did titles
+go on profile section? My username and title also have stopped
+appearing") - unlike Gems/Scrolls/Ascension, the floating username/title
+display was a real feature actually in use.
 
 See `DESIGN.md` for the (historical, pending rewrite) system design notes
 from that earlier design.
@@ -38,12 +42,14 @@ from that earlier design.
 
 - `GameConfig.lua` — every tunable number lives here: `Stats`/`RuneRanks`
   (Rune Altar odds/boosts - see `RuneHandler.lua`/`RuneCollectionHandler.lua`
-  below) and the Store's `DevProducts`/`GamePasses`/`StarterPack` (see
-  `StoreHandler.lua` below). Change balance here, not in the handler
-  scripts. Used to also hold a generic multi-currency `Zones` config,
-  Ascension tiers, and Titles - all removed as dead weight during the
-  Power Store cleanup once it was clear nothing in the current game read
-  them (see the top-of-file note).
+  below), the Store's `DevProducts`/`GamePasses`/`StarterPack` (see
+  `StoreHandler.lua` below), and `Titles` (see `TitleHandler.lua` below).
+  Change balance here, not in the handler scripts. Used to also hold a
+  generic multi-currency `Zones` config and Ascension tiers - removed as
+  dead weight during the Power Store cleanup once it was clear nothing in
+  the current game read them (see the top-of-file note); `Titles` was
+  briefly removed in that same pass too, then restored once it turned out
+  to be a real, in-use feature, not dead weight.
 - `NumberFormat.lua` — plain comma-separated whole numbers below a
   million ("999,000"), then a 2-decimal suffix from a million up
   ("5.32B" for 5,324,222,143) - suffix ladder M, B, T, Qd, Qt, St, SEt,
@@ -137,7 +143,21 @@ from that earlier design.
   `require`d by `Main.server.lua` BEFORE that same script creates the
   Remotes folder, so a `WaitForChild` at the top of this file would
   deadlock Main's own thread) - same direct-remotes-access exception
-  `WorldBuilder.server.lua`'s own background loops already make.
+  `WorldBuilder.server.lua`'s own background loops already make. Still
+  calls `TitleHandler.checkUnlocks` after both a dev product purchase and
+  a gamepass grant, same as before the Store rewrite, so Robux-spent
+  titles (Supporter/Boss/Rich/UltimateSpender) and EliteGP (repointed
+  from the old, now-gone "ElitePass" to the current `FortunesFavorPass`)
+  still unlock correctly.
+- `TitleHandler.lua` — unlocks and equips Titles (`GameConfig.Titles`),
+  mirrors the equipped one onto Player attributes (`Title`/`TitleColor`/
+  `TitleRainbow`) - read client-side by `TitleDisplayClient` to draw the
+  floating username/title label above each player's head, no remote round
+  trip needed. Briefly removed during the Power Store cleanup (mistaken
+  for dead scaffolding alongside the actually-dead Gems/Scrolls/Ascension
+  system), then restored per direct follow-up report ("Where did titles
+  go on profile section? My username and title also have stopped
+  appearing").
 - `LeaderboardHandler.lua` — the 4 global leaderboards (Playtime, Robux
   Spent, Total Mana, Runes Opened) shown on the Leaderboard island's sign
   boards, backed by one `OrderedDataStore` per stat so rankings persist
@@ -1115,23 +1135,60 @@ from that earlier design.
   implement our store?").
 - `ProfileClient.client.lua` — the Profile panel opened by that event: a
   dark modal card (dimmed background `Frame` with `Active = true` so
-  clicks don't pass through to the side menu underneath) showing a single
-  "Stats" page - what was originally asked for, per DESIGN.md's "Main
-  profile screen" - the player's own avatar/name up top, then the 4 stats
-  specifically requested: Time Played, Total Mana (`GetProfile`'s
-  `totalManaEarned`, the same lifetime figure the leaderboard uses - not
-  the live spendable `mana` balance also in that payload), Runes Opened,
-  and Robux Spent. Used to also have a "Titles" page (toggled by a
-  `statsTabButton`/`titlesTabButton` tab bar), listing every
-  `GameConfig.Titles` entry with a Locked/Equip/Equipped button - removed
-  along with the rest of the Titles system during the Power Store cleanup
-  (per direct request to implement a real store: "can I have you
-  implement our store?" - digging into the store code surfaced this whole
-  Titles/Gems/Scrolls/Ascension system as leftover scaffolding from an
-  earlier, scrapped design that nothing in the current game actually
-  used). Re-fetches fresh from `GetProfile` every time the panel opens
-  rather than staying subscribed to live updates, since a modal stat
+  clicks don't pass through to the side menu underneath) with two pages
+  toggled by a `statsTabButton`/`titlesTabButton` tab bar at the top
+  (`TAB_COLOR_ACTIVE`/`TAB_COLOR_INACTIVE` highlight whichever's open) -
+  originally a one-way "Titles ➜" button plus a separate "⬅ Back" button,
+  replaced per direct request after those arrow glyphs turned out not to
+  be in Roblox's default font, rendering as an empty box next to the text.
+  Both pages, and this whole file, were briefly deleted during the Power
+  Store cleanup (mistaken for dead scaffolding alongside the actually-dead
+  Gems/Scrolls/Ascension system), then restored verbatim per direct
+  follow-up report ("Where did titles go on profile section? My username
+  and title also have stopped appearing"). The "Stats" page (named per
+  direct request - was unnamed before) - what was originally asked for,
+  per DESIGN.md's "Main profile screen" - shows the player's own
+  avatar/name up top, then the 4 stats specifically requested: Time
+  Played, Total Mana (`GetProfile`'s `totalManaEarned`, the same lifetime
+  figure the leaderboard uses - not the live spendable `mana` balance also
+  in that payload), Runes Opened, and Robux Spent. The "Titles" page lists
+  every `GameConfig.Titles` entry (all 14), colored by its own title color
+  when unlocked or grayed out when not, each with a button to its right -
+  always visible now, per direct request ("there should be a button...
+  that says locked when you have not earned them and when you have earned
+  the titles the red locked button turns into a green equipped button"): a
+  red, inactive "Locked" button (`COLOR_TITLE_LOCKED_BUTTON`) when not yet
+  unlocked (with `describeCondition`'s plain-English rendering of its
+  `condition` still shown below it - none of the config entries carry a
+  human-readable string, so this builds one: "Play for 7 days", "Spend
+  R$1,000 total", "Join the group", "Own the FortunesFavorPass gamepass"
+  (repointed from the old, now-gone "ElitePass"), "Join during launch
+  week", "Granted manually"), a green "Equip" button once unlocked, or a
+  green "Equipped" tag (`COLOR_EQUIPPED_TAG`) for whichever one is
+  currently worn - calling the `EquipTitle` remote either way. Only one
+  title can ever be equipped at a time - already guaranteed by
+  `data.equippedTitle` being a single value server-side
+  (`TitleHandler.equipTitle` just overwrites it). Both pages re-fetch
+  fresh from `GetProfile` every time the panel opens rather than staying
+  subscribed to live updates, since a modal stat/title
   screen doesn't need to track changes while it's closed.
+- `TitleDisplayClient.client.lua` — the floating username + equipped
+  title above every player's head, own included, per direct request ("I
+  want it to say your username above your head and underneath the
+  username is your title. Have it be [None] if they don't equip
+  anything"). Reads Player attributes only (`Title`/`TitleColor`/
+  `TitleRainbow`) for every player, own included, live via
+  `GetAttributeChangedSignal` so (re)equipping updates the label
+  immediately for anyone standing nearby - no remote round trip. Shows
+  `[None]` in gray when `Title` is unset. A rainbow title (`TitleRainbow`,
+  e.g. the "Rich" title) is driven by one shared `RunService.Heartbeat`
+  loop cycling every displayed rainbow label through the same hue clock
+  (`RAINBOW_CYCLE_SECONDS` = 3), rather than a separate loop per player.
+  Sets `Humanoid.NameDisplayDistance = 0` on every character so Roblox's
+  own default floating nameplate doesn't also show, stacking a second
+  username tag on top of this one. Briefly deleted then restored verbatim
+  alongside `ProfileClient.client.lua`/`TitleHandler.lua` - see their own
+  entries above for why.
 - `RunesMenuClient.client.lua` — the Runes panel opened by
   `OpenRunesRequested`, per direct request after the side-menu Runes icon
   turned out to do nothing at all when clicked. Same dark-modal styling as
@@ -1600,6 +1657,14 @@ from that earlier design.
    purchase until that's done — `StoreHandler.promptPurchase` silently
    no-ops on `id = 0` on purpose, so a half-configured store can't
    accidentally prompt Studio's test/placeholder asset IDs.
+2. **Titles**: three `GameConfig` values are placeholders until you fill
+   them in —
+   - `ReleaseTimestampUnix` (nil right now): set to the real launch time so
+     the OG title means something. The OG condition never unlocks while
+     this is nil.
+   - `FanGroupId` (0 right now): your Roblox group's id, for the Fan title.
+   - `OwnerUserIds` / `AdminUserIds` / `TesterUserIds` (all empty): add your
+     own UserId to `OwnerUserIds` so you get the Owner title on join.
 
 ## One-time cleanup if Studio still shows old world parts
 
