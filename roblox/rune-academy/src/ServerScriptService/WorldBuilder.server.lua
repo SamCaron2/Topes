@@ -1569,68 +1569,48 @@ end
 -- ===========================================================================
 -- The 3-board row (LeyShardUpgradeBoard, LeyShardConversionBoard,
 -- AstralShardUpgradeBoard), all built together here now that their
--- placement no longer derives from the mat's own position - per direct
--- request ("Put the left side of the ley shard card on x70 z104 facing
--- towards the miiddle of the 3rd island. to the right put the convert
--- shards card and to the rioght of that the astra card shard"). Astral
--- Shard (Card 2) has NO collection mechanic of its own - "there isnt a
--- button or anything to get more of this material" - the only way to get
--- it is spending Ley Shard on the Conversion board
--- (AstralShardConversionHandler), 5,000 Ley Shard per 1 Astral Shard.
--- Card 2's own board is a placeholder shell for now, per direct request
--- ("It should be the material x card with three upgrades but dont put
--- them in yet I just want to see the card") - 3 empty "Coming Soon"
--- slots, no real upgrade logic wired up yet.
--- All 3 boards share ONE orientation (not each individually re-aimed at
--- the island's center) - the row spans ~90 studs, comparable to the
--- ~72-stud distance from the given anchor to the center itself, so
--- re-aiming each board separately would visibly fan them out instead of
--- reading as a straight row; only their position along the row differs.
--- Their Size swapped from the old (1, 18, width) to (width, 18, 1) -
--- CFrame.lookAt's readable "Front" face (whose outward normal is the
--- local -Z axis, i.e. the LookVector direction) needs the THIN dimension
--- on local Z now, unlike the old axis-aligned Left/Right boards. In its
--- own `do...end` block, same register-budget reasoning as the Ley Shard
--- section above, with an inner nested `do...end` around just the 3 Parts'
--- own construction locals for the same reason.
+-- placement no longer derives from the mat's own position. Axis-aligned
+-- along X at a fixed Z now, replacing the previous diagonal CFrame.lookAt
+-- placement entirely - per direct request with an exact start/end span
+-- ("Still off the map. Start the group of 3 cards at x80 z100 then it
+-- ends at x155 z100"), after two earlier diagonal-placement attempts
+-- still weren't landing right; a plain straight line along one axis is
+-- far less error-prone to reason about correctly than an arbitrary
+-- CFrame.lookAt angle. Astral Shard (Card 2) has NO collection mechanic
+-- of its own - "there isnt a button or anything to get more of this
+-- material" - the only way to get it is spending Ley Shard on the
+-- Conversion board (AstralShardConversionHandler), 5,000 Ley Shard per 1
+-- Astral Shard. Card 2's own board is a placeholder shell for now, per
+-- direct request ("It should be the material x card with three upgrades
+-- but dont put them in yet I just want to see the card") - 3 empty
+-- "Coming Soon" slots, no real upgrade logic wired up yet.
+-- The 3 boards' ORIGINAL combined width (34+20+34 plus two 6-stud gaps =
+-- 100 studs) is wider than the given 75-stud span (80 to 155) could fit
+-- even with zero gap (34+20+34 = 88 alone) - so all 3 are scaled down
+-- proportionally (my own call, not specified) to 26/15/26 with a 4-stud
+-- gap each, summing to exactly 75: 80 + 26 + 4 + 15 + 4 + 26 = 155.
+-- Faces toward the middle of the island (+Z, "Back" in Roblox's NormalId
+-- naming - the row sits at Z 100, the island's own center is at Z 150) -
+-- still the original design intent from a few requests back ("facing
+-- towards the miiddle of the 3rd island"), just realized here with a
+-- plain identity orientation instead of CFrame.lookAt, since the row is a
+-- straight line along X now rather than at an angle.
+-- In its own `do...end` block, same register-budget reasoning as the Ley
+-- Shard section above, with an inner nested `do...end` around just the 3
+-- Parts' own construction locals for the same reason.
 do
-	local BOARD_GAP = 6
-	local LEY_SHARD_WIDTH = 34
-	local CONVERSION_WIDTH = 20
-	local ASTRAL_SHARD_WIDTH = 34
+	local ROW_Z = 100
+	local ROW_START_X = 80 -- left edge of the whole row
+	local BOARD_GAP = 4
+	local LEY_SHARD_WIDTH = 26
+	local CONVERSION_WIDTH = 15
+	local ASTRAL_SHARD_WIDTH = 26
 
-	-- Nudged +20/+20 from the originally given (70, 104) - per report
-	-- ("close but it is hanging off the island") - that anchor sat only
-	-- ~5 studs from EtherIsland's X edge and ~14 from its Z edge, so this
-	-- pulls the whole row further from that corner while keeping the same
-	-- relative layout/facing untouched (a uniform translation of the
-	-- anchor moves the entire row together, so this needs no re-deriving
-	-- of the direction math below - only where the row starts).
-	local ROW_LEFT_ANCHOR = Vector3.new(90, ISLAND_TOP_Y + 9, 124)
-
-	local aimCFrame = CFrame.lookAt(
-		ROW_LEFT_ANCHOR,
-		Vector3.new(etherIslandCenterX, ISLAND_TOP_Y + 9, etherIslandCenterZ)
-	)
-	local rowRotation = aimCFrame.Rotation
-	local rowRightVector = aimCFrame.RightVector
-
-	-- A board's "left side," as experienced by a viewer standing in front
-	-- of it (its Front face points back at them, so their own left/right
-	-- are mirrored relative to the board's own RightVector) is the edge in
-	-- the SAME direction as the board's RightVector - so ROW_LEFT_ANCHOR is
-	-- offset 0 studs along -RightVector from itself, and "to the right" of
-	-- that (per direct request) continues further along -RightVector past
-	-- each board already placed.
-	local function boardCFrame(distanceFromLeftAnchor: number, width: number): CFrame
-		local center = ROW_LEFT_ANCHOR - rowRightVector * (distanceFromLeftAnchor + width / 2)
-		return CFrame.new(center) * rowRotation
-	end
-
-	local leyShardBoardCFrame = boardCFrame(0, LEY_SHARD_WIDTH)
-	local conversionBoardCFrame = boardCFrame(LEY_SHARD_WIDTH + BOARD_GAP, CONVERSION_WIDTH)
-	local astralShardBoardCFrame =
-		boardCFrame(LEY_SHARD_WIDTH + BOARD_GAP + CONVERSION_WIDTH + BOARD_GAP, ASTRAL_SHARD_WIDTH)
+	local leyShardBoardCFrame = CFrame.new(ROW_START_X + LEY_SHARD_WIDTH / 2, ISLAND_TOP_Y + 9, ROW_Z)
+	local conversionBoardX = ROW_START_X + LEY_SHARD_WIDTH + BOARD_GAP
+	local conversionBoardCFrame = CFrame.new(conversionBoardX + CONVERSION_WIDTH / 2, ISLAND_TOP_Y + 9, ROW_Z)
+	local astralShardBoardX = conversionBoardX + CONVERSION_WIDTH + BOARD_GAP
+	local astralShardBoardCFrame = CFrame.new(astralShardBoardX + ASTRAL_SHARD_WIDTH / 2, ISLAND_TOP_Y + 9, ROW_Z)
 
 	do
 		local existingLeyShardBoard = Workspace:FindFirstChild("LeyShardUpgradeBoard")

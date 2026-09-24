@@ -411,46 +411,38 @@ design notes.
   The 3 boards (`LeyShardUpgradeBoard`, `LeyShardConversionBoard`,
   `AstralShardUpgradeBoard`, in that left-to-right order) were later
   repositioned as their own explicit row, independent of the mat's own
-  position, per direct request with exact coordinates: "Put the left side
-  of the ley shard card on x70 z104 facing towards the miiddle of the 3rd
-  island. to the right put the convert shards card and to the rioght of
-  that the astra card shard." Built with `CFrame.lookAt` from that literal
-  anchor point toward `etherIslandCenterX`/`Z` - the board's readable
-  "Front" face (Roblox's NormalId naming; its outward normal is the local
-  -Z axis, matching `CFrame.lookAt`'s `LookVector`) ends up pointing at the
-  island's center, instead of the old axis-aligned Left/Right facing. Each
-  board's `Size` swapped from `(1, 18, width)` to `(width, 18, 1)` to
-  match - the thin dimension has to sit on local Z now, not X, for
-  "Front" to actually be a flat face. All 3 boards share ONE orientation
-  (not each individually re-aimed at the center) since the row spans about
-  as many studs as the distance to the center itself - re-aiming each one
-  separately would visibly fan them out instead of reading as a straight
-  row; only their position along the row differs, offset further along the
-  shared orientation's `-RightVector` for each board "to the right,"
-  matching how a viewer standing in front of the row (facing back at it)
-  has their own left/right mirrored relative to the boards' own
-  `RightVector`. Decor near all 3 boards' new positions is cleared on a
-  radius too ("please remove any bushes if eneded"), same "destroy any
-  decor part within a radius" precedent as RuneAltarBoard's own
-  clear-radius pass. All 3 boards' construction now lives together in one
-  `do...end` block (previously the Ley Shard board was built alongside the
-  mat, and Convert/Astral Shard were a separate block) with an inner
-  nested `do...end` around just the 3 Parts' own construction locals - this
-  file is one single Luau chunk with a hard 200-local-register ceiling,
-  and every section from here on has to budget its own locals carefully
+  position. Went through two rounds of a diagonal `CFrame.lookAt`-based
+  placement (aimed from a given anchor point toward `etherIslandCenterX`/
+  `Z`, with each board offset along the shared orientation's
+  `RightVector`) that still weren't landing right after nudging the
+  anchor once - per direct request ("Still off the map. Start the group
+  of 3 cards at x80 z100 then it ends at x155 z100"), it's now a plain
+  axis-aligned row along X at a fixed Z instead, which is far less
+  error-prone to reason about correctly than an arbitrary angle. Each
+  board's `Size` is `(width, 18, 1)` (thin on local Z) with a plain
+  identity-orientation `CFrame.new(x, y, 100)` - no rotation at all -
+  and the readable face is "Back" in Roblox's NormalId naming (outward
+  normal on local +Z), since the island's own center sits at a LARGER Z
+  (150) than the row (100), still realizing the original design intent
+  from a few requests back ("facing towards the miiddle of the 3rd
+  island"). The 3 boards' ORIGINAL combined width (34+20+34 plus two
+  6-stud gaps = 100 studs) was wider than the given 75-stud span (80 to
+  155) could fit even with zero gap (34+20+34 = 88 alone), so all 3 are
+  scaled down proportionally (my own call, not specified) to 26/15/26
+  with a 4-stud gap each, summing to exactly 75: 80 + 26 + 4 + 15 + 4 + 26
+  = 155. Decor near all 3 boards' positions is cleared on a 30-stud radius
+  ("please remove any bushes if eneded"/"you will probably have to get rid
+  of these trees" - widened from an initial 18, since a tree sitting in
+  the gap between two board centers can easily be farther from either
+  center than half either board's own width), same "destroy any decor
+  part within a radius" precedent as RuneAltarBoard's own clear-radius
+  pass. All 3 boards' construction lives together in one `do...end` block
+  (previously the Ley Shard board was built alongside the mat, and
+  Convert/Astral Shard were a separate block) with an inner nested
+  `do...end` around just the 3 Parts' own construction locals - this file
+  is one single Luau chunk with a hard 200-local-register ceiling, and
+  every section from here on has to budget its own locals carefully
   against everything already declared earlier in the file.
-  The literal (70, 104) anchor above turned out to sit only ~5 studs from
-  EtherIsland's own X edge and ~14 from its Z edge - close enough that the
-  row ended up partly hanging off the island (per report, "close but it is
-  hanging off the island"). `ROW_LEFT_ANCHOR` was nudged to (90, 124) - a
-  uniform +20/+20 translation of the same anchor, which shifts the whole
-  row together without needing to re-derive any of the direction math
-  above, since only where the row STARTS moved, not its own internal
-  layout. The decor clear radius was also widened from 18 to 30 studs -
-  trees were still showing up between/around the boards at the smaller
-  radius ("you will probably have to get rid of these trees"), since a
-  tree sitting in the GAP between two board centers can easily be farther
-  from either center than half either board's own width.
   Also a ring of procedurally placed decor pieces (`SecondIslandDecor`)
   around its edge, inset from the border, skipping the bridge's landing
   spot, and each given a small random `DECOR_JITTER` offset so the ring

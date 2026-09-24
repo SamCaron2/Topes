@@ -37,13 +37,14 @@ local function buildBoard()
 	end
 	built = true
 
-	-- Faces toward the middle of EtherIsland via the board's own CFrame
-	-- (built with CFrame.lookAt in WorldBuilder) - "Front" in Roblox's
-	-- NormalId naming - per direct request ("facing towards the miiddle
-	-- of the 3rd island").
+	-- The board sits at Z 100 with plain identity orientation (WorldBuilder,
+	-- axis-aligned row along X) - the island's own center is at Z 150, a
+	-- larger Z, so the readable face needs its outward normal on local +Z
+	-- - "Back" in Roblox's NormalId naming - per direct request ("facing
+	-- towards the miiddle of the 3rd island").
 	local surfaceGui = Instance.new("SurfaceGui")
 	surfaceGui.Name = "LeyShardConversionBoardGui"
-	surfaceGui.Face = Enum.NormalId.Front
+	surfaceGui.Face = Enum.NormalId.Back
 	surfaceGui.Adornee = board
 	surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	surfaceGui.PixelsPerStud = 36
