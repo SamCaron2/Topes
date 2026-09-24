@@ -1,26 +1,32 @@
 -- Server-authoritative "More Ley Shard" upgrade for the Astral Shard
 -- board (Card 2's first real upgrade) - a flat multiplier on Ley Shard
--- yield, exactly like ManaBoostHandler's/LeyShardManaBoostHandler's own
--- shape (1x-5.9x over 50 levels), just paid in Astral Shard instead and
--- read by LeyShardHandler. Crucially, this is NOT one of the 3 Ley Shard
--- board levels that get wiped every time Ley Shard is converted into
--- Astral Shard (AstralShardConversionHandler.convert) - it's the whole
--- point of Card 2: a permanent boost that survives every reset, so the
--- SECOND (and every later) grind back up the Ley Shard board goes faster
--- than the first - per direct request ("to max out ley shards it takes a
--- bit but when you exchange for astral shards and buy more ley shards it
--- goes by quicker the second time"). Costed on an exponential curve (my
--- own call - "dont make the cost be 1 then 2 then 3 then 4 make it
--- spaceed out how you think the game should flow and keep someones
--- attention"): 1.15x per level, starting at exactly 1 Astral Shard for
--- level 1 per direct request, climbing to ~658 Astral Shard for the very
--- last level.
+-- yield, paid in Astral Shard and read by LeyShardHandler. Crucially,
+-- this is NOT one of the 3 Ley Shard board levels that get wiped every
+-- time Ley Shard is converted into Astral Shard
+-- (AstralShardConversionHandler.convert) - it's the whole point of Card
+-- 2: a permanent boost that survives every reset, so the SECOND (and
+-- every later) grind back up the Ley Shard board goes faster than the
+-- first - per direct request ("to max out ley shards it takes a bit but
+-- when you exchange for astral shards and buy more ley shards it goes by
+-- quicker the second time"). Originally shared ManaBoostHandler's own
+-- gentle +0.1x/level ramp (1x-5.9x), but that read as far too weak for a
+-- 50-level Astral-Shard-funded upgrade sitting right next to "More Astral
+-- Shards"' own +3.2x/level - per direct request ("The ley shard upgrades
+-- on the astral card are tooo low. Jump like around 2-3x per upgrade"),
+-- raised to +2.5x/level (level 50 = 1 + 49*2.5 = 123.5x), matching that
+-- sibling column's own scale. Costed on an exponential curve (my own call
+-- - "dont make the cost be 1 then 2 then 3 then 4 make it spaceed out how
+-- you think the game should flow and keep someones attention"): starting
+-- at exactly 1 Astral Shard for level 1 per direct request, growth
+-- steepened from 1.15x/level to 1.35x/level per direct follow-up request
+-- ("also needs to cost more") to match the much stronger multiplier -
+-- climbing to ~1.79 million Astral Shard for the very last level.
 
 local PlayerData = require(script.Parent.PlayerData)
 
 local MAX_LEVEL = 50
-local MULTIPLIER_PER_LEVEL = 0.1 -- level 50 = 1 + 49 * 0.1 = 5.9x, same ramp as ManaBoostHandler/LeyShardManaBoostHandler
-local COST_GROWTH = 1.15
+local MULTIPLIER_PER_LEVEL = 2.5 -- level 50 = 1 + 49 * 2.5 = 123.5x
+local COST_GROWTH = 1.35
 
 local function costForLevel(currentLevel: number): number
 	return math.ceil(COST_GROWTH ^ (currentLevel - 1))

@@ -837,10 +837,18 @@ design notes.
   `AstralShardConversionBoostHandler` are the two permanent boosts that
   make that true.
   - `AstralShardLeyBoostHandler.lua` — Card 2's first real upgrade, "More
-    Ley Shard": a flat Ley Shard yield multiplier (1x-5.9x, same ramp as
-    `ManaBoostHandler`/`LeyShardManaBoostHandler`), read by
+    Ley Shard": a flat Ley Shard yield multiplier, read by
     `LeyShardHandler`. NOT one of the 3 levels wiped by converting - the
-    whole point is that it survives every reset.
+    whole point is that it survives every reset. Originally shared
+    `ManaBoostHandler`'s own gentle +0.1x/level ramp (topping out at just
+    5.9x), but that read as far too weak sitting right next to "More
+    Astral Shards"' own +3.2x/level - per direct request ("The ley shard
+    upgrades on the astral card are tooo low. Jump like around 2-3x per
+    upgrade"), raised to +2.5x/level (1x-123.5x over 50 levels), matching
+    that sibling column's scale. Its own cost curve was also steepened
+    from 1.15x/level to 1.35x/level per the same request's follow-up
+    ("also needs to cost more") - climbing to ~1.79 million Astral Shard
+    for the very last level, instead of ~658.
   - `AstralShardConversionBoostHandler.lua` — Card 2's second real
     upgrade, "More Astral Shards": a flat multiplier on how many Astral
     Shard each conversion grants, read by
@@ -848,14 +856,17 @@ design notes.
     per direct request's own example ("1000 ley shards after a couple
     upgrades maybe lets say gives you 30 astral shards instead of 1"),
     landing almost exactly on that at level 10 (1 + 9*3.2 = 29.8x),
-    reaching ~157.8x at level 50.
-  - Both are 50 levels, paid in Astral Shard, with the SAME exponential
-    cost curve (`math.ceil(1.15^(level-1))`, starting at exactly 1 Astral
-    Shard for level 1) - per direct request, "dont make the cost be 1
-    then 2 then 3 then 4 make it spaceed out how you think the game
-    should flow and keep someones attention." Card 2's own 3rd column
-    stays an empty "Coming Soon" placeholder for now - per direct
-    request, "lets just start with those two upgrades."
+    reaching ~157.8x at level 50. Cost curve untouched (1.15x/level,
+    starting at 1 Astral Shard) - the "too low"/"cost more" feedback was
+    specifically about the Ley Shard column above, not this one.
+  - Both are 50 levels, paid in Astral Shard, with an exponential cost
+    curve (`math.ceil(growth^(level-1))`, starting at exactly 1 Astral
+    Shard for level 1) rather than a flat +1 per level - per direct
+    request, "dont make the cost be 1 then 2 then 3 then 4 make it
+    spaceed out how you think the game should flow and keep someones
+    attention." Card 2's own 3rd column stays an empty "Coming Soon"
+    placeholder for now - per direct request, "lets just start with
+    those two upgrades."
   - A new `PlayerLeyShardConverted` RemoteEvent (fired by `Main.server.lua`
     after a successful `convert`) tells the Ley Shard board to re-fetch
     all 3 of its columns immediately, so it doesn't keep showing stale
