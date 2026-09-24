@@ -1161,13 +1161,14 @@ from that earlier design.
   real progress rather than a quick fill-in upgrade, so the first
   purchase alone costs as much as reaching level 20 on "More Mana"
   (`UpgradeCost.costForLevel(19)` = 190 Mana right now), climbing by
-  that same amount every level after. Also carries a TEMP testing-only
-  `TEMP_QA_SPEED_MULTIPLIER` (x4), clearly marked for removal, layered on
-  top of the real level-based speed at the point it's actually applied to
-  the Humanoid - per direct request ("make my sprint speed times 4 just so
-  I can move around the map faster when I quality check each time"). Only
-  affects the live `Humanoid.WalkSpeed`; `walkSpeedLevel`/`costForLevel`/
-  the upgrade board's own displayed 1x-1.5x range are untouched by it.
+  that same amount every level after. Used to also carry a TEMP
+  testing-only `TEMP_QA_SPEED_MULTIPLIER` (x4) layered on top of the real
+  level-based speed at the point it's actually applied to the Humanoid -
+  per direct request ("make my sprint speed times 4 just so I can move
+  around the map faster when I quality check each time") - removed per
+  direct follow-up report during playtest cleanup ("Still running fast
+  get rid of that"), so every player's `Humanoid.WalkSpeed` now reflects
+  only their real `walkSpeedLevel`, 1x-1.5x.
 - `CollectionRangeHandler.lua` — the "Collection Range" upgrade (level
   1-12, radius linear 3 studs → 9 studs - halved from 18, which felt
   too strong). Also on its own cost curve
