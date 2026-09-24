@@ -69,7 +69,14 @@ design notes.
   actually saved) so later-game content stays immediately reachable while
   testing - most recently extended per direct request ("spawn me in with
   more all ley shard card uogrades maxed just to see how much I gain") to
-  also skip the EtherIsland gate and max all 3 Ley Shard columns.
+  also skip the EtherIsland gate and max all 3 Ley Shard columns. Also now
+  sets `secondIslandUnlocked = true` - missing this one was a real bug,
+  not just a convenience gap: `UpgradeTreeHandler.isUnlocked` requires
+  BOTH `wizardTier >= 3` (already forced) AND this, so every fresh Studio
+  session (no DataStore persistence without publishing + API access) left
+  the floor tile upgrades looking "greyed out" - no sign at all, since
+  `UpgradeTreeClient` never builds one while `unlocked` is false - until
+  the SecondIslandGate was manually re-unlocked by hand each time.
 - `ResourceEngine.lua` — the generic engine every currency runs on:
   server-authoritative collect (click/stand, distance + debounce checked),
   buy upgrade (one/max), self-prestige, chain reset, sell (see below), and

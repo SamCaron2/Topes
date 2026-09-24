@@ -260,6 +260,12 @@ function PlayerData.load(player: Player)
 	data.arcaneDust = 1e13
 	data.ether = 1e13
 	data.wizardTier = 3
+	-- Also needed for UpgradeTreeHandler.isUnlocked (requires BOTH
+	-- wizardTier >= 3 AND this) - without it, every fresh Studio session
+	-- left the floor tile upgrades looking "greyed out" (no sign at all,
+	-- since UpgradeTreeClient never builds one while unlocked is false)
+	-- until the SecondIslandGate was manually re-unlocked by hand each time.
+	data.secondIslandUnlocked = true
 	data.dustTreeTile1 = true
 	data.dustTreeTile2 = true
 	data.dustTreeTile3 = true
