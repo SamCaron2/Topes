@@ -24,6 +24,7 @@ local RuneHandler = require(script.Parent.RuneHandler)
 local WorldDecor = require(script.Parent.WorldDecor)
 local LeyShardHandler = require(script.Parent.LeyShardHandler)
 local LeyShardSpeedHandler = require(script.Parent.LeyShardSpeedHandler)
+local LeyShardFloorTileHandler = require(script.Parent.LeyShardFloorTileHandler)
 
 local MANA_ZONE_SIZE = 60 -- studs, square
 local BORDER_THICKNESS = 1
@@ -43,6 +44,7 @@ local etherUpdatedEvent = remotesFolder:WaitForChild("EtherUpdated")
 local upgradeTreeTileBoughtEvent = remotesFolder:WaitForChild("UpgradeTreeTileBought")
 local runeAltarCollectedEvent = remotesFolder:WaitForChild("RuneAltarCollected")
 local leyShardUpdatedEvent = remotesFolder:WaitForChild("LeyShardUpdated")
+local leyShardFloorTileBoughtEvent = remotesFolder:WaitForChild("LeyShardFloorTileBought")
 
 -- Everything below is positioned relative to SpawnLocation, so building the
 -- island here and lifting spawn onto its surface lifts the whole build with
@@ -1687,6 +1689,90 @@ do
 			end
 		end
 	end
+end
+
+-- ===========================================================================
+-- Ley Shard floor tile(s) - EtherIsland's own walk-over upgrade tile(s),
+-- paid in Ley Shard, same one-time-purchase mechanic as the SecondIsland
+-- Upgrade Tree's own tiles - per direct request ("x107 z134 start a floor
+-- tile upgrade. Lets do for 1k ley shards times your ley by 2"). Only
+-- Tile 1 exists for now; LeyShardFloorTileHandler.TILES is a list so a
+-- 2nd/3rd tile later is just one more entry plus one more position here.
+-- In its own `do...end` block, same register-budget reasoning as every
+-- other late-file section here.
+do
+	local LEY_SHARD_FLOOR_TILE_WIDTH = 9
+	local LEY_SHARD_FLOOR_TILE_DEPTH = 6
+	local LEY_SHARD_FLOOR_TILE_POSITIONS = {
+		[1] = { x = 107, z = 134 },
+	}
+	local LEY_SHARD_FLOOR_TILE_RADIUS = math.max(LEY_SHARD_FLOOR_TILE_WIDTH, LEY_SHARD_FLOOR_TILE_DEPTH) / 2
+	local LEY_SHARD_FLOOR_TILE_CHECK_INTERVAL = 0.5
+
+	local existingLeyShardFloorTiles = Workspace:FindFirstChild("LeyShardFloorTiles")
+	if existingLeyShardFloorTiles then
+		existingLeyShardFloorTiles:Destroy()
+	end
+
+	local leyShardFloorTileFolder = Instance.new("Folder")
+	leyShardFloorTileFolder.Name = "LeyShardFloorTiles"
+	leyShardFloorTileFolder.Parent = Workspace
+
+	for _, tile in LeyShardFloorTileHandler.TILES do
+		local position = LEY_SHARD_FLOOR_TILE_POSITIONS[tile.id]
+
+		local tilePart = Instance.new("Part")
+		tilePart.Name = ("LeyShardFloorTile%d"):format(tile.id)
+		tilePart.Anchored = true
+		tilePart.CanCollide = true
+		tilePart.Material = Enum.Material.Marble
+		tilePart.Color = Color3.fromRGB(90, 220, 190)
+		tilePart.Size = Vector3.new(LEY_SHARD_FLOOR_TILE_WIDTH, 0.4, LEY_SHARD_FLOOR_TILE_DEPTH)
+		tilePart.CFrame = CFrame.new(position.x, ISLAND_TOP_Y + 0.2, position.z)
+		tilePart.Parent = leyShardFloorTileFolder
+	end
+
+	-- Clearing decor near the tile - same "remove bushes if needed"
+	-- precedent as the board row above.
+	local etherIslandDecorFolder = Workspace:FindFirstChild("EtherIslandDecor")
+	if etherIslandDecorFolder then
+		local tile1Position = LEY_SHARD_FLOOR_TILE_POSITIONS[1]
+		for _, decorPart in etherIslandDecorFolder:GetChildren() do
+			if decorPart:IsA("BasePart") then
+				local dx = decorPart.Position.X - tile1Position.x
+				local dz = decorPart.Position.Z - tile1Position.z
+				if (dx * dx + dz * dz) ^ 0.5 <= 12 then
+					decorPart:Destroy()
+				end
+			end
+		end
+	end
+
+	task.spawn(function()
+		while true do
+			task.wait(LEY_SHARD_FLOOR_TILE_CHECK_INTERVAL)
+			for _, player in Players:GetPlayers() do
+				local character = player.Character
+				local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+				if rootPart then
+					local playerPosition = Vector2.new(rootPart.Position.X, rootPart.Position.Z)
+					for _, tile in LeyShardFloorTileHandler.TILES do
+						local position = LEY_SHARD_FLOOR_TILE_POSITIONS[tile.id]
+						local onTile = (playerPosition - Vector2.new(position.x, position.z)).Magnitude
+							<= LEY_SHARD_FLOOR_TILE_RADIUS
+
+						if onTile and LeyShardFloorTileHandler.buyTile(player, tile.id) then
+							local data = PlayerData.get(player)
+							if data then
+								leyShardUpdatedEvent:FireClient(player, data.leyShard or 0)
+							end
+							leyShardFloorTileBoughtEvent:FireClient(player, tile.id)
+						end
+					end
+				end
+			end
+		end
+	end)
 end
 
 -- ===========================================================================

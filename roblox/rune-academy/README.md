@@ -820,6 +820,9 @@ design notes.
   `leyShardYieldLevel`, that one is NOT wiped when Ley Shard gets converted
   into Astral Shard (see `AstralShardConversionHandler` below), so it's
   the one thing that survives every reset and speeds up every later grind.
+  Also folds in `LeyShardFloorTileHandler.getMultiplier` - EtherIsland's
+  own walk-over floor tile(s), also a permanent one-time purchase (see
+  below).
 - `AstralShardConversionHandler.lua` — Astral Shard, Card 2 of the 3-card
   progression, sitting physically next to the Ley Shard board on
   EtherIsland - per direct request ("to the right of ley shards we want
@@ -883,6 +886,25 @@ design notes.
     all 3 of its columns immediately, so it doesn't keep showing stale
     pre-reset levels/costs - same "broadcast a re-fetch signal" pattern as
     `playerRebirthedEvent`/`playerWizardTieredEvent`.
+- `LeyShardFloorTileHandler.lua` — EtherIsland's own walk-over floor
+  tile(s), paid in Ley Shard - the exact same one-time-purchase mechanic
+  as the SecondIsland Upgrade Tree (`UpgradeTreeHandler`), just its own
+  Ley-Shard-funded, EtherIsland-gated set instead of Arcane-Dust-funded/
+  Tier-3-gated - per direct request ("x107 z134 start a floor tile
+  upgrade. Lets do for 1k ley shards times your ley by 2"). Tile 1 costs
+  1,000 Ley Shard and permanently doubles Ley Shard yield
+  (`getMultiplier`, read by `LeyShardHandler`). A one-time boolean flag,
+  not a level, so it's NOT reset by `AstralShardConversionHandler.convert`
+  - same as every other one-time-flag purchase in this game. `TILES` is a
+  list (same shape as `UpgradeTreeHandler.TILES`, `requires` included even
+  though nothing needs it yet) so a 2nd/3rd tile later is just one more
+  entry, no code changes. `WorldBuilder` places Tile 1 at the exact given
+  coordinates (X 107, Z 134) with the exact same proximity-check-and-buy
+  loop shape as the Upgrade Tree's own tiles, and clears nearby decor on a
+  radius too. `LeyShardFloorTileClient.client.lua` is `UpgradeTreeClient`'s
+  own sign-rendering logic (same red/can't-afford, yellow/affordable,
+  green/bought rule), just reading this handler's state and gated on
+  EtherIsland being unlocked instead of Wizard Tier 3+.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and

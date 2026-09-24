@@ -19,11 +19,15 @@
 -- upgrade, paid in Astral Shard, and (unlike this file's own
 -- leyShardYieldLevel) NOT wiped when Ley Shard gets converted into Astral
 -- Shard, so it's the one thing that survives every reset and speeds up
--- every later grind.
+-- every later grind. Also folds in LeyShardFloorTileHandler's own
+-- multiplier - EtherIsland's own walk-over floor tile(s), paid in Ley
+-- Shard, a one-time purchase like the SecondIsland Upgrade Tree's own
+-- tiles rather than a leveled upgrade.
 
 local PlayerData = require(script.Parent.PlayerData)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
 local AstralShardLeyBoostHandler = require(script.Parent.AstralShardLeyBoostHandler)
+local LeyShardFloorTileHandler = require(script.Parent.LeyShardFloorTileHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -55,7 +59,10 @@ function LeyShardHandler.collect(player: Player): number?
 
 	local level = data.leyShardYieldLevel or 1
 	local amount = math.floor(
-		amountForLevel(level) * RuneCollectionHandler.getMultiplier(player) * AstralShardLeyBoostHandler.getMultiplier(player)
+		amountForLevel(level)
+			* RuneCollectionHandler.getMultiplier(player)
+			* AstralShardLeyBoostHandler.getMultiplier(player)
+			* LeyShardFloorTileHandler.getMultiplier(player)
 	)
 	data.leyShard = (data.leyShard or 0) + amount
 	return data.leyShard

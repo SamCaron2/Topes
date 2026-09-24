@@ -184,6 +184,15 @@ local function defaultData()
 		astralShardLeyBoostLevel = 1, -- Card 2's "More Ley Shard" (AstralShardLeyBoostHandler), 1-50, a flat Ley Shard yield multiplier paid in Astral Shard
 		astralConversionBoostLevel = 1, -- Card 2's "More Astral Shards" (AstralShardConversionBoostHandler), 1-50, boosts how many Astral Shard each conversion grants
 
+		-- EtherIsland's own walk-over floor tile(s), paid in Ley Shard -
+		-- same one-time-purchase mechanic as the SecondIsland Upgrade
+		-- Tree's own tiles (LeyShardFloorTileHandler), per direct request
+		-- ("x107 z134 start a floor tile upgrade. Lets do for 1k ley
+		-- shards times your ley by 2"). A boolean flag, not a level - once
+		-- bought, permanent, NOT reset by converting Ley Shard into
+		-- Astral Shard.
+		leyShardFloorTile1 = false,
+
 		-- Rune Altar upgrades (RuinRuneHandler): 5 tiers bought via
 		-- RuneAltarBoard, paid in Mana - only reachable once the Fantasy
 		-- Ruin itself is (Wizard Tier 3+). A single count like wizardTier,
