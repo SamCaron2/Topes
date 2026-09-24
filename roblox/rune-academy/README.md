@@ -1225,7 +1225,18 @@ design notes.
   `createUpgradeColumn` pattern, clear readout (now with the real uploaded
   dust icon overlapping its left edge, same as Mana's own readout), and
   Buy/Max → "Maxed" behavior, just costed and gated in Arcane Dust instead
-  of Mana - and its
+  of Mana. **Icons** - per direct request ("more arcain dust do the dust
+  icon, for grant speed Do like 3 arrows clipart, and for more mana do the
+  mana icon again"): `createUpgradeColumn` gained the same
+  `buildIcon(iconFrame)` callback the Mana Upgrades board uses. "More
+  Arcane Dust" and "More Mana" each reuse their real uploaded currency
+  image (`buildImageIcon`, `iconColor = nil`, no colored backdrop, same
+  treatment as every other reused-image icon in this game); "Grant Speed"
+  has no uploaded arrow image, so it's hand-built from 3 white chevrons
+  ("›››", `buildGrantSpeedIcon`/`buildChevron` - each chevron a pair of
+  thin bars rotated ±45° sharing one right-hand vertex) fanning out to the
+  right on its usual pink circle backdrop - a "fast-forward" pictogram for
+  "how often the pad pays out." And its
   Buy/Max buttons sit at Y=0.7 instead of the Mana board's 0.82, since
   this board's bottom edge sits right at ground level (its height puts
   the bottom of the Part at `ISLAND_TOP_Y`), so 0.82 read as the buttons

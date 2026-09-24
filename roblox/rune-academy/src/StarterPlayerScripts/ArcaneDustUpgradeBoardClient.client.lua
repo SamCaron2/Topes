@@ -44,6 +44,7 @@ while true do
 end
 
 local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
+local MANA_ICON_ID = "rbxassetid://119417928367783"
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230)
 
 local COLOR_CAN_BUY = Color3.fromRGB(70, 190, 60)
@@ -136,8 +137,57 @@ titleText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
 titleText.Text = "Arcane Dust Upgrades"
 titleText.Parent = titleBanner
 
+-- Per direct request ("more arcain dust do the dust icon, for grant speed
+-- Do like 3 arrows clipart, and for more mana do the mana icon again"):
+-- "More Arcane Dust" and "More Mana" reuse their real uploaded currency
+-- images (same `buildImageIcon` pattern the Mana Upgrades board already
+-- uses); "Grant Speed" has no uploaded image, so it's hand-built from 3
+-- chevrons ("›››", a common fast-forward/speed pictogram) fanning out to
+-- the right, each a pair of thin rotated bars sharing one right-hand
+-- vertex point.
+local function buildImageIcon(imageId: string): (Frame) -> ()
+	return function(iconFrame: Frame)
+		local icon = Instance.new("ImageLabel")
+		icon.Size = UDim2.new(1, 0, 1, 0)
+		icon.BackgroundTransparency = 1
+		icon.Image = imageId
+		icon.Parent = iconFrame
+
+		local iconPadding = Instance.new("UIPadding")
+		iconPadding.PaddingTop = UDim.new(0.12, 0)
+		iconPadding.PaddingBottom = UDim.new(0.12, 0)
+		iconPadding.PaddingLeft = UDim.new(0.12, 0)
+		iconPadding.PaddingRight = UDim.new(0.12, 0)
+		iconPadding.Parent = icon
+	end
+end
+
+local function buildChevron(parent: Frame, xPosition: number, color: Color3)
+	for _, rotation in { 45, -45 } do
+		local bar = Instance.new("Frame")
+		bar.AnchorPoint = Vector2.new(1, 0.5)
+		bar.Size = UDim2.new(0.34, 0, 0.14, 0)
+		bar.Position = UDim2.new(xPosition, 0, 0.5, 0)
+		bar.Rotation = rotation
+		bar.BackgroundColor3 = color
+		bar.BorderSizePixel = 0
+		bar.Parent = parent
+
+		local barCorner = Instance.new("UICorner")
+		barCorner.CornerRadius = UDim.new(1, 0)
+		barCorner.Parent = bar
+	end
+end
+
+local function buildGrantSpeedIcon(iconFrame: Frame)
+	local white = Color3.fromRGB(255, 255, 255)
+	buildChevron(iconFrame, 0.4, white)
+	buildChevron(iconFrame, 0.64, white)
+	buildChevron(iconFrame, 0.88, white)
+end
+
 -- Same column-building pattern as the Mana Upgrades board.
-local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3, getStateRemote, buyRemote, formatDetail)
+local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3?, buildIcon: (Frame) -> (), getStateRemote, buyRemote, formatDetail)
 	local column = Instance.new("Frame")
 	column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
 	column.Position = UDim2.new(COLUMN_START_X + (slotIndex - 1) * (COLUMN_WIDTH + COLUMN_GAP), 0, COLUMN_TOP_Y, 0)
@@ -148,7 +198,10 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	iconFrame.AnchorPoint = Vector2.new(0.5, 0)
 	iconFrame.Size = UDim2.new(0.4, 0, 0.22, 0)
 	iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
-	iconFrame.BackgroundColor3 = iconColor
+	-- nil iconColor (the 2 real-icon-image columns) means no filled backdrop
+	-- - same reasoning as the Mana Upgrades board's own image icon columns.
+	iconFrame.BackgroundTransparency = iconColor and 0 or 1
+	iconFrame.BackgroundColor3 = iconColor or Color3.fromRGB(255, 255, 255)
 	iconFrame.BorderSizePixel = 0
 	iconFrame.Parent = column
 
@@ -159,6 +212,8 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	local iconCorner = Instance.new("UICorner")
 	iconCorner.CornerRadius = UDim.new(1, 0)
 	iconCorner.Parent = iconFrame
+
+	buildIcon(iconFrame)
 
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
@@ -325,21 +380,21 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 end
 
 local columnRefreshFunctions = {
-	createUpgradeColumn(1, "More Arcane Dust", ARCANE_DUST_COLOR, getArcaneDustYieldStateFunction, buyArcaneDustYieldUpgradeFunction, function(state)
+	createUpgradeColumn(1, "More Arcane Dust", nil, buildImageIcon(ARCANE_DUST_ICON_ID), getArcaneDustYieldStateFunction, buyArcaneDustYieldUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("+%s > +%s"):format(NumberFormat.format(state.amountPerPickup), NumberFormat.format(state.nextAmountPerPickup))
 		end
 		return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
 	end),
 
-	createUpgradeColumn(2, "Grant Speed", Color3.fromRGB(255, 160, 220), getArcaneDustSpawnStateFunction, buyArcaneDustSpawnUpgradeFunction, function(state)
+	createUpgradeColumn(2, "Grant Speed", Color3.fromRGB(255, 160, 220), buildGrantSpeedIcon, getArcaneDustSpawnStateFunction, buyArcaneDustSpawnUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("Every %.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
 		end
 		return ("Every %.1fs (MAX)"):format(state.respawnSeconds)
 	end),
 
-	createUpgradeColumn(3, "More Mana", Color3.fromRGB(180, 120, 255), getManaBoostStateFunction, buyManaBoostUpgradeFunction, function(state)
+	createUpgradeColumn(3, "More Mana", nil, buildImageIcon(MANA_ICON_ID), getManaBoostStateFunction, buyManaBoostUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
 		end
