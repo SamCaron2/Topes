@@ -1468,6 +1468,23 @@ design notes.
   (`(x/25)`), each with a `%.1fx > %.1fx` preview, cost in Rebirths, and
   the same Buy/Max → single "Maxed" button behavior as the Mana board's
   columns.
+  **Icons** - per direct request ("for mana multiplier use the mana icon
+  we have and then a small multiplier icon next to it, for rebirth
+  multiplier do rebirth icon we already have and another multiplier next
+  to it icon, Then for xp multiplier do the letters XP with a multiplier
+  icon"): `createUpgradeColumn` gained the same `buildIcon(iconFrame)`
+  callback the Mana Upgrades board already uses. "Mana Value Multiplier"
+  and "Rebirth Multiplier" each reuse their board's own uploaded currency
+  image (the real Mana icon / the real Rebirths icon,
+  `buildImageMultiplierIcon`, `iconColor = nil` so the image shows with no
+  colored backdrop, same reasoning as the Mana board's own image icons);
+  "XP Multiplier" has no uploaded XP image, so it's plain bold "XP"
+  lettering on its usual light-blue circle backdrop instead
+  (`buildXpMultiplierIcon`). All 3 get the exact same small round "X"
+  badge (`addMultiplierBadge`, yellow circle, white outline, bold "X")
+  overlapping their icon's bottom-right corner, marking every column here
+  as a *multiplier* upgrade with one consistent glyph rather than 3
+  different ones.
 - `XPBarClient.client.lua` — a small bottom-middle HUD: "Level <N>" above
   a progress bar that fills as XP approaches the next level, with
   "<xp> / <xpToNextLevel> XP" over the bar itself (or "MAX LEVEL" once

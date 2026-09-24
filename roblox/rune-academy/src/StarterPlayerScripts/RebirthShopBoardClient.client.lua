@@ -25,6 +25,7 @@ local playerRebirthedEvent = remotes:WaitForChild("PlayerRebirthed")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("RebirthShopBoard")
 
+local MANA_ICON_ID = "rbxassetid://119417928367783"
 local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
 
 -- A small round white badge overlapping the readout pill's left edge -
@@ -63,6 +64,94 @@ local COLOR_CANT_AFFORD = Color3.fromRGB(200, 55, 55)
 local COLOR_MAX_ACTIVE = Color3.fromRGB(240, 210, 40)
 local COLOR_MAXED_OUT = Color3.fromRGB(90, 90, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
+
+-- Per direct request ("for mana multiplier use the mana icon we have and
+-- then a small multiplier icon next to it, for rebirth multiplier do
+-- rebirth icon we already have and another multiplier next to it icon,
+-- Then for xp multiplier do the letters XP with a multiplier icon"): each
+-- of this board's 3 columns gets a real icon (the uploaded Mana/Rebirths
+-- images, or plain "XP" lettering) with a small "X" badge overlapping its
+-- corner marking it as a multiplier - same badge reused identically
+-- across all 3 rather than 3 different multiplier glyphs.
+local MULTIPLIER_BADGE_COLOR = Color3.fromRGB(255, 210, 60)
+local MULTIPLIER_BADGE_TEXT_COLOR = Color3.fromRGB(70, 45, 10)
+
+local function addMultiplierBadge(iconFrame: Frame)
+	local badge = Instance.new("Frame")
+	badge.AnchorPoint = Vector2.new(1, 1)
+	badge.Size = UDim2.new(0.42, 0, 0.42, 0)
+	badge.Position = UDim2.new(1.05, 0, 1.05, 0)
+	badge.BackgroundColor3 = MULTIPLIER_BADGE_COLOR
+	badge.BorderSizePixel = 0
+	badge.ZIndex = 4
+	badge.Parent = iconFrame
+
+	local badgeCorner = Instance.new("UICorner")
+	badgeCorner.CornerRadius = UDim.new(1, 0)
+	badgeCorner.Parent = badge
+
+	local badgeStroke = Instance.new("UIStroke")
+	badgeStroke.Thickness = 2
+	badgeStroke.Color = Color3.fromRGB(255, 255, 255)
+	badgeStroke.Parent = badge
+
+	local badgeText = Instance.new("TextLabel")
+	badgeText.Size = UDim2.new(1, 0, 1, 0)
+	badgeText.BackgroundTransparency = 1
+	badgeText.Font = Enum.Font.GothamBlack
+	badgeText.TextScaled = true
+	badgeText.TextColor3 = MULTIPLIER_BADGE_TEXT_COLOR
+	badgeText.Text = "X"
+	badgeText.ZIndex = 5
+	badgeText.Parent = badge
+
+	local badgePadding = Instance.new("UIPadding")
+	badgePadding.PaddingTop = UDim.new(0.15, 0)
+	badgePadding.PaddingBottom = UDim.new(0.15, 0)
+	badgePadding.PaddingLeft = UDim.new(0.15, 0)
+	badgePadding.PaddingRight = UDim.new(0.15, 0)
+	badgePadding.Parent = badgeText
+end
+
+local function buildImageMultiplierIcon(imageId: string): (Frame) -> ()
+	return function(iconFrame: Frame)
+		local icon = Instance.new("ImageLabel")
+		icon.Size = UDim2.new(1, 0, 1, 0)
+		icon.BackgroundTransparency = 1
+		icon.Image = imageId
+		icon.Parent = iconFrame
+
+		local iconPadding = Instance.new("UIPadding")
+		iconPadding.PaddingTop = UDim.new(0.12, 0)
+		iconPadding.PaddingBottom = UDim.new(0.12, 0)
+		iconPadding.PaddingLeft = UDim.new(0.12, 0)
+		iconPadding.PaddingRight = UDim.new(0.12, 0)
+		iconPadding.Parent = icon
+
+		addMultiplierBadge(iconFrame)
+	end
+end
+
+local function buildXpMultiplierIcon(iconFrame: Frame)
+	local xpText = Instance.new("TextLabel")
+	xpText.Size = UDim2.new(1, 0, 1, 0)
+	xpText.BackgroundTransparency = 1
+	xpText.Font = Enum.Font.GothamBlack
+	xpText.TextScaled = true
+	xpText.TextColor3 = Color3.fromRGB(255, 255, 255)
+	xpText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+	xpText.Text = "XP"
+	xpText.Parent = iconFrame
+
+	local xpPadding = Instance.new("UIPadding")
+	xpPadding.PaddingTop = UDim.new(0.22, 0)
+	xpPadding.PaddingBottom = UDim.new(0.22, 0)
+	xpPadding.PaddingLeft = UDim.new(0.12, 0)
+	xpPadding.PaddingRight = UDim.new(0.12, 0)
+	xpPadding.Parent = xpText
+
+	addMultiplierBadge(iconFrame)
+end
 
 -- Sized to fill the board edge-to-edge for exactly 3 columns (0.03 margin on
 -- both sides), same spacing scheme as the Mana Upgrades board's 4 columns.
@@ -146,7 +235,7 @@ titleText.Parent = titleBanner
 -- board's createUpgradeColumn but costed and gated in Rebirths instead of
 -- Mana. Returns a refresh() function used after a rebirth (Rebirths itself
 -- doesn't reset, but this keeps the pattern consistent with the Mana board).
-local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3, getStateRemote, buyRemote, formatDetail)
+local function createUpgradeColumn(slotIndex: number, name: string, iconColor: Color3?, buildIcon: (Frame) -> (), getStateRemote, buyRemote, formatDetail)
 	local column = Instance.new("Frame")
 	column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
 	column.Position = UDim2.new(COLUMN_START_X + (slotIndex - 1) * (COLUMN_WIDTH + COLUMN_GAP), 0, COLUMN_TOP_Y, 0)
@@ -157,7 +246,10 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	iconFrame.AnchorPoint = Vector2.new(0.5, 0)
 	iconFrame.Size = UDim2.new(0.55, 0, 0.22, 0)
 	iconFrame.Position = UDim2.new(0.5, 0, 0, 0)
-	iconFrame.BackgroundColor3 = iconColor
+	-- nil iconColor (the 2 real-icon-image columns) means no filled backdrop
+	-- - same reasoning as the Mana Upgrades board's own icon columns.
+	iconFrame.BackgroundTransparency = iconColor and 0 or 1
+	iconFrame.BackgroundColor3 = iconColor or Color3.fromRGB(255, 255, 255)
 	iconFrame.BorderSizePixel = 0
 	iconFrame.Parent = column
 
@@ -168,6 +260,8 @@ local function createUpgradeColumn(slotIndex: number, name: string, iconColor: C
 	local iconCorner = Instance.new("UICorner")
 	iconCorner.CornerRadius = UDim.new(1, 0)
 	iconCorner.Parent = iconFrame
+
+	buildIcon(iconFrame)
 
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(1, 0, 0.09, 0)
@@ -343,7 +437,8 @@ local columnRefreshFunctions = {
 	createUpgradeColumn(
 		1,
 		"Mana Value Multiplier",
-		Color3.fromRGB(255, 200, 60),
+		nil,
+		buildImageMultiplierIcon(MANA_ICON_ID),
 		getManaValueMultiplierStateFunction,
 		buyManaValueMultiplierFunction,
 		formatMultiplierDetail
@@ -352,7 +447,8 @@ local columnRefreshFunctions = {
 	createUpgradeColumn(
 		2,
 		"Rebirth Multiplier",
-		Color3.fromRGB(255, 100, 100),
+		nil,
+		buildImageMultiplierIcon(REBIRTHS_ICON_ID),
 		getRebirthMultiplierStateFunction,
 		buyRebirthMultiplierFunction,
 		formatMultiplierDetail
@@ -362,6 +458,7 @@ local columnRefreshFunctions = {
 		3,
 		"XP Multiplier",
 		Color3.fromRGB(150, 220, 255),
+		buildXpMultiplierIcon,
 		getXpMultiplierStateFunction,
 		buyXpMultiplierFunction,
 		formatMultiplierDetail
