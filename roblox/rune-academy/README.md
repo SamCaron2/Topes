@@ -1024,9 +1024,12 @@ design notes.
   2's own color). Ether originally had no uploaded image, falling back to
   a placeholder star glyph the same way Arcane Dust once did; per direct
   request ("The purple with square should be the ether logo we just
-  made"), it now uses the real uploaded `eth_purple` logo instead, with
-  the same small round white circle backdrop Rebirths already uses for
-  contrast. Ley Shard and Astral Shard originally used a placeholder "◆"
+  made"), it now uses the real uploaded `eth_purple` logo instead - no
+  circle backdrop (`useCircleBadge = false`), per an immediate direct
+  follow-up ("Remove white background behidn that ether logo") since the
+  white circle showed through around the logo's own transparent
+  background; same no-backdrop treatment as Mana's own icon. Ley Shard
+  and Astral Shard originally used a placeholder "◆"
   glyph too, just recolored; per direct follow-up request ("the ley and
   astra shard icons on the left screen I want them to look like the icons
   on the cards"), both now reuse `buildGemIcon` - the exact same hand-built

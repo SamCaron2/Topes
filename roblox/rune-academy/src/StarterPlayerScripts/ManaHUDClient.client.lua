@@ -193,8 +193,10 @@ rebirthsText.Text = "0"
 -- Ether now has a real uploaded image (the eth_purple logo, same one the
 -- Ether board's own "More Ether" column and currency readout use), per
 -- direct request ("The purple with square should be the ether logo we
--- just made").
-local etherRow, etherText = createCounterRow("EtherCounter", 0, ETHER_COLOR, ETHER_ICON_ID, true)
+-- just made"). No white circle backdrop (useCircleBadge = false) - per a
+-- direct follow-up request ("Remove white background behidn that ether
+-- logo") - same no-backdrop treatment as Mana's own icon.
+local etherRow, etherText = createCounterRow("EtherCounter", 0, ETHER_COLOR, ETHER_ICON_ID, false)
 etherRow.Visible = false
 etherText.Text = "0"
 
