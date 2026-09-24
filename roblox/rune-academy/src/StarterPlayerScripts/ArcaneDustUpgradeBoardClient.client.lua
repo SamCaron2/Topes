@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local LockIcon = require(ReplicatedStorage.Modules.LockIcon)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getSecondIslandStateFunction = remotes:WaitForChild("GetSecondIslandState")
@@ -29,12 +30,13 @@ local playerWizardTieredEvent = remotes:WaitForChild("PlayerWizardTiered")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("ArcaneDustUpgradeBoard")
 
--- Waits (without building anything) until SecondIsland is actually
--- unlocked - per direct request ("keep the cards so people see there is
--- stuff on the island but the text on them does not appear until you
--- unlock"). The board Part itself is always visible/solid; only this
--- SurfaceGui (which renders independent of its host Part's Transparency)
--- is withheld until unlock.
+-- Shows a locked-padlock overlay (LockIcon) instead of just staying blank
+-- while SecondIsland isn't unlocked yet - per direct request ("Make sure
+-- all cards are locked with a locked emoji on them until you unlock
+-- them... for the dust you unlock the door"). Torn down the instant the
+-- door opens, then the real board gets built below.
+local lockGui = LockIcon.show(board, Enum.NormalId.Right)
+
 while true do
 	local state = getSecondIslandStateFunction:InvokeServer()
 	if state and state.unlocked then
@@ -42,6 +44,8 @@ while true do
 	end
 	task.wait(1)
 end
+
+lockGui:Destroy()
 
 local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
 local MANA_ICON_ID = "rbxassetid://119417928367783"

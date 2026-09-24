@@ -57,6 +57,27 @@ from that earlier design.
   (`ManaHUDClient`, `ManaUpgradeBoardClient`'s readout/costs/yield
   preview) - use it for any other currency display that could reach
   seven figures too.
+- `LockIcon.lua` — shared "🔒" padlock overlay for any gated board/kiosk
+  card, per direct request ("Make sure all cards are locked with a locked
+  emoji on them until you unlock them"). Every gated board used to just
+  build nothing at all while locked (a bare, blank Part with no
+  explanation - the original reasoning behind that was "keep the cards so
+  people see there is stuff on the island but the text on them does not
+  appear until you unlock"). `LockIcon.show(board, face)` builds a small
+  SurfaceGui with a centered padlock emoji on the SAME face the real
+  board content will use, and returns it so the caller can `:Destroy()`
+  it the instant its own unlock condition passes, right before building
+  the real board - used by `ArcaneDustUpgradeBoardClient`/
+  `WizardTierBoardClient`/`RuneAltarBoardClient` (locked until
+  SecondIsland's own door - `GetSecondIslandState().unlocked`),
+  `EtherUpgradeBoardClient` (locked until the Upgrade Tree's own Ether
+  floor tile is bought - `GetEtherUnlocked`), `LeyShardUpgradeBoardClient`/
+  `AstralShardUpgradeBoardClient`/`LeyShardConversionBoardClient` (locked
+  until EtherIsland's own gate), and `CelestialShardBoardClient`/
+  `CelestialShardConversionBoardClient` (locked until floor Tile 4) - per
+  direct follow-up clarifying exactly those two SecondIsland conditions
+  ("for the dust you unlock the door and for ether when you hit the floor
+  tile map").
 - `ClientSettings.lua` — client-only, session-only settings (not saved
   server-side, reset on rejoin - nothing server-authoritative depends on
   them), per direct request ("add some relevant settings in the settings
@@ -990,11 +1011,16 @@ from that earlier design.
   exact live-rate/readouts/warning/Convert-button shape, gold-themed)
   sits right next to the Celestial Shard board - per direct request
   ("make a converter card to the left. of the celestrial upgarade card").
-  Placed by `WorldBuilder` at the board's own "left" edge (the high-Z
-  side, matching the user's own "left side... z154" framing from the
-  original placement request), continuing the row with the same 4-stud
-  gap the original 3-board row uses (my own call for the exact
-  placement, not specified).
+  Originally placed second (higher Z, farther from the approach side);
+  per direct follow-up request ("Flip these two around so the convert is
+  first. make both cards longer too like all the other ones"),
+  `WorldBuilder` now places the converter FIRST (the lower-Z, closer
+  position) and the upgrade board second, and widened both from the
+  original 14-stud placeholder to match their closest sibling board's own
+  size - the converter to 15 studs (matching `LeyShardConversionBoard`
+  exactly) and the upgrade board to 26 studs (matching
+  `AstralShardUpgradeBoard` exactly), still with the same 4-stud gap the
+  original 3-board row uses between them.
 - `CelestialConversionBoostHandler.lua` — Card 3's first real upgrade,
   "More Celestial Shard": a flat multiplier on how many Celestial Shard
   each conversion grants, same role `AstralShardConversionBoostHandler`

@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local LockIcon = require(ReplicatedStorage.Modules.LockIcon)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getEtherUnlockedFunction = remotes:WaitForChild("GetEtherUnlocked")
@@ -59,6 +60,12 @@ local COLUMN_TOP_Y = 0.33
 
 local built = false
 
+-- Shows a locked-padlock overlay (LockIcon) instead of just staying blank
+-- until Ether is unlocked - per direct request ("Make sure all cards are
+-- locked with a locked emoji on them until you unlock them... for ether
+-- when you hit the floor tile map").
+local lockGui = LockIcon.show(board, Enum.NormalId.Left)
+
 -- The shroud sits at a LOWER X than this board (see WorldBuilder), so the
 -- board's readable face needs to point back toward it (-X) - "Left" in
 -- Roblox's NormalId naming, the mirror of the Arcane Dust board's "Right".
@@ -69,6 +76,8 @@ local function buildBoard()
 		return
 	end
 	built = true
+
+	lockGui:Destroy()
 
 	local surfaceGui = Instance.new("SurfaceGui")
 	surfaceGui.Name = "EtherUpgradeBoardGui"

@@ -1812,58 +1812,34 @@ do
 	end)
 end
 
--- Card 3's own board, Celestial Shard (CelestialShardHandler) -
--- unlocked by Tile 4 above. Per direct request with exact opposite
--- corners ("this fill be at these cordinates (left side of card
--- starts at x155 z154 and right side is around x154 z140"), which
--- puts its long axis along Z (not X, unlike the 3-board row) - built
--- the same way RuinRuneHandler's own board turns 90 degrees to run along a
--- different axis than its neighbors (Size's "width" dimension stays
--- local-X, then a 90-degree CFrame.Angles Y-rotation swings that to point
--- along world Z). Gold-tinted glass, per direct request ("Maybe make
--- this shard color gold"). Now has 3 real upgrade columns
--- (CelestialConversionBoostHandler/CelestialAstralBoostHandler/
--- CelestialManaBoostHandler) plus its own converter card
--- (CelestialShardConversionBoard, built right below) - per direct
--- request ("Okay time to do celestial shard... make a converter card
--- to the left. of the celestrial upgarade card. There are 3 upgrades").
+-- Card 3's own board, Celestial Shard (CelestialShardHandler), and its
+-- converter card, both rotated 90 degrees around Y to run along Z (not
+-- X, unlike the 3-board row) - built the same way RuinRuneHandler's own
+-- board turns 90 degrees to run along a different axis than its
+-- neighbors. Gold-tinted glass, per direct request ("Maybe make this
+-- shard color gold"). Per direct follow-up request ("Flip these two
+-- around so the convert is first. make both cards longer too like all
+-- the other ones"): the converter card is now the FIRST one encountered
+-- (the lower-Z, closer position) and the upgrade board second (higher
+-- Z), and both are widened to match their closest sibling board's own
+-- size instead of the original 14-stud placeholder - the converter
+-- (rate/readouts/warning/button, same shape as LeyShardConversionBoard)
+-- to 15 studs, matching that board exactly, and the upgrade board (3
+-- real columns, same shape as AstralShardUpgradeBoard) to 26 studs,
+-- also matching that board exactly.
 do
-	local CELESTIAL_SHARD_BOARD_X = 154.5 -- halfway between the given 155/154 corners
-	local CELESTIAL_SHARD_BOARD_Z = (154 + 140) / 2
-	local CELESTIAL_SHARD_BOARD_WIDTH = 154 - 140 -- 14 studs, spanning the given Z range
+	local CELESTIAL_ROW_X = 154.5 -- halfway between the original given 155/154 corners
+	local CELESTIAL_ROW_GAP = 4 -- same gap the original 3-board row uses between neighbors
+	local CELESTIAL_ROW_START_Z = 140 -- the original given closer/lower-Z edge
 
-	local existingCelestialShardBoard = Workspace:FindFirstChild("CelestialShardBoard")
-	if existingCelestialShardBoard then
-		existingCelestialShardBoard:Destroy()
-	end
+	local CONVERSION_BOARD_WIDTH = 15 -- matches LeyShardConversionBoard exactly
+	local CELESTIAL_SHARD_BOARD_WIDTH = 26 -- matches AstralShardUpgradeBoard exactly
 
-	local celestialShardBoard = Instance.new("Part")
-	celestialShardBoard.Name = "CelestialShardBoard"
-	celestialShardBoard.Anchored = true
-	celestialShardBoard.CanCollide = true
-	celestialShardBoard.Material = Enum.Material.Glass
-	celestialShardBoard.Color = Color3.fromRGB(80, 65, 20)
-	celestialShardBoard.Transparency = 0.7
-	celestialShardBoard.Size = Vector3.new(CELESTIAL_SHARD_BOARD_WIDTH, 18, 1)
-	celestialShardBoard.CFrame = CFrame.new(CELESTIAL_SHARD_BOARD_X, ISLAND_TOP_Y + 9, CELESTIAL_SHARD_BOARD_Z)
-		* CFrame.Angles(0, math.rad(90), 0)
-	celestialShardBoard.Parent = Workspace
-
-	-- The new Astral->Celestial converter card - per direct request ("make
-	-- a converter card to the left. of the celestrial upgarade card").
-	-- The board above is rotated 90 degrees around Y, so its local +X (the
-	-- "width" axis) maps to world -Z - meaning its "left" edge (the Z=154
-	-- side, matching the user's own "left side of card starts at... z154"
-	-- framing from the original placement request) is the HIGH-Z edge.
-	-- Continuing the row one more step past that edge (my own call for
-	-- exact placement, not specified) with the same 4-stud gap the
-	-- original 3-board row uses between neighbors.
-	local CONVERSION_BOARD_GAP = 4
-	local CONVERSION_BOARD_WIDTH = CELESTIAL_SHARD_BOARD_WIDTH
-	local CONVERSION_BOARD_Z = CELESTIAL_SHARD_BOARD_Z
+	local conversionBoardZ = CELESTIAL_ROW_START_Z + CONVERSION_BOARD_WIDTH / 2
+	local celestialShardBoardZ = CELESTIAL_ROW_START_Z
+		+ CONVERSION_BOARD_WIDTH
+		+ CELESTIAL_ROW_GAP
 		+ CELESTIAL_SHARD_BOARD_WIDTH / 2
-		+ CONVERSION_BOARD_GAP
-		+ CONVERSION_BOARD_WIDTH / 2
 
 	local existingCelestialShardConversionBoard = Workspace:FindFirstChild("CelestialShardConversionBoard")
 	if existingCelestialShardConversionBoard then
@@ -1878,9 +1854,26 @@ do
 	celestialShardConversionBoard.Color = Color3.fromRGB(80, 65, 20)
 	celestialShardConversionBoard.Transparency = 0.7
 	celestialShardConversionBoard.Size = Vector3.new(CONVERSION_BOARD_WIDTH, 18, 1)
-	celestialShardConversionBoard.CFrame = CFrame.new(CELESTIAL_SHARD_BOARD_X, ISLAND_TOP_Y + 9, CONVERSION_BOARD_Z)
+	celestialShardConversionBoard.CFrame = CFrame.new(CELESTIAL_ROW_X, ISLAND_TOP_Y + 9, conversionBoardZ)
 		* CFrame.Angles(0, math.rad(90), 0)
 	celestialShardConversionBoard.Parent = Workspace
+
+	local existingCelestialShardBoard = Workspace:FindFirstChild("CelestialShardBoard")
+	if existingCelestialShardBoard then
+		existingCelestialShardBoard:Destroy()
+	end
+
+	local celestialShardBoard = Instance.new("Part")
+	celestialShardBoard.Name = "CelestialShardBoard"
+	celestialShardBoard.Anchored = true
+	celestialShardBoard.CanCollide = true
+	celestialShardBoard.Material = Enum.Material.Glass
+	celestialShardBoard.Color = Color3.fromRGB(80, 65, 20)
+	celestialShardBoard.Transparency = 0.7
+	celestialShardBoard.Size = Vector3.new(CELESTIAL_SHARD_BOARD_WIDTH, 18, 1)
+	celestialShardBoard.CFrame = CFrame.new(CELESTIAL_ROW_X, ISLAND_TOP_Y + 9, celestialShardBoardZ)
+		* CFrame.Angles(0, math.rad(90), 0)
+	celestialShardBoard.Parent = Workspace
 end
 
 -- "Auto Ley Shard" (LeyShardFloorTileHandler.hasAutoLeyShard, Tile 5) -

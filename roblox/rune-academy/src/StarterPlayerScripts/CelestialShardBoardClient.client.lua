@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local LockIcon = require(ReplicatedStorage.Modules.LockIcon)
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -259,11 +260,11 @@ local function createUpgradeColumn(background: Frame, slotIndex: number, name: s
 	end)
 end
 
--- Waits (without building anything) until Tile 4 is actually bought - per
--- the same "look locked until you unlock it" reasoning as every other
--- gated board here. The board Part itself is always visible/solid; only
--- this SurfaceGui (which renders independent of its host Part's
--- Transparency) is withheld until unlock.
+-- Shows a locked-padlock overlay (LockIcon) instead of just staying blank
+-- until Tile 4 is bought - per direct request ("Make sure all cards are
+-- locked with a locked emoji on them until you unlock them").
+local lockGui = LockIcon.show(board, Enum.NormalId.Front)
+
 while true do
 	local state = getCelestialShardStateFunction:InvokeServer()
 	if state and state.unlocked then
@@ -271,6 +272,8 @@ while true do
 	end
 	task.wait(1)
 end
+
+lockGui:Destroy()
 
 -- Rotated 90° around Y in WorldBuilder (its long axis runs along Z, not
 -- X, unlike the 3-board row) - but its Size is (WIDTH, 18, 1), thickness

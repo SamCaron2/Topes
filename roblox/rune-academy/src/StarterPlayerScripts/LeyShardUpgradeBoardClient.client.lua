@@ -24,6 +24,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local LockIcon = require(ReplicatedStorage.Modules.LockIcon)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getEtherIslandStateFunction = remotes:WaitForChild("GetEtherIslandState")
@@ -38,6 +39,11 @@ local leyShardUpdatedEvent = remotes:WaitForChild("LeyShardUpdated")
 local playerLeyShardConvertedEvent = remotes:WaitForChild("PlayerLeyShardConverted")
 
 local board = Workspace:WaitForChild("LeyShardUpgradeBoard")
+
+-- Shows a locked-padlock overlay (LockIcon) instead of just staying blank
+-- until EtherIsland is unlocked - per direct request ("Make sure all
+-- cards are locked with a locked emoji on them until you unlock them").
+local lockGui = LockIcon.show(board, Enum.NormalId.Back)
 
 local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190)
 local MANA_ICON_ID = "rbxassetid://119417928367783"
@@ -444,6 +450,8 @@ local function buildBoard()
 		return
 	end
 	built = true
+
+	lockGui:Destroy()
 
 	background.Parent = surfaceGui
 	surfaceGui.Parent = board

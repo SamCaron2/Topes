@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local LockIcon = require(ReplicatedStorage.Modules.LockIcon)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getCelestialShardStateFunction = remotes:WaitForChild("GetCelestialShardState")
@@ -38,9 +39,11 @@ local COLOR_CAN_CONVERT = Color3.fromRGB(70, 190, 60)
 local COLOR_CANT_CONVERT = Color3.fromRGB(200, 55, 55)
 local TEXT_STROKE_TRANSPARENCY = 0.4
 
--- Waits (without building anything) until Tile 4 is actually bought - same
--- "look locked until you unlock it" reasoning as CelestialShardBoardClient
--- right next to this board.
+-- Shows a locked-padlock overlay (LockIcon) instead of just staying blank
+-- until Tile 4 is bought - per direct request ("Make sure all cards are
+-- locked with a locked emoji on them until you unlock them").
+local lockGui = LockIcon.show(board, Enum.NormalId.Front)
+
 while true do
 	local state = getCelestialShardStateFunction:InvokeServer()
 	if state and state.unlocked then
@@ -48,6 +51,8 @@ while true do
 	end
 	task.wait(1)
 end
+
+lockGui:Destroy()
 
 -- Same rotation AND same Size shape as CelestialShardBoard (thickness on
 -- local Z, not local X) - same Front face fix as that board, see its own

@@ -19,6 +19,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local LockIcon = require(ReplicatedStorage.Modules.LockIcon)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getEtherIslandStateFunction = remotes:WaitForChild("GetEtherIslandState")
@@ -31,6 +32,11 @@ local buyAstralShardConversionBoostUpgradeFunction = remotes:WaitForChild("BuyAs
 local playerAstralShardConvertedEvent = remotes:WaitForChild("PlayerAstralShardConverted")
 
 local board = Workspace:WaitForChild("AstralShardUpgradeBoard")
+
+-- Shows a locked-padlock overlay (LockIcon) instead of just staying blank
+-- until EtherIsland is unlocked - per direct request ("Make sure all
+-- cards are locked with a locked emoji on them until you unlock them").
+local lockGui = LockIcon.show(board, Enum.NormalId.Back)
 
 local ASTRAL_SHARD_COLOR = Color3.fromRGB(160, 140, 255)
 local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190)
@@ -274,6 +280,8 @@ local function buildBoard()
 		return
 	end
 	built = true
+
+	lockGui:Destroy()
 
 	-- The board sits at Z 100 with plain identity orientation (WorldBuilder,
 	-- axis-aligned row along X) - the island's own center is at Z 150, a

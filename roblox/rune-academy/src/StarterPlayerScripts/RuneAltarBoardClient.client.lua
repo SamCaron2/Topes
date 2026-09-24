@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
+local LockIcon = require(ReplicatedStorage.Modules.LockIcon)
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getSecondIslandStateFunction = remotes:WaitForChild("GetSecondIslandState")
@@ -23,9 +24,12 @@ local manaUpdatedEvent = remotes:WaitForChild("ManaUpdated")
 
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("RuneAltarBoard")
 
--- Waits (without building anything) until SecondIsland is actually
--- unlocked, same reasoning/pattern as every other SecondIsland board - a
--- SurfaceGui renders independent of its host Part's own Transparency.
+-- Shows a locked-padlock overlay (LockIcon) instead of just staying blank
+-- while SecondIsland isn't unlocked yet - per direct request ("Make sure
+-- all cards are locked with a locked emoji on them until you unlock
+-- them... for the dust you unlock the door").
+local lockGui = LockIcon.show(board, Enum.NormalId.Right)
+
 while true do
 	local state = getSecondIslandStateFunction:InvokeServer()
 	if state and state.unlocked then
@@ -33,6 +37,8 @@ while true do
 	end
 	task.wait(1)
 end
+
+lockGui:Destroy()
 
 local GOLD = Color3.fromRGB(255, 220, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
