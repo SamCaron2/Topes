@@ -1021,14 +1021,23 @@ design notes.
   before; pink-red for Rebirths, matching the Rebirth board's red theme;
   purple for Ether, matching the Shroud's own color; teal for Ley Shard,
   matching the Mat's own color; violet for Astral Shard, matching Card
-  2's own color). The Rebirths, Ether, Ley Shard, and Astral Shard icons
-  keep a small round white circle behind them for contrast (Ether, Ley
-  Shard, and Astral Shard have no uploaded image yet, so they fall back to
-  a placeholder glyph the same way Arcane Dust once did - a star for
-  Ether, a plain diamond for both Ley Shard and Astral Shard just
-  recolored, all safe basic Unicode symbols rather than an arrow/emoji
-  codepoint); the Mana and Arcane Dust icons have none, since both already
-  read fine boxed on their own. The Arcane Dust, Rebirths, Ether, Ley
+  2's own color). Ether originally had no uploaded image, falling back to
+  a placeholder star glyph the same way Arcane Dust once did; per direct
+  request ("The purple with square should be the ether logo we just
+  made"), it now uses the real uploaded `eth_purple` logo instead, with
+  the same small round white circle backdrop Rebirths already uses for
+  contrast. Ley Shard and Astral Shard originally used a placeholder "◆"
+  glyph too, just recolored; per direct follow-up request ("the ley and
+  astra shard icons on the left screen I want them to look like the icons
+  on the cards"), both now reuse `buildGemIcon` - the exact same hand-built
+  rotated-diamond-with-inset-facet icon the Ley Shard and Astral Shard
+  boards' own columns already use, just recolored per currency - drawn
+  directly with no circle backdrop, matching how those boards render it.
+  `createCounterRow` gained an optional `buildIcon` parameter for this -
+  when given, it takes priority over both `imageId` and `symbol` and
+  skips the circle-backdrop logic entirely. The Mana and Arcane Dust icons
+  still have no backdrop at all, since both already read fine boxed on
+  their own. The Arcane Dust, Rebirths, Ether, Ley
   Shard, and Astral Shard rows are all visible only while their amount is
   actually above 0, not just "ever shown once" - Arcane Dust the first
   time you actually stand on `ArcaneDustPad`, Rebirths only once you've

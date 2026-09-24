@@ -29,6 +29,7 @@ local astralShardUpdatedEvent = remotes:WaitForChild("AstralShardUpdated")
 local MANA_ICON_ID = "rbxassetid://119417928367783"
 local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
 local ARCANE_DUST_ICON_ID = "rbxassetid://76299006281145"
+local ETHER_ICON_ID = "rbxassetid://84621843997198" -- eth_purple
 local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the dust icon's own blue, per direct request
 local ETHER_COLOR = Color3.fromRGB(150, 60, 220) -- matches the Ether Shroud's own purple
 local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190) -- matches the Ley Shard Mat's own teal
@@ -41,6 +42,41 @@ screenGui.Name = "ManaHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
+-- A gem: a rotated square (diamond) with a smaller, lighter diamond inset
+-- for a facet highlight - same shape/construction as the Ley Shard and
+-- Astral Shard boards' own icons (`buildLeyShardIcon`/`buildGemIcon`),
+-- reused here per direct request ("the ley and astra shard icons on the
+-- left screen I want them to look like the icons on the cards") so the
+-- corner HUD matches those boards instead of using a plain "◆" glyph.
+local function buildGemIcon(color: Color3): (Frame) -> ()
+	return function(iconFrame: Frame)
+		local outer = Instance.new("Frame")
+		outer.AnchorPoint = Vector2.new(0.5, 0.5)
+		outer.Position = UDim2.new(0.5, 0, 0.5, 0)
+		outer.Size = UDim2.new(0.8, 0, 0.8, 0)
+		outer.Rotation = 45
+		outer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		outer.BorderSizePixel = 0
+		outer.Parent = iconFrame
+
+		local outerCorner = Instance.new("UICorner")
+		outerCorner.CornerRadius = UDim.new(0.2, 0)
+		outerCorner.Parent = outer
+
+		local inner = Instance.new("Frame")
+		inner.AnchorPoint = Vector2.new(0.5, 0.5)
+		inner.Position = UDim2.new(0.5, 0, 0.5, 0)
+		inner.Size = UDim2.new(0.42, 0, 0.42, 0)
+		inner.BackgroundColor3 = color
+		inner.BorderSizePixel = 0
+		inner.Parent = outer
+
+		local innerCorner = Instance.new("UICorner")
+		innerCorner.CornerRadius = UDim.new(0.25, 0)
+		innerCorner.Parent = inner
+	end
+end
+
 -- One row: icon on the left (the Rebirths icon gets a small white circle
 -- behind it for contrast; the Mana icon has none, per direct request,
 -- since its sparkles poke outside a round silhouette and looked bad boxed
@@ -49,13 +85,18 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 -- Arcane Dust has no uploaded image yet, so it passes `symbol` instead of
 -- `imageId` - a safe basic Unicode glyph (not emoji) in a colored circle,
 -- same placeholder treatment as the side menu's Runes/Profile icons.
+-- `buildIcon`, when given (Ley Shard/Astral Shard's own gem), takes
+-- priority over both `imageId` and `symbol` and draws directly onto a
+-- transparent iconHolder, no circle backdrop - same as the board columns
+-- that already use this exact icon.
 local function createCounterRow(
 	name: string,
 	yOffset: number,
 	textColor: Color3,
 	imageId: string?,
 	useCircleBadge: boolean,
-	symbol: string?
+	symbol: string?,
+	buildIcon: ((Frame) -> ())?
 )
 	local row = Instance.new("Frame")
 	row.Name = name
@@ -69,18 +110,20 @@ local function createCounterRow(
 	iconHolder.AnchorPoint = Vector2.new(0, 0.5)
 	iconHolder.Position = UDim2.new(0, 0, 0.5, 0)
 	iconHolder.Size = UDim2.new(0, ICON_SIZE, 0, ICON_SIZE)
-	iconHolder.BackgroundTransparency = useCircleBadge and 0 or 1
+	iconHolder.BackgroundTransparency = (useCircleBadge and not buildIcon) and 0 or 1
 	iconHolder.BackgroundColor3 = symbol and textColor or Color3.fromRGB(255, 255, 255)
 	iconHolder.BorderSizePixel = 0
 	iconHolder.Parent = row
 
-	if useCircleBadge then
+	if useCircleBadge and not buildIcon then
 		local holderCorner = Instance.new("UICorner")
 		holderCorner.CornerRadius = UDim.new(1, 0)
 		holderCorner.Parent = iconHolder
 	end
 
-	if imageId then
+	if buildIcon then
+		buildIcon(iconHolder)
+	elseif imageId then
 		local icon = Instance.new("ImageLabel")
 		icon.Size = UDim2.new(1, 0, 1, 0)
 		icon.BackgroundTransparency = 1
@@ -147,23 +190,24 @@ local rebirthsRow, rebirthsText = createCounterRow("RebirthsCounter", 0, Color3.
 rebirthsRow.Visible = false
 rebirthsText.Text = "0"
 
--- Ether has no uploaded image yet, so it passes `symbol` instead of
--- `imageId` - same placeholder treatment Arcane Dust used before its own
--- icon was uploaded.
-local etherRow, etherText = createCounterRow("EtherCounter", 0, ETHER_COLOR, nil, true, "\u{2727}")
+-- Ether now has a real uploaded image (the eth_purple logo, same one the
+-- Ether board's own "More Ether" column and currency readout use), per
+-- direct request ("The purple with square should be the ether logo we
+-- just made").
+local etherRow, etherText = createCounterRow("EtherCounter", 0, ETHER_COLOR, ETHER_ICON_ID, true)
 etherRow.Visible = false
 etherText.Text = "0"
 
--- Ley Shard has no uploaded image yet either - same placeholder symbol
--- treatment, a plain diamond (a common, well-covered glyph, not a risky
--- arrow/emoji codepoint).
-local leyShardRow, leyShardText = createCounterRow("LeyShardCounter", 0, LEY_SHARD_COLOR, nil, true, "\u{25C6}")
+-- Ley Shard/Astral Shard now use the same hand-built gem icon as their
+-- own boards instead of a plain "◆" glyph, per direct request ("the ley
+-- and astra shard icons on the left screen I want them to look like the
+-- icons on the cards"). No circle backdrop (useCircleBadge = false) -
+-- same transparent-iconFrame treatment the boards themselves use.
+local leyShardRow, leyShardText = createCounterRow("LeyShardCounter", 0, LEY_SHARD_COLOR, nil, false, nil, buildGemIcon(LEY_SHARD_COLOR))
 leyShardRow.Visible = false
 leyShardText.Text = "0"
 
--- Astral Shard (Card 2) also has no uploaded image yet - same diamond
--- placeholder symbol as Ley Shard, just recolored.
-local astralShardRow, astralShardText = createCounterRow("AstralShardCounter", 0, ASTRAL_SHARD_COLOR, nil, true, "\u{25C6}")
+local astralShardRow, astralShardText = createCounterRow("AstralShardCounter", 0, ASTRAL_SHARD_COLOR, nil, false, nil, buildGemIcon(ASTRAL_SHARD_COLOR))
 astralShardRow.Visible = false
 astralShardText.Text = "0"
 
