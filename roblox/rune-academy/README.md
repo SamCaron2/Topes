@@ -907,10 +907,9 @@ design notes.
   specified - steep enough that a fresh-to-EtherIsland player can't just
   walk up and buy them. Tile 3 was originally priced in Ley Shard too
   (100,000), then changed to be priced in Astral Shard itself instead -
-  per direct follow-up request ("Make tile 3 cost a resonable amount of
-  astral shard not ley shard") - 50 Astral Shard (my own call for
-  "reasonable," not specified: enough to need a couple of conversions
-  saved up, not a single one). Each tile now carries its own `currency`
+  per direct follow-up requests ("Make tile 3 cost a resonable amount of
+  astral shard not ley shard," then "Do 1k astral") - 1,000 Astral
+  Shard. Each tile now carries its own `currency`
   field (`"leyShard"` for Tiles 1-2, `"astralShard"` for Tile 3),
   independent of its `kind`, so `buyTile`/`getState` debit and display the
   right balance per tile; `WorldBuilder` fires `AstralShardUpdated`

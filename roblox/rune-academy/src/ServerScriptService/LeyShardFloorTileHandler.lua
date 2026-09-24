@@ -10,10 +10,9 @@
 -- each require the previous tile bought first, same "each tile requires
 -- the one before it" chaining as the SecondIsland tree. Tile 2 is 25,000
 -- Ley Shard; Tile 3, since it boosts Astral Shard itself, is priced in
--- Astral Shard instead - 50 Astral Shard (per direct follow-up request,
--- "Make tile 3 cost a resonable amount of astral shard not ley shard" -
--- my own call for "reasonable," not specified: enough to need a couple of
--- conversions to save up, not a single one). A one-time purchase flag per
+-- Astral Shard instead - per direct follow-up requests ("Make tile 3
+-- cost a resonable amount of astral shard not ley shard," then "Do 1k
+-- astral") 1,000 Astral Shard. A one-time purchase flag per
 -- tile, not a level, so bought tiles survive
 -- AstralShardConversionHandler.convert's reset just like every other
 -- one-time-flag purchase in this game (only
@@ -34,7 +33,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local TILES = {
 	{ id = 1, fieldName = "leyShardFloorTile1", cost = 1000, currency = "leyShard", kind = "leyShard", multiplier = 2, label = "Ley Shard x2", requires = {} },
 	{ id = 2, fieldName = "leyShardFloorTile2", cost = 25000, currency = "leyShard", kind = "leyShard", multiplier = 2, label = "Ley Shard x2", requires = { 1 } },
-	{ id = 3, fieldName = "leyShardFloorTile3", cost = 50, currency = "astralShard", kind = "astralConversion", multiplier = 2, label = "Astral Shard x2", requires = { 2 } },
+	{ id = 3, fieldName = "leyShardFloorTile3", cost = 1000, currency = "astralShard", kind = "astralConversion", multiplier = 2, label = "Astral Shard x2", requires = { 2 } },
 }
 
 local LeyShardFloorTileHandler = {}
