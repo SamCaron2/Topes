@@ -1692,13 +1692,18 @@ from that earlier design.
   (`CelestialManaBoostHandler`) - per direct request ("Okay time to do
   celestial shard... There are 3 upgrades. More celestrial shard... Then
   another upgrade 0-25 for more astral cards... FInally 0-50 on more
-  mana"). Rotated 90° in `WorldBuilder` like `RuinRuneBoard`'s own board;
-  originally guessed `SurfaceGui.Face = Right` (copying that board's own
-  guess), but that rendered both this board and the converter card below
-  as blank glass panes with no visible content - per direct report ("Why
-  are the cards like this what happened?") - since this board's approach
-  direction doesn't actually match `RuinRuneBoard`'s. Flipped to `Left`,
-  which puts the readable face on the correct side.
+  mana"). Rotated 90° in `WorldBuilder`, its `Size` is `(WIDTH, 18, 1)` -
+  thickness on local Z, SAME shape as the un-rotated 3-board row, NOT
+  `RuinRuneBoard` (`Size = (1, 18, WIDTH)`, thickness on local X instead).
+  Copying `RuinRuneBoard`'s own `Face = Right` guess (then `Left`) both
+  put the SurfaceGui on the thin 1-stud edge strip instead of the real
+  flat face - per two rounds of direct report ("Why are the cards like
+  this what happened?", then "They are on the wrong side again... have it
+  like the ley and astral cards"). The real fix: the flat face's normal is
+  along local Z (`Back`/`Front`, same axis the un-rotated boards use), just
+  swung by this board's own 90° Y-rotation to point along world X instead
+  of world Z - `Front` (local -Z) lands on world -X, the side EtherIsland's
+  floor tiles/main board row approach from.
 - `CelestialShardConversionBoardClient.client.lua` — the new converter
   card next to Card 3's board (see `CelestialShardConversionHandler.lua`
   above), mirroring `LeyShardConversionBoardClient.client.lua`'s exact
@@ -1707,8 +1712,8 @@ from that earlier design.
   Astral Shard upgrades!" - per direct request, "hitting this converter
   completely resets your astral shards"), and one gold-themed "Convert"
   button spending ALL currently-affordable Astral Shard in one press.
-  Same blocking-loop-until-unlocked and 90°-rotated `Left`-face fix as
-  the board right next to it (see its own bullet above).
+  Same blocking-loop-until-unlocked pattern and the same `Front`-face fix
+  as the board right next to it (see its own bullet above for why).
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.

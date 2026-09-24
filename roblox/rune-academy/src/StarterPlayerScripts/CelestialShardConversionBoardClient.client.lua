@@ -49,12 +49,13 @@ while true do
 	task.wait(1)
 end
 
--- Same rotation as CelestialShardBoard (its own long axis runs along Z) -
--- same Left face fix as that board (see its own client's header comment)
--- since the original "Right" guess rendered blank/backwards in-game.
+-- Same rotation AND same Size shape as CelestialShardBoard (thickness on
+-- local Z, not local X) - same Front face fix as that board, see its own
+-- client's header comment for why Right/Left were both wrong (the thin
+-- edge strip, not the actual flat face).
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "CelestialShardConversionBoardGui"
-surfaceGui.Face = Enum.NormalId.Left
+surfaceGui.Face = Enum.NormalId.Front
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36

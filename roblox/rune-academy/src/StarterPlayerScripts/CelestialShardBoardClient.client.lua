@@ -273,14 +273,20 @@ while true do
 end
 
 -- Rotated 90° around Y in WorldBuilder (its long axis runs along Z, not
--- X, unlike the 3-board row). The original "Right" guess (copying
--- RuinRuneHandler's own board) rendered blank/backwards in-game - per
--- direct report ("Why are the cards like this what happened?") - since
--- this board's approach direction doesn't match RuinRuneBoard's. Flipped
--- to Left, which puts the readable face on the correct side.
+-- X, unlike the 3-board row) - but its Size is (WIDTH, 18, 1), thickness
+-- on local Z, same shape as the UN-rotated 3-board row, NOT RuinRuneBoard
+-- (whose Size is (1, 18, WIDTH), thickness on local X instead). Copying
+-- RuinRuneBoard's own Face = Right (then Left) both put the SurfaceGui on
+-- the thin 1-stud edge strip instead of the actual big flat face - per
+-- direct report, both rendered blank ("Why are the cards like this what
+-- happened?" / "They are on the wrong side again"). The real flat face
+-- normal is along local Z (Back/Front, matching the un-rotated boards),
+-- which after this board's own 90° Y-rotation swings to point along world
+-- X - Front (local -Z) lands on world -X, the side EtherIsland's floor
+-- tiles/main board row approach from.
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "CelestialShardBoardGui"
-surfaceGui.Face = Enum.NormalId.Left
+surfaceGui.Face = Enum.NormalId.Front
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36
