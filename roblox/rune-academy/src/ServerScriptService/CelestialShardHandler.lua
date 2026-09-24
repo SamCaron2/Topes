@@ -1,11 +1,11 @@
 -- Card 3 of the wizard-material progression - Celestial Shard, unlocked
 -- by EtherIsland's Tile 4 (LeyShardFloorTileHandler.isCelestialShardUnlocked,
--- 5,000,000 Astral Shard). Per direct request ("For the time being it
--- wont have any upgrades"), this is deliberately just a placeholder shell
--- for now - no collection mechanic, no upgrade columns, just the unlocked
--- flag and a currency field sitting at 0 - same "build the card, wire the
--- mechanic later" precedent as Card 2's own board when it first went up
--- ("3 empty 'Coming Soon' slots, no real upgrade logic wired up yet").
+-- 5,000,000 Astral Shard). Just the unlocked flag and a currency readout -
+-- the actual conversion (CelestialShardConversionHandler) and the 3 real
+-- upgrade columns (CelestialConversionBoostHandler/
+-- CelestialAstralBoostHandler/CelestialManaBoostHandler) each live in
+-- their own sibling handler files, same "one small module per column"
+-- convention as every other board in this game.
 
 local PlayerData = require(script.Parent.PlayerData)
 local LeyShardFloorTileHandler = require(script.Parent.LeyShardFloorTileHandler)

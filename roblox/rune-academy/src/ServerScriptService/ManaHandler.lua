@@ -11,6 +11,7 @@ local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
 local LeyShardManaBoostHandler = require(script.Parent.LeyShardManaBoostHandler)
 local GamePassBoostHandler = require(script.Parent.GamePassBoostHandler)
+local CelestialManaBoostHandler = require(script.Parent.CelestialManaBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -45,8 +46,12 @@ local ManaHandler = {}
 -- copy owned of each Rune rank, capped at x5 per rank, all 9 ranks' own
 -- multipliers combined together), the Ley Shard board's own "More
 -- Mana" column (LeyShardManaBoostHandler - 1x-5.9x, paid in Ley Shard),
--- and any owned Robux gamepass perks (GamePassBoostHandler - VIPPass/
--- DoubleManaPass/the Starter Pack). Floored to keep Mana a whole number.
+-- the Celestial Shard board's own "More Mana" column
+-- (CelestialManaBoostHandler - 1x-50x, paid in Celestial Shard, per
+-- direct request "0-50 on more mana. Make this start at 1 but take a
+-- bit to reach 50"), and any owned Robux gamepass perks
+-- (GamePassBoostHandler - VIPPass/DoubleManaPass/the Starter Pack).
+-- Floored to keep Mana a whole number.
 local function effectiveAmountForLevel(player: Player, level: number): number
 	return math.floor(
 		amountForLevel(level)
@@ -56,6 +61,7 @@ local function effectiveAmountForLevel(player: Player, level: number): number
 			* UpgradeTreeHandler.getManaMultiplier(player)
 			* RuneCollectionHandler.getMultiplier(player)
 			* LeyShardManaBoostHandler.getMultiplier(player)
+			* CelestialManaBoostHandler.getMultiplier(player)
 			* GamePassBoostHandler.getManaMultiplier(player)
 	)
 end

@@ -39,6 +39,10 @@ local AstralShardLeyBoostHandler = require(script.Parent.AstralShardLeyBoostHand
 local AstralShardConversionBoostHandler = require(script.Parent.AstralShardConversionBoostHandler)
 local LeyShardFloorTileHandler = require(script.Parent.LeyShardFloorTileHandler)
 local CelestialShardHandler = require(script.Parent.CelestialShardHandler)
+local CelestialShardConversionHandler = require(script.Parent.CelestialShardConversionHandler)
+local CelestialConversionBoostHandler = require(script.Parent.CelestialConversionBoostHandler)
+local CelestialAstralBoostHandler = require(script.Parent.CelestialAstralBoostHandler)
+local CelestialManaBoostHandler = require(script.Parent.CelestialManaBoostHandler)
 
 local remotesFolder = Instance.new("Folder")
 remotesFolder.Name = "Remotes"
@@ -134,6 +138,16 @@ local buyAstralShardConversionBoostUpgradeFunction = newRemoteFunction("BuyAstra
 local getLeyShardFloorTileStateFunction = newRemoteFunction("GetLeyShardFloorTileState")
 local leyShardFloorTileBoughtEvent = newRemoteEvent("LeyShardFloorTileBought") -- server -> client, fired the instant a tile is bought (args: tileId), same pattern as upgradeTreeTileBoughtEvent
 local getCelestialShardStateFunction = newRemoteFunction("GetCelestialShardState")
+local celestialShardUpdatedEvent = newRemoteEvent("CelestialShardUpdated") -- server -> client, fired on join (if > 0) and every conversion/purchase
+local getCelestialShardConversionStateFunction = newRemoteFunction("GetCelestialShardConversionState")
+local convertAstralShardToCelestialShardFunction = newRemoteFunction("ConvertAstralShardToCelestialShard")
+local playerAstralShardConvertedEvent = newRemoteEvent("PlayerAstralShardConverted") -- server -> client, tells the Astral Shard board to re-fetch its 2 columns (converting resets them)
+local getCelestialConversionBoostStateFunction = newRemoteFunction("GetCelestialConversionBoostState")
+local buyCelestialConversionBoostUpgradeFunction = newRemoteFunction("BuyCelestialConversionBoostUpgrade")
+local getCelestialAstralBoostStateFunction = newRemoteFunction("GetCelestialAstralBoostState")
+local buyCelestialAstralBoostUpgradeFunction = newRemoteFunction("BuyCelestialAstralBoostUpgrade")
+local getCelestialManaBoostStateFunction = newRemoteFunction("GetCelestialManaBoostState")
+local buyCelestialManaBoostUpgradeFunction = newRemoteFunction("BuyCelestialManaBoostUpgrade")
 
 requestPurchaseEvent.OnServerEvent:Connect(function(player, kind, key)
 	if type(kind) == "string" and type(key) == "string" then
@@ -481,6 +495,70 @@ getCelestialShardStateFunction.OnServerInvoke = function(player)
 	return CelestialShardHandler.getState(player)
 end
 
+getCelestialShardConversionStateFunction.OnServerInvoke = function(player)
+	return CelestialShardConversionHandler.getState(player)
+end
+
+-- A successful convert also resets the Astral Shard board's own 2 levels
+-- back to 1 (CelestialShardConversionHandler.convert itself does the
+-- reset) - tell the Astral Shard board to re-fetch both columns so it
+-- doesn't keep showing stale pre-reset levels/costs, same "broadcast a
+-- re-fetch signal" pattern as playerLeyShardConvertedEvent one tier down.
+convertAstralShardToCelestialShardFunction.OnServerInvoke = function(player)
+	local success, err, newState = CelestialShardConversionHandler.convert(player)
+	if success then
+		astralShardUpdatedEvent:FireClient(player, newState.astralShard)
+		celestialShardUpdatedEvent:FireClient(player, newState.celestialShard)
+		playerAstralShardConvertedEvent:FireClient(player)
+	end
+	return success, err, newState
+end
+
+getCelestialConversionBoostStateFunction.OnServerInvoke = function(player)
+	return CelestialConversionBoostHandler.getUpgradeState(player)
+end
+
+buyCelestialConversionBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = CelestialConversionBoostHandler.buyUpgrade(player, mode)
+	if success then
+		celestialShardUpdatedEvent:FireClient(player, newState.celestialShard)
+	end
+	return success, err, newState
+end
+
+getCelestialAstralBoostStateFunction.OnServerInvoke = function(player)
+	return CelestialAstralBoostHandler.getUpgradeState(player)
+end
+
+buyCelestialAstralBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = CelestialAstralBoostHandler.buyUpgrade(player, mode)
+	if success then
+		celestialShardUpdatedEvent:FireClient(player, newState.celestialShard)
+	end
+	return success, err, newState
+end
+
+getCelestialManaBoostStateFunction.OnServerInvoke = function(player)
+	return CelestialManaBoostHandler.getUpgradeState(player)
+end
+
+buyCelestialManaBoostUpgradeFunction.OnServerInvoke = function(player, mode)
+	if mode ~= nil and mode ~= "one" and mode ~= "max" then
+		return false, "Invalid request"
+	end
+	local success, err, newState = CelestialManaBoostHandler.buyUpgrade(player, mode)
+	if success then
+		celestialShardUpdatedEvent:FireClient(player, newState.celestialShard)
+	end
+	return success, err, newState
+end
+
 getRuinRuneStateFunction.OnServerInvoke = function(player)
 	return RuinRuneHandler.getState(player)
 end
@@ -634,6 +712,9 @@ Players.PlayerAdded:Connect(function(player)
 		end
 		if (data.astralShard or 0) > 0 then
 			astralShardUpdatedEvent:FireClient(player, data.astralShard)
+		end
+		if (data.celestialShard or 0) > 0 then
+			celestialShardUpdatedEvent:FireClient(player, data.celestialShard)
 		end
 	end
 end)

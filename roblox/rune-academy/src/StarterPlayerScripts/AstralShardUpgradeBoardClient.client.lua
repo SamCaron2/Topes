@@ -28,6 +28,7 @@ local getAstralShardLeyBoostStateFunction = remotes:WaitForChild("GetAstralShard
 local buyAstralShardLeyBoostUpgradeFunction = remotes:WaitForChild("BuyAstralShardLeyBoostUpgrade")
 local getAstralShardConversionBoostStateFunction = remotes:WaitForChild("GetAstralShardConversionBoostState")
 local buyAstralShardConversionBoostUpgradeFunction = remotes:WaitForChild("BuyAstralShardConversionBoostUpgrade")
+local playerAstralShardConvertedEvent = remotes:WaitForChild("PlayerAstralShardConverted")
 
 local board = Workspace:WaitForChild("AstralShardUpgradeBoard")
 
@@ -255,6 +256,16 @@ local function createUpgradeColumn(background: Frame, slotIndex: number, name: s
 		if success then
 			render(newState)
 		end
+	end)
+
+	-- Converting Astral Shard into Celestial Shard resets both of this
+	-- board's own levels back to 1 (CelestialShardConversionHandler.convert
+	-- does the reset) - re-fetch so this column doesn't keep showing a
+	-- stale pre-reset level/cost, same "broadcast a re-fetch signal"
+	-- pattern LeyShardUpgradeBoardClient's own columns use for
+	-- PlayerLeyShardConverted.
+	playerAstralShardConvertedEvent.OnClientEvent:Connect(function()
+		render(getStateRemote:InvokeServer())
 	end)
 end
 

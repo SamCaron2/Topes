@@ -193,10 +193,18 @@ local function defaultData()
 		-- per this game's own long-planned naming (see LeyShardHandler.lua's
 		-- own header comment: "Astral Shard" and "Celestial Shard" are the
 		-- planned names for cards 2 and 3"). Unlocked by leyShardFloorTile4
-		-- above; per direct request ("For the time being it wont have any
-		-- upgrades") it has no collection mechanic or upgrades yet, just a
-		-- placeholder currency/board - CelestialShardHandler.lua.
+		-- above. Its only source is CelestialShardConversionHandler
+		-- (5,000,000 Astral Shard = 1 Celestial Shard) - per direct request
+		-- ("It should cost 5 million astra shroud for 1 celestrial"), which
+		-- ALSO completely resets astralShardLeyBoostLevel/
+		-- astralConversionBoostLevel above back to 1 - per direct request
+		-- ("hitting this converter completely resets your astral shards"),
+		-- same prestige-reset shape as AstralShardConversionHandler.convert
+		-- one tier down.
 		celestialShard = 0,
+		celestialConversionBoostLevel = 1, -- Card 3's "More Celestial Shard" (CelestialConversionBoostHandler), 1-50, boosts how many Celestial Shard each conversion grants - per direct request ("More celestrial shard. 50 upgrades starting at costing 1 celestrial... the times is big")
+		celestialAstralBoostLevel = 1, -- Card 3's "More Astral Shard" (CelestialAstralBoostHandler), 1-25, boosts the Ley->Astral conversion rate - per direct request ("0-25 for more astral cards again start this at 3 and make the upgrades big")
+		celestialManaBoostLevel = 1, -- Card 3's "More Mana" (CelestialManaBoostHandler), 1-50, a flat Mana Per Pickup multiplier paid in Celestial Shard - per direct request ("0-50 on more mana. Make this start at 1 but take a bit to reach 50")
 
 		-- Rune Altar upgrades (RuinRuneHandler): 5 tiers bought via
 		-- RuneAltarBoard, paid in Mana - only reachable once the Fantasy

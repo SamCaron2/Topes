@@ -589,7 +589,10 @@ from that earlier design.
   mode that buys as many levels in a row as currently affordable.
   Also folds in `GamePassBoostHandler.getManaMultiplier` - any owned
   Robux gamepass perk that boosts Mana (VIPPass, DoubleManaPass, the
-  Starter Pack).
+  Starter Pack) - `LeyShardManaBoostHandler.getMultiplier` (Card 1's own
+  "More Mana" column, paid in Ley Shard), and now
+  `CelestialManaBoostHandler.getMultiplier` (Card 3's own "More Mana"
+  column, paid in Celestial Shard, 1x-50x).
 - `ManaSpawnHandler.lua` — the "Mana Spawn Speed" upgrade (level 1-10,
   same `UpgradeCost` curve as every other Mana upgrade). Two effects per
   level, both linear: respawn delay 2.0s → 0.2s, and live node count 3 →
@@ -894,7 +897,11 @@ from that earlier design.
   shards and buy more ley shards it goes by quicker the second time" -
   `AstralShardLeyBoostHandler`/
   `AstralShardConversionBoostHandler` are the two permanent boosts that
-  make that true.
+  make that true. Now also folds in `CelestialAstralBoostHandler`'s own
+  "More Astral Shard" multiplier (Card 3's second upgrade, paid in
+  Celestial Shard) into the same `astralPerUnit` chain, in all three of
+  `getState`/`convert`/`autoConvertTick` - one prestige layer deeper than
+  `AstralShardConversionBoostHandler`'s own leveled multiplier.
   - `AstralShardLeyBoostHandler.lua` — Card 2's first real upgrade, "More
     Ley Shard": a flat Ley Shard yield multiplier, read by
     `LeyShardHandler`. NOT one of the 3 levels wiped by converting - the
@@ -953,21 +960,70 @@ from that earlier design.
   game's own long-planned name for Card 3, per `LeyShardHandler.lua`'s
   own header comment from when Card 1 was first built ("'Astral Shard'
   and 'Celestial Shard' are the planned names for cards 2 and 3 later").
-  Per direct request ("For the time being it wont have any upgrades")
-  this is deliberately just a placeholder shell - `getState` returns only
-  `unlocked`/`celestialShard` (a new `PlayerData.celestialShard` field,
-  stuck at 0 - no collection mechanic exists yet either), no upgrade
-  columns at all, same "build the card, wire the mechanic later"
-  precedent Card 2's own board followed when it first went up. Its board
-  (`CelestialShardBoardClient.client.lua`) just shows the (currently
-  always-0) currency readout under a gold-themed "Celestial Shard" title
-  over a "Coming Soon" message - per direct request, "Maybe make this
-  shard color gold." `WorldBuilder` places the physical board at the
-  exact given opposite corners ("left side of card starts at x155 z154
-  and right side is around x154 z140"), which run along Z rather than X
+  `getState` returns only `unlocked`/`celestialShard` - the real
+  conversion and upgrade logic each live in their own sibling handler
+  files below, same "one small module per column" convention as every
+  other board. `WorldBuilder` places the physical board at the exact
+  given opposite corners ("left side of card starts at x155 z154 and
+  right side is around x154 z140"), which run along Z rather than X
   unlike the main 3-board row - rotated 90° around Y, same technique
   `RuinRuneHandler`'s own board already uses to run along a different
   axis than its neighbors.
+- `CelestialShardConversionHandler.lua` — the actual Astral→Celestial
+  conversion, unlocked at the same time as the card above. Per direct
+  request ("Okay time to do celestial shard. It should cost 5 million
+  astra shroud for 1 celestrial"), 5,000,000 Astral Shard = 1 Celestial
+  Shard base rate, boosted by `CelestialConversionBoostHandler`'s own
+  "More Celestial Shard" multiplier - exact same shape as
+  `AstralShardConversionHandler.convert` one tier down, just at a
+  5,000,000:1 rate instead of 1,000:1. `convert` spends AS MANY
+  5,000,000-Astral-Shard units as currently affordable in one press (same
+  "spend it all in one press" call as the Ley→Astral conversion), zeroes
+  the Astral Shard balance outright (no leftover remainder, same
+  reasoning as the Ley→Astral conversion's own fix), and completely
+  resets the Astral Shard board's own 2 real upgrade levels
+  (`astralShardLeyBoostLevel`/`astralConversionBoostLevel`) back to 1 -
+  per direct request, "hitting this converter completely resets your
+  astral shards." A new physical converter card
+  (`CelestialShardConversionBoard`/`CelestialShardConversionBoardClient
+  .client.lua`, mirroring `LeyShardConversionBoardClient.client.lua`'s
+  exact live-rate/readouts/warning/Convert-button shape, gold-themed)
+  sits right next to the Celestial Shard board - per direct request
+  ("make a converter card to the left. of the celestrial upgarade card").
+  Placed by `WorldBuilder` at the board's own "left" edge (the high-Z
+  side, matching the user's own "left side... z154" framing from the
+  original placement request), continuing the row with the same 4-stud
+  gap the original 3-board row uses (my own call for the exact
+  placement, not specified).
+- `CelestialConversionBoostHandler.lua` — Card 3's first real upgrade,
+  "More Celestial Shard": a flat multiplier on how many Celestial Shard
+  each conversion grants, same role `AstralShardConversionBoostHandler`
+  plays one tier down. Per direct request ("More celestrial shard. 50
+  upgrades starting at costing 1 celestrial... the times is big on this
+  celestial card"): 50 levels, cost starts at exactly 1 Celestial Shard
+  (1.15x/level growth, same curve `AstralShardConversionBoostHandler`
+  uses), and a big +5x/level ramp (level 50 = 246x) - bigger than either
+  of Card 2's own 50-level columns, matching "the times is big."
+- `CelestialAstralBoostHandler.lua` — Card 3's second real upgrade,
+  "More Astral Shard": folds into `AstralShardConversionHandler`'s own
+  Ley→Astral conversion rate, paid in Celestial Shard - Astral Shard has
+  no yield of its own to boost, so this boosts its conversion RATE
+  instead, one prestige layer deeper than
+  `AstralShardConversionBoostHandler`'s own leveled multiplier. Per
+  direct request ("Then another upgrade 0-25 for more astral cards again
+  start this at 3 and make the upgrades big"): 25 levels, cost starts at
+  exactly 3 Celestial Shard (1.2x/level growth), big +4x/level ramp
+  (level 25 = 97x).
+- `CelestialManaBoostHandler.lua` — Card 3's third real upgrade, "More
+  Mana": a flat Mana Per Pickup multiplier, same role
+  `LeyShardManaBoostHandler`/`ManaBoostHandler` play on their own cards,
+  folded into `ManaHandler`'s own multiplier chain. Per direct request
+  ("FInally 0-50 on more mana. Make this start at 1 but take a bit to
+  reach 50"): 50 levels, cost starts at exactly 1 Celestial Shard on a
+  quadratic curve (`currentLevel^2`, reaching 2,401 Celestial Shard for
+  the last level - a real, meaningfully steep grind without the "big"
+  per-level multiplier the card's other two columns explicitly asked
+  for), so a gentler +1x/level ramp (level 50 = 50x).
 - `LeyShardFloorTileHandler.lua` — EtherIsland's own walk-over floor
   tiles, paid in Ley Shard - the exact same one-time-purchase mechanic
   as the SecondIsland Upgrade Tree (`UpgradeTreeHandler`), just its own
@@ -1595,7 +1651,11 @@ from that earlier design.
   separate icon-builder function per column. The 3rd slot stays the
   original empty "Coming Soon" placeholder (faded diamond, "???", no
   buttons) until a 3rd upgrade is actually asked for. Same gating/rebuild
-  pattern as `LeyShardUpgradeBoardClient`.
+  pattern as `LeyShardUpgradeBoardClient`. Now also listens for
+  `PlayerAstralShardConverted` (fired by a successful Astral→Celestial
+  conversion) and re-fetches both columns, since that conversion resets
+  their levels back to 1 - same "broadcast a re-fetch signal" pattern
+  `PlayerLeyShardConverted` already uses one tier down.
 - `LeyShardConversionBoardClient.client.lua` — Card 3, the only way to
   actually get Astral Shard since Card 2 has no collection mechanic of its
   own - per direct request ("a card next to that where you can convert
@@ -1616,18 +1676,30 @@ from that earlier design.
 - `CelestialShardBoardClient.client.lua` — Card 3's board, unlocked by
   EtherIsland floor Tile 4 (see `CelestialShardHandler.lua` and
   `LeyShardFloorTileHandler.lua` above). Same blocking-loop-until-unlocked
-  pattern as every other gated board here (polls `GetCelestialShardState`
-  every second rather than waiting on a push event, since there's no
-  dedicated "just unlocked" broadcast for this one - `LeyShardFloorTileBought`
-  already covers re-fetching the readout after unlock cheaply enough).
-  Gold-themed (`GOLD = Color3.fromRGB(255, 215, 0)`, the same value
-  `GameConfig.Titles`' own gold entries use) per direct request ("Maybe
-  make this shard color gold") - a currency readout (always 0 for now)
-  under a "Celestial Shard" title banner, then a "Coming Soon" message
-  filling the rest of the board, per direct request ("For the time being
-  it wont have any upgrades"). Rotated 90° in `WorldBuilder` like
-  `RuinRuneBoard`'s own board, so its `SurfaceGui.Face` is `Right` too -
-  the same guess that board's own client makes for its readable face.
+  pattern as every other gated board here. Gold-themed
+  (`GOLD = Color3.fromRGB(255, 215, 0)`, the same value `GameConfig
+  .Titles`' own gold entries use) per direct request ("Maybe make this
+  shard color gold") - a currency readout under a "Celestial Shard" title
+  banner, then 3 real upgrade columns (same shared `createUpgradeColumn`
+  pattern as `AstralShardUpgradeBoardClient.client.lua`): "More Celestial
+  Shard" (`CelestialConversionBoostHandler`), "More Astral Shard"
+  (`CelestialAstralBoostHandler`), and "More Mana"
+  (`CelestialManaBoostHandler`) - per direct request ("Okay time to do
+  celestial shard... There are 3 upgrades. More celestrial shard... Then
+  another upgrade 0-25 for more astral cards... FInally 0-50 on more
+  mana"). Rotated 90° in `WorldBuilder` like `RuinRuneBoard`'s own board,
+  so its `SurfaceGui.Face` is `Right` too - the same guess that board's
+  own client makes for its readable face.
+- `CelestialShardConversionBoardClient.client.lua` — the new converter
+  card next to Card 3's board (see `CelestialShardConversionHandler.lua`
+  above), mirroring `LeyShardConversionBoardClient.client.lua`'s exact
+  shape: live rate (5,000,000 Astral Shard = N Celestial Shard), live
+  Astral Shard/Celestial Shard readouts, a red warning line ("Resets your
+  Astral Shard upgrades!" - per direct request, "hitting this converter
+  completely resets your astral shards"), and one gold-themed "Convert"
+  button spending ALL currently-affordable Astral Shard in one press.
+  Same blocking-loop-until-unlocked and 90°-rotated `Right`-face
+  placement as the board right next to it.
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.
