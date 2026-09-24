@@ -1702,13 +1702,18 @@ end
 -- them cost a decent amount so the players cant just unlock those tiles
 -- right when they get to this island") each require the tile before it
 -- bought first, same "sign only appears once reachable" treatment as the
--- SecondIsland tree. Placement went through 2 wrong tries extending along
--- Z (first +Z, which ran Tile 3 into EtherIsland's own coastline water;
--- then -Z, per a follow-up screenshot report, which was "wrong again")
--- before landing on this: extending along +X instead, from Tile 1's
--- given coordinates, same direction/spacing style as the SecondIsland
--- Upgrade Tree's own tile chain below (UPGRADE_TREE_TILE_POSITIONS) -
--- per direct request to match "that good format."
+-- SecondIsland tree. Placement went through a few wrong tries: first +Z
+-- (ran Tile 3 into EtherIsland's own coastline water), then -Z (per a
+-- follow-up screenshot report, "wrong again"), then a straight +X line
+-- (per direct request to match "that good format" of the SecondIsland
+-- Upgrade Tree's own tile chain) - still wrong, per a follow-up
+-- screenshot ("I want tile 2 and 3 to form a triangle with this red one.
+-- Like the ones before. HAVE IT GO TILE 1 and ABOVE 2 and 3 next to
+-- eachother"). Landed on an actual triangle now: Tile 1 at the point,
+-- Tiles 2-3 side by side one row forward (+X) and offset ±half the
+-- spacing in Z - the exact same diamond-chain shape
+-- UPGRADE_TREE_TILE_POSITIONS' own Tiles 2-3 use relative to its Tile 1,
+-- not just the same spacing constant.
 -- LeyShardFloorTileHandler.TILES is a list so a 4th tile later is just
 -- one more entry plus one more position here. In its own `do...end`
 -- block, same register-budget reasoning as every other late-file section
@@ -1719,8 +1724,8 @@ do
 	local LEY_SHARD_FLOOR_TILE_SPACING = 12
 	local LEY_SHARD_FLOOR_TILE_POSITIONS = {
 		[1] = { x = 107, z = 134 },
-		[2] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING, z = 134 },
-		[3] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING * 2, z = 134 },
+		[2] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING, z = 134 - LEY_SHARD_FLOOR_TILE_SPACING / 2 },
+		[3] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING, z = 134 + LEY_SHARD_FLOOR_TILE_SPACING / 2 },
 	}
 	local LEY_SHARD_FLOOR_TILE_RADIUS = math.max(LEY_SHARD_FLOOR_TILE_WIDTH, LEY_SHARD_FLOOR_TILE_DEPTH) / 2
 	local LEY_SHARD_FLOOR_TILE_CHECK_INTERVAL = 0.5

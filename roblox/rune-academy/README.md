@@ -975,17 +975,23 @@ from that earlier design.
   each only see the tiles that actually affect them, keeping Astral
   Shard's conversion-rate boost from also silently doubling Ley Shard
   yield or vice versa. `WorldBuilder` places Tile 1 at the exact given
-  coordinates (X 107, Z 134). Tiles 2 and 3's placement took 2 wrong
+  coordinates (X 107, Z 134). Tiles 2 and 3's placement took several wrong
   tries: first +12/+24 studs in +Z (my own placement choice, exact
   coordinates weren't given for the new two), which ran Tile 3 straight
   into EtherIsland's own coastline water; then -12/-24 in Z per a direct
   follow-up report with a screenshot ("I want those two tiles you just
   made to be moved to above tile one like in this picture"), which was
-  still "wrong again." They're now placed +12/+24 studs in **X** instead
-  - per direct follow-up request to match "that good format," i.e. the
-  same direction/spacing style the SecondIsland Upgrade Tree's own tile
-  chain already uses (`UPGRADE_TREE_TILE_POSITIONS`, which extends along
-  +X from its own Tile 1) - same proximity-check-and-buy loop shape as the
+  still "wrong again"; then a straight +12/+24-stud **X** line, per direct
+  follow-up request to match "that good format" (the same direction/
+  spacing style `UPGRADE_TREE_TILE_POSITIONS` uses for its own tiles) -
+  still not right, per a follow-up screenshot ("I want tile 2 and 3 to
+  form a triangle with this red one. Like the ones before. HAVE IT GO
+  TILE 1 and ABOVE 2 and 3 next to eachother"). They now form an actual
+  triangle: Tile 1 at the point, Tiles 2 and 3 both +12 studs in X and
+  offset ∓6 studs in Z from there - the same diamond-chain shape
+  `UPGRADE_TREE_TILE_POSITIONS`' own Tiles 2-3 use relative to ITS Tile 1
+  (not just the same spacing constant, the same relative offset shape) -
+  same proximity-check-and-buy loop shape as the
   Upgrade Tree's own tiles, same nearby-decor clearing (now checked
   against all 3 positions), and the same 180° `CFrame.Angles` flip the
   Upgrade Tree's own tiles use (missed on Tile 1's first pass, per report
