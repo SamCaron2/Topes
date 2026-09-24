@@ -820,9 +820,9 @@ design notes.
   `leyShardYieldLevel`, that one is NOT wiped when Ley Shard gets converted
   into Astral Shard (see `AstralShardConversionHandler` below), so it's
   the one thing that survives every reset and speeds up every later grind.
-  Also folds in `LeyShardFloorTileHandler.getMultiplier` - EtherIsland's
-  own walk-over floor tile(s), also a permanent one-time purchase (see
-  below).
+  Also folds in `LeyShardFloorTileHandler.getLeyShardMultiplier` -
+  EtherIsland's own walk-over floor tiles, also a permanent one-time
+  purchase (see below).
 - `AstralShardConversionHandler.lua` — Astral Shard, Card 2 of the 3-card
   progression, sitting physically next to the Ley Shard board on
   EtherIsland - per direct request ("to the right of ley shards we want
@@ -887,29 +887,54 @@ design notes.
     pre-reset levels/costs - same "broadcast a re-fetch signal" pattern as
     `playerRebirthedEvent`/`playerWizardTieredEvent`.
 - `LeyShardFloorTileHandler.lua` — EtherIsland's own walk-over floor
-  tile(s), paid in Ley Shard - the exact same one-time-purchase mechanic
+  tiles, paid in Ley Shard - the exact same one-time-purchase mechanic
   as the SecondIsland Upgrade Tree (`UpgradeTreeHandler`), just its own
   Ley-Shard-funded, EtherIsland-gated set instead of Arcane-Dust-funded/
   Tier-3-gated - per direct request ("x107 z134 start a floor tile
   upgrade. Lets do for 1k ley shards times your ley by 2"). Tile 1 costs
-  1,000 Ley Shard and permanently doubles Ley Shard yield
-  (`getMultiplier`, read by `LeyShardHandler`). A one-time boolean flag,
-  not a level, so it's NOT reset by `AstralShardConversionHandler.convert`
-  - same as every other one-time-flag purchase in this game. `TILES` is a
-  list (same shape as `UpgradeTreeHandler.TILES`, `requires` included even
-  though nothing needs it yet) so a 2nd/3rd tile later is just one more
-  entry, no code changes. `WorldBuilder` places Tile 1 at the exact given
-  coordinates (X 107, Z 134) with the exact same proximity-check-and-buy
-  loop shape as the Upgrade Tree's own tiles, and clears nearby decor on a
-  radius too - including the same 180° `CFrame.Angles` flip the Upgrade
-  Tree's own tiles use, missed on the first pass (per report, "Flip the
-  tree card 180 facing wrong way") - without it, the sign's text (painted
-  on the tile's Top face) reads upside-down/backwards from the direction
-  a player naturally approaches it. `LeyShardFloorTileClient.client.lua`
-  is `UpgradeTreeClient`'s own sign-rendering logic (same red/can't-
-  afford, yellow/affordable, green/bought rule), just reading this
-  handler's state and gated on EtherIsland being unlocked instead of
-  Wizard Tier 3+.
+  1,000 Ley Shard and permanently doubles Ley Shard yield. A one-time
+  boolean flag per tile, not a level, so bought tiles are NOT reset by
+  `AstralShardConversionHandler.convert` - same as every other
+  one-time-flag purchase in this game.
+  **Extended to a 3-tile chain** per a direct follow-up request ("Now two
+  more floor tiles above that is one for times 2 ley shrouds and 2x
+  astra shrouds. Make them cost a decent amount so the players cant just
+  unlock those tiles right when they get to this island" -
+  "shrouds"/"shrods" read as "Shard"): Tile 2 costs 25,000 Ley Shard and
+  also doubles Ley Shard yield (stacking multiplicatively with Tile 1, so
+  both bought = 4x); Tile 3 costs 100,000 Ley Shard and doubles the
+  Astral Shard conversion rate instead. Both new costs are my own call
+  for "a decent amount," not specified - steep enough that a
+  fresh-to-EtherIsland player can't just walk up and buy them. Each tile
+  `requires` the one before it (Tile 2 needs Tile 1 bought, Tile 3 needs
+  Tile 2), same `requires`-array gating `UpgradeTreeHandler.TILES` already
+  used - a tile only becomes reachable, and only gets a sign built for it
+  client-side, once its prerequisite is bought.
+  Every tile also carries a `kind` (`"leyShard"` for Tiles 1-2,
+  `"astralConversion"` for Tile 3, same convention as
+  `UpgradeTreeHandler.TILES`) and a shared `foldMultiplier(player, kind)`
+  local helper folds together only the tiles matching one kind - so
+  `getLeyShardMultiplier` (read by `LeyShardHandler`, renamed from the
+  original single-tile `getMultiplier`) and the new
+  `getAstralConversionMultiplier` (read by `AstralShardConversionHandler`)
+  each only see the tiles that actually affect them, keeping Astral
+  Shard's conversion-rate boost from also silently doubling Ley Shard
+  yield or vice versa. `WorldBuilder` places Tile 1 at the exact given
+  coordinates (X 107, Z 134), with Tiles 2 and 3 continuing +12 studs in
+  Z from there (my own placement choice, exact coordinates weren't given
+  for the new two) - same proximity-check-and-buy loop shape as the
+  Upgrade Tree's own tiles, same nearby-decor clearing (now checked
+  against all 3 positions), and the same 180° `CFrame.Angles` flip the
+  Upgrade Tree's own tiles use (missed on Tile 1's first pass, per report
+  "Flip the tree card 180 facing wrong way" - without it, the sign's text
+  painted on the tile's Top face reads upside-down/backwards from the
+  direction a player naturally approaches it) applied to all 3 tiles from
+  the start this time. `LeyShardFloorTileClient.client.lua` is
+  `UpgradeTreeClient`'s own sign-rendering logic (same red/can't-afford,
+  yellow/affordable, green/bought rule), just reading this handler's
+  state and gated on EtherIsland being unlocked instead of Wizard Tier
+  3+, now looping over all 3 tiles and only building a sign for one once
+  it's reachable.
 - `WalkSpeedHandler.lua` — the "Walking Speed" upgrade (level 1-10,
   linear 1x → 1.5x `Humanoid.WalkSpeed` - halved from the original 3x
   max, which felt too strong, applied on every spawn and

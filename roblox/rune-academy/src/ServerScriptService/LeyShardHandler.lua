@@ -62,7 +62,7 @@ function LeyShardHandler.collect(player: Player): number?
 		amountForLevel(level)
 			* RuneCollectionHandler.getMultiplier(player)
 			* AstralShardLeyBoostHandler.getMultiplier(player)
-			* LeyShardFloorTileHandler.getMultiplier(player)
+			* LeyShardFloorTileHandler.getLeyShardMultiplier(player)
 	)
 	data.leyShard = (data.leyShard or 0) + amount
 	return data.leyShard

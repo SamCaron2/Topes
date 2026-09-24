@@ -1692,19 +1692,29 @@ do
 end
 
 -- ===========================================================================
--- Ley Shard floor tile(s) - EtherIsland's own walk-over upgrade tile(s),
--- paid in Ley Shard, same one-time-purchase mechanic as the SecondIsland
+-- Ley Shard floor tiles - EtherIsland's own walk-over upgrade tiles, paid
+-- in Ley Shard, same one-time-purchase mechanic as the SecondIsland
 -- Upgrade Tree's own tiles - per direct request ("x107 z134 start a floor
--- tile upgrade. Lets do for 1k ley shards times your ley by 2"). Only
--- Tile 1 exists for now; LeyShardFloorTileHandler.TILES is a list so a
--- 2nd/3rd tile later is just one more entry plus one more position here.
--- In its own `do...end` block, same register-budget reasoning as every
--- other late-file section here.
+-- tile upgrade. Lets do for 1k ley shards times your ley by 2" for Tile
+-- 1). Tiles 2-3 continue further along +Z from Tile 1 (my own call for
+-- "above that," not given exact coordinates) - per direct follow-up
+-- request ("Now two more floor tiles above that is one for times 2 ley
+-- shrouds and 2x astra shrouds. Make them cost a decent amount so the
+-- players cant just unlock those tiles right when they get to this
+-- island"), each requiring the tile before it bought first, same
+-- "sign only appears once reachable" treatment as the SecondIsland tree.
+-- LeyShardFloorTileHandler.TILES is a list so a 4th tile later is just
+-- one more entry plus one more position here. In its own `do...end`
+-- block, same register-budget reasoning as every other late-file section
+-- here.
 do
 	local LEY_SHARD_FLOOR_TILE_WIDTH = 9
 	local LEY_SHARD_FLOOR_TILE_DEPTH = 6
+	local LEY_SHARD_FLOOR_TILE_SPACING = 12
 	local LEY_SHARD_FLOOR_TILE_POSITIONS = {
 		[1] = { x = 107, z = 134 },
+		[2] = { x = 107, z = 134 + LEY_SHARD_FLOOR_TILE_SPACING },
+		[3] = { x = 107, z = 134 + LEY_SHARD_FLOOR_TILE_SPACING * 2 },
 	}
 	local LEY_SHARD_FLOOR_TILE_RADIUS = math.max(LEY_SHARD_FLOOR_TILE_WIDTH, LEY_SHARD_FLOOR_TILE_DEPTH) / 2
 	local LEY_SHARD_FLOOR_TILE_CHECK_INTERVAL = 0.5
@@ -1736,17 +1746,19 @@ do
 		tilePart.Parent = leyShardFloorTileFolder
 	end
 
-	-- Clearing decor near the tile - same "remove bushes if needed"
+	-- Clearing decor near all 3 tiles - same "remove bushes if needed"
 	-- precedent as the board row above.
 	local etherIslandDecorFolder = Workspace:FindFirstChild("EtherIslandDecor")
 	if etherIslandDecorFolder then
-		local tile1Position = LEY_SHARD_FLOOR_TILE_POSITIONS[1]
 		for _, decorPart in etherIslandDecorFolder:GetChildren() do
 			if decorPart:IsA("BasePart") then
-				local dx = decorPart.Position.X - tile1Position.x
-				local dz = decorPart.Position.Z - tile1Position.z
-				if (dx * dx + dz * dz) ^ 0.5 <= 12 then
-					decorPart:Destroy()
+				for _, position in LEY_SHARD_FLOOR_TILE_POSITIONS do
+					local dx = decorPart.Position.X - position.x
+					local dz = decorPart.Position.Z - position.z
+					if (dx * dx + dz * dz) ^ 0.5 <= 12 then
+						decorPart:Destroy()
+						break
+					end
 				end
 			end
 		end

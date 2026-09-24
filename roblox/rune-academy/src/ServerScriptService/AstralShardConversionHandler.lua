@@ -22,9 +22,15 @@
 -- zeroed outright too, not just docked the spent units, per a direct
 -- follow-up report ("I noticed I have some left over") - a "total reset"
 -- shouldn't leave a leftover sub-1,000 remainder sitting around.
+--
+-- Also folds in LeyShardFloorTileHandler's own "Astral Shard x2" floor
+-- tile (Tile 3 on EtherIsland - a one-time purchase, not a level, so it's
+-- permanent and separate from AstralShardConversionBoostHandler's own
+-- leveled "More Astral Shards" upgrade).
 
 local PlayerData = require(script.Parent.PlayerData)
 local AstralShardConversionBoostHandler = require(script.Parent.AstralShardConversionBoostHandler)
+local LeyShardFloorTileHandler = require(script.Parent.LeyShardFloorTileHandler)
 
 local LEY_SHARD_COST_PER_ASTRAL_SHARD = 1000
 
@@ -39,6 +45,7 @@ function AstralShardConversionHandler.getState(player: Player)
 	local leyShard = data.leyShard or 0
 	local units = math.floor(leyShard / LEY_SHARD_COST_PER_ASTRAL_SHARD)
 	local astralPerUnit = AstralShardConversionBoostHandler.getMultiplier(player)
+		* LeyShardFloorTileHandler.getAstralConversionMultiplier(player)
 	return {
 		leyShard = leyShard,
 		astralShard = data.astralShard or 0,
@@ -65,7 +72,9 @@ function AstralShardConversionHandler.convert(player: Player)
 		return false, "Not enough Ley Shard"
 	end
 
-	local astralGained = math.floor(units * AstralShardConversionBoostHandler.getMultiplier(player))
+	local astralGained = math.floor(
+		units * AstralShardConversionBoostHandler.getMultiplier(player) * LeyShardFloorTileHandler.getAstralConversionMultiplier(player)
+	)
 
 	data.leyShard = 0
 	data.astralShard = (data.astralShard or 0) + astralGained

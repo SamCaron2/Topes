@@ -1,12 +1,15 @@
--- Renders the info sign for EtherIsland's own Ley Shard floor tile(s) -
--- exact same styling/behavior as UpgradeTreeClient (colored background,
--- title, cost, painted flat onto the tile's own Top face with a
--- SurfaceGui, not a BillboardGui), just reading LeyShardFloorTileHandler's
--- state (gated on EtherIsland being unlocked, not Wizard Tier 3+) and
--- costed/paid in Ley Shard instead of Arcane Dust - per direct request
--- ("x107 z134 start a floor tile upgrade. Lets do for 1k ley shards times
--- your ley by 2"). Color follows the same rule: red (can't afford yet),
--- yellow (affordable - walk over it to buy), green (bought).
+-- Renders the info sign for EtherIsland's own Ley Shard floor tiles (3 of
+-- them now, each requiring the one before it bought first, same as the
+-- SecondIsland tree - a tile's sign only exists once reachable) - exact
+-- same styling/behavior as UpgradeTreeClient (colored background, title,
+-- cost, painted flat onto the tile's own Top face with a SurfaceGui, not
+-- a BillboardGui), just reading LeyShardFloorTileHandler's state (gated
+-- on EtherIsland being unlocked, not Wizard Tier 3+) and costed/paid in
+-- Ley Shard instead of Arcane Dust - per direct request ("x107 z134 start
+-- a floor tile upgrade. Lets do for 1k ley shards times your ley by 2,"
+-- then "Now two more floor tiles above that is one for times 2 ley
+-- shrouds and 2x astra shrouds"). Color follows the same rule: red (can't
+-- afford yet), yellow (affordable - walk over it to buy), green (bought).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,7 +30,7 @@ local COLOR_LOCKED = Color3.fromRGB(200, 55, 55) -- red - not enough Ley Shard y
 local COLOR_READY = Color3.fromRGB(230, 200, 40) -- yellow - affordable, walk over it
 local COLOR_BOUGHT = Color3.fromRGB(70, 190, 60) -- green - bought
 local TEXT_STROKE_TRANSPARENCY = 0.3
-local TILE_COUNT = 1
+local TILE_COUNT = 3
 
 local currentLeyShard = 0
 local signs = {} -- [tileId] = { background = Frame, costText = TextLabel, cost = number, bought = boolean }
