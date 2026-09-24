@@ -30,6 +30,9 @@ local playerRebirthedEvent = remotes:WaitForChild("PlayerRebirthed")
 local board = Workspace:WaitForChild("Kiosks"):WaitForChild("ManaUpgradeBoard")
 
 local MANA_ICON_ID = "rbxassetid://119417928367783"
+local MANA_SPAWN_ICON_ID = "rbxassetid://99548025712195" -- stopwatch
+local WALK_SPEED_ICON_ID = "rbxassetid://78323960475077" -- footprints
+local COLLECTION_RANGE_ICON_ID = "rbxassetid://137939213623347" -- target
 
 -- Overlaps the readout pill's left edge - no circle backdrop for the Mana
 -- icon specifically (its sparkles poke outside a round silhouette, so a
@@ -121,147 +124,43 @@ currencyReadoutText.Parent = currencyReadout
 
 addReadoutIcon(currencyReadout, MANA_ICON_ID)
 
--- Small helper reused by the hand-built (no image asset) column icons
--- below - a perfect circle Frame, optionally hollow (a ring: transparent
--- fill, UIStroke border only).
-local function newCircle(parent: Instance, size: UDim2, position: UDim2, color: Color3, hollow: boolean, strokeThickness: number?)
-	local circle = Instance.new("Frame")
-	circle.AnchorPoint = Vector2.new(0.5, 0.5)
-	circle.Size = size
-	circle.Position = position
-	circle.BackgroundTransparency = hollow and 1 or 0
-	circle.BackgroundColor3 = color
-	circle.BorderSizePixel = 0
-	circle.Parent = parent
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1, 0)
-	corner.Parent = circle
-
-	if hollow then
-		local stroke = Instance.new("UIStroke")
-		stroke.Thickness = strokeThickness or 2
-		stroke.Color = color
-		stroke.Parent = circle
-	end
-
-	return circle
-end
-
--- Per direct request ("lets do icons instead of these circles"). Built
--- from plain UI shapes for 3 of the 4 (no uploaded image, and no Unicode
+-- Per an original direct request ("lets do icons instead of these
+-- circles"), Mana Spawn Speed/Walking Speed/Collection Range were
+-- hand-built from plain UI shapes (no uploaded image, and no Unicode
 -- glyph either - Roblox's default font doesn't cover most symbol/emoji
 -- codepoints, confirmed the hard way earlier this session with "➜"/"⬅"
--- rendering as empty boxes), so these always render identically with no
--- font-coverage risk at all. "More Mana" reuses the real Mana icon
--- instead, per direct request ("for the more mana lets do our mana
--- icon").
+-- rendering as empty boxes). Per a direct follow-up request once real
+-- icon images were uploaded to Roblox ("On island 1. Use footprints for
+-- walking speed, Stopwatch for mana spawn rate and target for collection
+-- range"), all 3 now use those uploaded images instead, same treatment
+-- as "More Mana" (which already reused the real Mana icon this same way,
+-- per direct request "for the more mana lets do our mana icon").
 
--- No colored circle behind this one - same reasoning as `addReadoutIcon`
--- above (the Mana icon's own sparkles poke outside a round silhouette,
--- so a filled circle backdrop looks bad behind it specifically).
-local function buildManaIcon(iconFrame: Frame)
-	local icon = Instance.new("ImageLabel")
-	icon.Size = UDim2.new(1, 0, 1, 0)
-	icon.BackgroundTransparency = 1
-	icon.Image = MANA_ICON_ID
-	icon.Parent = iconFrame
+-- No colored circle behind any of these - same reasoning as
+-- `addReadoutIcon` above (the Mana icon's own sparkles poke outside a
+-- round silhouette, so a filled circle backdrop looks bad behind it) -
+-- applied to all 4 icons now that they're all real images.
+local function buildImageIcon(imageId: string): (Frame) -> ()
+	return function(iconFrame: Frame)
+		local icon = Instance.new("ImageLabel")
+		icon.Size = UDim2.new(1, 0, 1, 0)
+		icon.BackgroundTransparency = 1
+		icon.Image = imageId
+		icon.Parent = iconFrame
 
-	local iconPadding = Instance.new("UIPadding")
-	iconPadding.PaddingTop = UDim.new(0.12, 0)
-	iconPadding.PaddingBottom = UDim.new(0.12, 0)
-	iconPadding.PaddingLeft = UDim.new(0.12, 0)
-	iconPadding.PaddingRight = UDim.new(0.12, 0)
-	iconPadding.Parent = icon
-end
-
--- A stopwatch: a hollow ring (the face), a small rectangle poking out the
--- top (the crown button), and a thin rotated rectangle from center to
--- edge (the hand) - best represents "how often a new node spawns."
-local function buildSpawnSpeedIcon(iconFrame: Frame)
-	local white = Color3.fromRGB(255, 255, 255)
-
-	newCircle(iconFrame, UDim2.new(0.66, 0, 0.66, 0), UDim2.new(0.5, 0, 0.56, 0), white, true, 3)
-
-	local crown = Instance.new("Frame")
-	crown.AnchorPoint = Vector2.new(0.5, 1)
-	crown.Size = UDim2.new(0.14, 0, 0.12, 0)
-	crown.Position = UDim2.new(0.5, 0, 0.22, 0)
-	crown.BackgroundColor3 = white
-	crown.BorderSizePixel = 0
-	crown.Parent = iconFrame
-
-	local crownCorner = Instance.new("UICorner")
-	crownCorner.CornerRadius = UDim.new(0.4, 0)
-	crownCorner.Parent = crown
-
-	local hand = Instance.new("Frame")
-	hand.AnchorPoint = Vector2.new(0.5, 1)
-	hand.Size = UDim2.new(0.07, 0, 0.24, 0)
-	hand.Position = UDim2.new(0.5, 0, 0.56, 0)
-	hand.Rotation = 35
-	hand.BackgroundColor3 = white
-	hand.BorderSizePixel = 0
-	hand.Parent = iconFrame
-
-	local handCorner = Instance.new("UICorner")
-	handCorner.CornerRadius = UDim.new(1, 0)
-	handCorner.Parent = hand
-end
-
--- A boot silhouette (ankle + sole) with 3 short motion lines trailing
--- behind it, per direct request ("like a pair of boots getting faster").
-local function buildWalkSpeedIcon(iconFrame: Frame)
-	local bootColor = Color3.fromRGB(90, 60, 40)
-
-	local ankle = Instance.new("Frame")
-	ankle.AnchorPoint = Vector2.new(0.5, 1)
-	ankle.Size = UDim2.new(0.26, 0, 0.42, 0)
-	ankle.Position = UDim2.new(0.62, 0, 0.62, 0)
-	ankle.BackgroundColor3 = bootColor
-	ankle.BorderSizePixel = 0
-	ankle.Parent = iconFrame
-
-	local ankleCorner = Instance.new("UICorner")
-	ankleCorner.CornerRadius = UDim.new(0.3, 0)
-	ankleCorner.Parent = ankle
-
-	local sole = Instance.new("Frame")
-	sole.AnchorPoint = Vector2.new(0.5, 1)
-	sole.Size = UDim2.new(0.5, 0, 0.2, 0)
-	sole.Position = UDim2.new(0.68, 0, 0.8, 0)
-	sole.BackgroundColor3 = bootColor
-	sole.BorderSizePixel = 0
-	sole.Parent = iconFrame
-
-	local soleCorner = Instance.new("UICorner")
-	soleCorner.CornerRadius = UDim.new(0.35, 0)
-	soleCorner.Parent = sole
-
-	-- 3 shrinking lines trailing to the left, suggesting forward motion.
-	local lineWidths = { 0.22, 0.16, 0.1 }
-	for i, width in lineWidths do
-		local line = Instance.new("Frame")
-		line.AnchorPoint = Vector2.new(1, 0.5)
-		line.Size = UDim2.new(width, 0, 0.06, 0)
-		line.Position = UDim2.new(0.32, 0, 0.28 + (i - 1) * 0.14, 0)
-		line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		line.BorderSizePixel = 0
-		line.Parent = iconFrame
-
-		local lineCorner = Instance.new("UICorner")
-		lineCorner.CornerRadius = UDim.new(1, 0)
-		lineCorner.Parent = line
+		local iconPadding = Instance.new("UIPadding")
+		iconPadding.PaddingTop = UDim.new(0.12, 0)
+		iconPadding.PaddingBottom = UDim.new(0.12, 0)
+		iconPadding.PaddingLeft = UDim.new(0.12, 0)
+		iconPadding.PaddingRight = UDim.new(0.12, 0)
+		iconPadding.Parent = icon
 	end
 end
 
--- Concentric rings around a solid center dot - a pickup-radius pictogram.
-local function buildCollectionRangeIcon(iconFrame: Frame)
-	local white = Color3.fromRGB(255, 255, 255)
-	newCircle(iconFrame, UDim2.new(0.86, 0, 0.86, 0), UDim2.new(0.5, 0, 0.5, 0), white, true, 2)
-	newCircle(iconFrame, UDim2.new(0.58, 0, 0.58, 0), UDim2.new(0.5, 0, 0.5, 0), white, true, 2)
-	newCircle(iconFrame, UDim2.new(0.22, 0, 0.22, 0), UDim2.new(0.5, 0, 0.5, 0), white, false)
-end
+local buildManaIcon = buildImageIcon(MANA_ICON_ID)
+local buildSpawnSpeedIcon = buildImageIcon(MANA_SPAWN_ICON_ID)
+local buildWalkSpeedIcon = buildImageIcon(WALK_SPEED_ICON_ID)
+local buildCollectionRangeIcon = buildImageIcon(COLLECTION_RANGE_ICON_ID)
 
 manaUpdatedEvent.OnClientEvent:Connect(function(amount)
 	currencyReadoutText.Text = NumberFormat.format(amount)
@@ -498,21 +397,21 @@ local columnRefreshFunctions = {
 		return ("+%s (MAX)"):format(NumberFormat.format(state.amountPerPickup))
 	end),
 
-	createUpgradeColumn(2, "Mana Spawn Speed", Color3.fromRGB(80, 220, 255), buildSpawnSpeedIcon, getManaSpawnStateFunction, buyManaSpawnUpgradeFunction, function(state)
+	createUpgradeColumn(2, "Mana Spawn Speed", nil, buildSpawnSpeedIcon, getManaSpawnStateFunction, buyManaSpawnUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("%.1fs > %.1fs"):format(state.respawnSeconds, state.nextRespawnSeconds)
 		end
 		return ("%.1fs (MAX)"):format(state.respawnSeconds)
 	end),
 
-	createUpgradeColumn(3, "Walking Speed", Color3.fromRGB(255, 200, 60), buildWalkSpeedIcon, getWalkSpeedStateFunction, buyWalkSpeedUpgradeFunction, function(state)
+	createUpgradeColumn(3, "Walking Speed", nil, buildWalkSpeedIcon, getWalkSpeedStateFunction, buyWalkSpeedUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("%.1fx > %.1fx"):format(state.multiplier, state.nextMultiplier)
 		end
 		return ("%.1fx (MAX)"):format(state.multiplier)
 	end),
 
-	createUpgradeColumn(4, "Collection Range", Color3.fromRGB(90, 220, 140), buildCollectionRangeIcon, getCollectionRangeStateFunction, buyCollectionRangeUpgradeFunction, function(state)
+	createUpgradeColumn(4, "Collection Range", nil, buildCollectionRangeIcon, getCollectionRangeStateFunction, buyCollectionRangeUpgradeFunction, function(state)
 		if state.nextLevelCost then
 			return ("%.0f > %.0f"):format(state.radius, state.nextRadius)
 		end

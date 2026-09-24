@@ -1184,21 +1184,23 @@ design notes.
   ("lets do icons instead of these circles"), `createUpgradeColumn` now
   takes a `buildIcon(iconFrame)` callback that draws an actual icon inside
   each column's circle instead of leaving it blank: "More Mana" reuses the
-  real uploaded Mana icon (`buildManaIcon`, per direct request "for the
-  more mana lets do our mana icon" - and drops its circle's own fill,
-  passing `iconColor = nil`, same reasoning as `addReadoutIcon` above -
-  the icon's own sparkles poke outside a round silhouette). The other 3
-  are hand-built from plain UI shapes (`newCircle` + a few `Frame`s) - no
+  real uploaded Mana icon (per direct request "for the more mana lets do
+  our mana icon"). The other 3 originally were hand-built from plain UI
+  shapes (a stopwatch, a boot with motion lines, concentric rings) - no
   uploaded image, and no Unicode glyph either, since Roblox's default font
   doesn't cover most symbol/emoji codepoints (confirmed the hard way
-  earlier this session with "➜"/"⬅" rendering as empty boxes), so these
-  render identically everywhere with zero font-coverage risk: a stopwatch
-  (`buildSpawnSpeedIcon` - a hollow ring, a crown button, a rotated hand)
-  for Mana Spawn Speed, a boot with 3 shrinking motion lines trailing it
-  (`buildWalkSpeedIcon`, per direct request "like a pair of boots getting
-  faster") for Walking Speed, and concentric rings around a center dot
-  (`buildCollectionRangeIcon`) for Collection Range - a pickup-radius
-  pictogram. Each column still gets a level `(x/max)`, a value preview (`+N > +N`,
+  earlier this session with "➜"/"⬅" rendering as empty boxes). Once real
+  icon images (footprints, a stopwatch, and a target/bullseye - transparent
+  PNGs I generated and the user uploaded to Roblox) existed, per direct
+  follow-up request ("On island 1. Use footprints for walking speed,
+  Stopwatch for mana spawn rate and target for collection range") all 4
+  columns now share one `buildImageIcon(imageId)` factory instead - Mana
+  Spawn Speed uses the stopwatch, Walking Speed the footprints, Collection
+  Range the target, matching "More Mana"'s own reused-image treatment
+  exactly. Every column now drops its circle's own fill too, passing
+  `iconColor = nil`, same reasoning as `addReadoutIcon` above (an icon's
+  own art can poke outside a round silhouette, so a filled circle backdrop
+  looks bad behind a real image). Each column still gets a level `(x/max)`, a value preview (`+N > +N`,
   `Ns > Ns`, `Nx > Nx`, or plain `N > N` studs), cost, and Buy/Max
   buttons (white text, padded so labels don't stretch edge-to-edge, all
   text with a subtle stroke for a slight 3D look). Its UI is a
