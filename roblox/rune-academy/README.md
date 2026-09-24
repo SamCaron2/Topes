@@ -830,10 +830,14 @@ design notes.
   direct request ("when you exchange them it totally resets your ley
   shard upgrades all 3"): every successful `convert` wipes
   `leyShardYieldLevel`/`leyShardSpeedLevel`/`leyShardManaBoostLevel` back
-  to 1, while leaving everything Astral-Shard-funded completely alone.
-  That's the whole design: per direct request, "So to max out ley shards
-  it takes a bit but when you exchange for astral shards and buy more ley
-  shards it goes by quicker the second time" - `AstralShardLeyBoostHandler`/
+  to 1, zeroes the `leyShard` balance itself outright (not just docking
+  the spent units - a follow-up report, "I noticed I have some left
+  over," meant a "total reset" shouldn't leave a leftover sub-1,000
+  remainder sitting around), while leaving everything Astral-Shard-funded
+  completely alone. That's the whole design: per direct request, "So to
+  max out ley shards it takes a bit but when you exchange for astral
+  shards and buy more ley shards it goes by quicker the second time" -
+  `AstralShardLeyBoostHandler`/
   `AstralShardConversionBoostHandler` are the two permanent boosts that
   make that true.
   - `AstralShardLeyBoostHandler.lua` — Card 2's first real upgrade, "More

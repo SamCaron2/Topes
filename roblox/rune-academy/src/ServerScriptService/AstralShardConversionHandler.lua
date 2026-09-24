@@ -18,7 +18,10 @@
 -- grind back up the Ley Shard board after this point faster than the
 -- last - per direct request, "So to max out ley shards it takes a bit
 -- but when you exchange for astral shards and buy more ley shards it
--- goes by quicker the second time."
+-- goes by quicker the second time." The Ley Shard balance itself is
+-- zeroed outright too, not just docked the spent units, per a direct
+-- follow-up report ("I noticed I have some left over") - a "total reset"
+-- shouldn't leave a leftover sub-1,000 remainder sitting around.
 
 local PlayerData = require(script.Parent.PlayerData)
 local AstralShardConversionBoostHandler = require(script.Parent.AstralShardConversionBoostHandler)
@@ -64,7 +67,7 @@ function AstralShardConversionHandler.convert(player: Player)
 
 	local astralGained = math.floor(units * AstralShardConversionBoostHandler.getMultiplier(player))
 
-	data.leyShard -= units * LEY_SHARD_COST_PER_ASTRAL_SHARD
+	data.leyShard = 0
 	data.astralShard = (data.astralShard or 0) + astralGained
 
 	-- The reset this whole system is built around - see the file header.
