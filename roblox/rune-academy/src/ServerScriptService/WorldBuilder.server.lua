@@ -1386,8 +1386,11 @@ do
 -- directly in every handler function below, same defense-in-depth
 -- reasoning as every other gated system in this game.
 local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190) -- a teal "ley energy" glow, distinct from Mana/Dust/Ether/Rebirths' own palette
-local leyShardMatX = 80
-local leyShardMatZ = 116
+-- Moved from the originally given (80, 116) per direct request, once the
+-- board row settled at Z 100 facing +Z - this puts the mat right in front
+-- of the boards' own readable side instead of off to the side of them.
+local leyShardMatX = 94
+local leyShardMatZ = 117
 local LEY_SHARD_HOVER_HEIGHT = 6 -- studs above the mat a levitating player floats at
 
 -- Everything purely about building the Instances lives in its own nested

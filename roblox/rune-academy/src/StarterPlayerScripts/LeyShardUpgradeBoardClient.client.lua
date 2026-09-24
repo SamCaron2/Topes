@@ -242,8 +242,15 @@ titleText.Text = "Ley Shard Upgrades"
 titleText.Parent = titleBanner
 
 local function createUpgradeColumn(slotIndex: number, name: string, buildIcon: (Frame) -> (), getStateRemote, buyRemote, formatDetail)
+	-- Height shrunk from 0.7 to 0.62 - at 0.7 the column's own bottom edge
+	-- (COLUMN_TOP_Y 0.33 + 0.7 = 1.03) actually overflowed past the whole
+	-- board's bottom edge, which sits exactly at ground level (the board
+	-- Part spans ISLAND_TOP_Y to ISLAND_TOP_Y+18 with no gap below it) -
+	-- so the Buy/Max buttons near the bottom of each column were rendering
+	-- into the ground itself. Per direct request ("the buy and max
+	-- buttons... they are touching the ground on the cards").
 	local column = Instance.new("Frame")
-	column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.7, 0)
+	column.Size = UDim2.new(COLUMN_WIDTH, 0, 0.62, 0)
 	column.Position = UDim2.new(COLUMN_START_X + (slotIndex - 1) * (COLUMN_WIDTH + COLUMN_GAP), 0, COLUMN_TOP_Y, 0)
 	column.BackgroundTransparency = 1
 	column.Parent = background

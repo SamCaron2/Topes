@@ -376,15 +376,17 @@ design notes.
   checks the full island width instead of just `BRIDGE_WIDTH`. See
   `EtherIslandHandler`/`EtherIslandGateClient` below.
   The first thing actually built on the island itself: the Ley Shard Mat
-  and its upgrade board (Card 1 of the planned 3-card wizard-material
-  progression - see `LeyShardHandler` above), placed at the exact world
-  coordinates given directly (X 80, Z 116), with the board 14 studs
-  further along +X, same "board sits past the interactive point" layout
-  as `ArcaneDustPad`/the Ether Shroud. Both are solid/visible from the
-  moment the island exists, not hidden/revealed per-player like
-  SecondIsland's own deeper content, since the island's own gate is
-  already what's locked - nothing further inside it needs its own
-  containment. Also a floating `LeyShardCrystal` above the mat (a small
+  (Card 1 of the planned 3-card wizard-material progression - see
+  `LeyShardHandler` above), currently at X 94, Z 117 - moved there from
+  the originally given (80, 116) once the board row (see below) settled
+  at Z 100 facing +Z, so the mat now sits right in front of the boards'
+  own readable side instead of off to the side of them; its upgrade board
+  is built separately now (see the board row section below), no longer
+  offset from the mat's own position. Solid/visible from the moment the
+  island exists, not hidden/revealed per-player like SecondIsland's own
+  deeper content, since the island's own gate is already what's locked -
+  nothing further inside it needs its own containment. Also a floating
+  `LeyShardCrystal` above the mat (a small
   Neon ball, same idea as the Ether Shroud's own clickable core) added
   after the first playtest reported "standing on Ley Shards and nothing is
   happening" - the mat's own ClickDetector sat on a flat pad directly
@@ -1258,6 +1260,13 @@ design notes.
   so the UI waits on the unlock check same as `EtherUpgradeBoardClient`
   does. Rechecks on the new `PlayerEtherIslandUnlocked` event, building the
   board immediately once a player presses Unlock, no rejoin needed.
+  Each column's height was shrunk from 0.7 to 0.62 - per report ("the buy
+  and max buttons... they are touching the ground on the cards"). At 0.7,
+  a column's own bottom edge (`COLUMN_TOP_Y` 0.33 + 0.7 = 1.03) actually
+  overflowed past the whole board's bottom edge, which sits exactly at
+  ground level (the board Part spans `ISLAND_TOP_Y` to `ISLAND_TOP_Y+18`
+  with no gap below it) - so the Buy/Max buttons, positioned near the
+  bottom of each column, were rendering into the ground itself.
 - `AstralShardUpgradeBoardClient.client.lua` — Card 2's board, sitting
   next to the Ley Shard board in the same row. A placeholder shell for now
   - per direct request ("It should be the material x card with three
