@@ -14,10 +14,20 @@ local GameConfig = require(game.ReplicatedStorage.Modules.GameConfig)
 -- function we control, and takes down every script that requires PlayerData
 -- with it. Falling back to nil here means Studio testing works out of the
 -- box with no persistence, instead of refusing to run at all.
+-- Bumped v1 -> v2 per direct report ("I had my friends playtest this and
+-- it gave them 10 trillion everything like me. You never cleared it") -
+-- the TEMP testing overrides were removed from the code, but that alone
+-- doesn't undo what already got WRITTEN to v1's saves: anyone who played
+-- before the fixed code was actually synced/republished had those
+-- 1e13/maxed-everything values saved into their DataStore entry
+-- permanently, and simply removing the override in code can't retroactively
+-- un-save that. A new DataStore name is a clean slate for every player -
+-- including the developer's own account - with no old contaminated saves
+-- reachable under it.
 local SAVE_STORE
 do
 	local success, result = pcall(function()
-		return DataStoreService:GetDataStore("RuneAcademy_PlayerData_v1")
+		return DataStoreService:GetDataStore("RuneAcademy_PlayerData_v2")
 	end)
 	if success then
 		SAVE_STORE = result

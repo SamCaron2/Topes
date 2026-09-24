@@ -110,7 +110,16 @@ from that earlier design.
   unconditionally, which would have handed playtesters the same
   developer-only head start instead of the real progression. Every
   player, including the developer's own account, now starts from
-  `defaultData()` with nothing forced.
+  `defaultData()` with nothing forced. The DataStore name itself was also
+  bumped `RuneAcademy_PlayerData_v1` -> `v2` per a direct follow-up report
+  ("I had my friends playtest this and it gave them 10 trillion
+  everything like me. You never cleared it") - removing the override from
+  the CODE doesn't retroactively fix data that was already SAVED under
+  the old overrides (anyone who played before the fixed code was actually
+  synced/republished had 1e13/maxed-everything permanently written to
+  their save). A new DataStore name is a clean slate for every player,
+  including the developer's own account, with the old contaminated v1
+  saves simply unreachable under it.
 - `RuneHandler.lua` — `collectAtAltar`: the Rune Altar's own tick logic
   (stand on `RuinRuneCircle`, called once per tick by `WorldBuilder`'s
   proximity loop) - spends `RuinRuneHandler.getManaCostPerTick` Mana, then
