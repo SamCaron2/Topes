@@ -1697,18 +1697,18 @@ end
 -- in Ley Shard, same one-time-purchase mechanic as the SecondIsland
 -- Upgrade Tree's own tiles - per direct request ("x107 z134 start a floor
 -- tile upgrade. Lets do for 1k ley shards times your ley by 2" for Tile
--- 1). Tiles 2-3 originally continued further along +Z from Tile 1 (my
--- own call for "above that," not given exact coordinates) per direct
--- follow-up request ("Now two more floor tiles above that is one for
--- times 2 ley shrouds and 2x astra shrouds. Make them cost a decent
--- amount so the players cant just unlock those tiles right when they get
--- to this island"), each requiring the tile before it bought first, same
--- "sign only appears once reachable" treatment as the SecondIsland tree.
--- That +Z direction ran Tile 3 straight into EtherIsland's own coastline
--- water, so per a direct follow-up report with a screenshot ("I want
--- those two tiles you just made to be moved to above tile one like in
--- this picture") they're now placed going -Z from Tile 1 instead -
--- inland, away from the water, still directly in line with Tile 1.
+-- 1). Tiles 2-3 (per direct follow-up request, "Now two more floor tiles
+-- above that is one for times 2 ley shrouds and 2x astra shrouds. Make
+-- them cost a decent amount so the players cant just unlock those tiles
+-- right when they get to this island") each require the tile before it
+-- bought first, same "sign only appears once reachable" treatment as the
+-- SecondIsland tree. Placement went through 2 wrong tries extending along
+-- Z (first +Z, which ran Tile 3 into EtherIsland's own coastline water;
+-- then -Z, per a follow-up screenshot report, which was "wrong again")
+-- before landing on this: extending along +X instead, from Tile 1's
+-- given coordinates, same direction/spacing style as the SecondIsland
+-- Upgrade Tree's own tile chain below (UPGRADE_TREE_TILE_POSITIONS) -
+-- per direct request to match "that good format."
 -- LeyShardFloorTileHandler.TILES is a list so a 4th tile later is just
 -- one more entry plus one more position here. In its own `do...end`
 -- block, same register-budget reasoning as every other late-file section
@@ -1719,8 +1719,8 @@ do
 	local LEY_SHARD_FLOOR_TILE_SPACING = 12
 	local LEY_SHARD_FLOOR_TILE_POSITIONS = {
 		[1] = { x = 107, z = 134 },
-		[2] = { x = 107, z = 134 - LEY_SHARD_FLOOR_TILE_SPACING },
-		[3] = { x = 107, z = 134 - LEY_SHARD_FLOOR_TILE_SPACING * 2 },
+		[2] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING, z = 134 },
+		[3] = { x = 107 + LEY_SHARD_FLOOR_TILE_SPACING * 2, z = 134 },
 	}
 	local LEY_SHARD_FLOOR_TILE_RADIUS = math.max(LEY_SHARD_FLOOR_TILE_WIDTH, LEY_SHARD_FLOOR_TILE_DEPTH) / 2
 	local LEY_SHARD_FLOOR_TILE_CHECK_INTERVAL = 0.5

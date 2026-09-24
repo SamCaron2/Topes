@@ -930,14 +930,17 @@ design notes.
   each only see the tiles that actually affect them, keeping Astral
   Shard's conversion-rate boost from also silently doubling Ley Shard
   yield or vice versa. `WorldBuilder` places Tile 1 at the exact given
-  coordinates (X 107, Z 134); Tiles 2 and 3 originally continued +12/+24
-  studs in +Z from there (my own placement choice, exact coordinates
-  weren't given for the new two), but that ran Tile 3 straight into
-  EtherIsland's own coastline water, so per a direct follow-up report with
-  a screenshot ("I want those two tiles you just made to be moved to
-  above tile one like in this picture") they're now placed -12/-24 studs
-  in Z instead - inland, still directly in line with Tile 1, away from
-  the water - same proximity-check-and-buy loop shape as the
+  coordinates (X 107, Z 134). Tiles 2 and 3's placement took 2 wrong
+  tries: first +12/+24 studs in +Z (my own placement choice, exact
+  coordinates weren't given for the new two), which ran Tile 3 straight
+  into EtherIsland's own coastline water; then -12/-24 in Z per a direct
+  follow-up report with a screenshot ("I want those two tiles you just
+  made to be moved to above tile one like in this picture"), which was
+  still "wrong again." They're now placed +12/+24 studs in **X** instead
+  - per direct follow-up request to match "that good format," i.e. the
+  same direction/spacing style the SecondIsland Upgrade Tree's own tile
+  chain already uses (`UPGRADE_TREE_TILE_POSITIONS`, which extends along
+  +X from its own Tile 1) - same proximity-check-and-buy loop shape as the
   Upgrade Tree's own tiles, same nearby-decor clearing (now checked
   against all 3 positions), and the same 180° `CFrame.Angles` flip the
   Upgrade Tree's own tiles use (missed on Tile 1's first pass, per report
