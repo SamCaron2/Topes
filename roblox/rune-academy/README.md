@@ -1174,7 +1174,12 @@ from that earlier design.
 - `ManaHUDClient.client.lua` — a Mana counter, middle-left of the screen,
   updated live off the `ManaUpdated` RemoteEvent, an Arcane Dust counter
   below that, a Rebirths counter below that, an Ether counter below that,
-  a Ley Shard counter, then an Astral Shard counter below that. Styled
+  a Ley Shard counter, an Astral Shard counter, then a Celestial Shard
+  counter below that (gold-colored, same `buildGemIcon` treatment as its
+  siblings) - per direct report that Celestial Shard was missing from
+  this HUD entirely ("Why are the cards like this what happened? Do it
+  how the others look"), added to match every other currency's own row.
+  Styled
   after a typical incremental-game HUD, not the original dark rounded
   pill: no background at all, just the icon sitting a small fixed gap
   (`ICON_TEXT_GAP`) from a bold, left-aligned number - no "Mana"/"Arcane
@@ -1687,9 +1692,13 @@ from that earlier design.
   (`CelestialManaBoostHandler`) - per direct request ("Okay time to do
   celestial shard... There are 3 upgrades. More celestrial shard... Then
   another upgrade 0-25 for more astral cards... FInally 0-50 on more
-  mana"). Rotated 90° in `WorldBuilder` like `RuinRuneBoard`'s own board,
-  so its `SurfaceGui.Face` is `Right` too - the same guess that board's
-  own client makes for its readable face.
+  mana"). Rotated 90° in `WorldBuilder` like `RuinRuneBoard`'s own board;
+  originally guessed `SurfaceGui.Face = Right` (copying that board's own
+  guess), but that rendered both this board and the converter card below
+  as blank glass panes with no visible content - per direct report ("Why
+  are the cards like this what happened?") - since this board's approach
+  direction doesn't actually match `RuinRuneBoard`'s. Flipped to `Left`,
+  which puts the readable face on the correct side.
 - `CelestialShardConversionBoardClient.client.lua` — the new converter
   card next to Card 3's board (see `CelestialShardConversionHandler.lua`
   above), mirroring `LeyShardConversionBoardClient.client.lua`'s exact
@@ -1698,8 +1707,8 @@ from that earlier design.
   Astral Shard upgrades!" - per direct request, "hitting this converter
   completely resets your astral shards"), and one gold-themed "Convert"
   button spending ALL currently-affordable Astral Shard in one press.
-  Same blocking-loop-until-unlocked and 90°-rotated `Right`-face
-  placement as the board right next to it.
+  Same blocking-loop-until-unlocked and 90°-rotated `Left`-face fix as
+  the board right next to it (see its own bullet above).
 - `EtherIslandGateClient.client.lua` — builds `EtherIslandGate`'s "LOCKED"
   sign and Unlock button, exact same shape as `SecondIslandGateClient`
   just with a single Ether requirement instead of Mana/Rebirths/Level.

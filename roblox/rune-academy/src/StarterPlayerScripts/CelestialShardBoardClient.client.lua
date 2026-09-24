@@ -273,12 +273,14 @@ while true do
 end
 
 -- Rotated 90° around Y in WorldBuilder (its long axis runs along Z, not
--- X, unlike the 3-board row) - same rotation formula RuinRuneHandler's
--- own board uses, so "Right" is the same guess that board's own client
--- makes for its readable face; flip to Left if it renders backwards.
+-- X, unlike the 3-board row). The original "Right" guess (copying
+-- RuinRuneHandler's own board) rendered blank/backwards in-game - per
+-- direct report ("Why are the cards like this what happened?") - since
+-- this board's approach direction doesn't match RuinRuneBoard's. Flipped
+-- to Left, which puts the readable face on the correct side.
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "CelestialShardBoardGui"
-surfaceGui.Face = Enum.NormalId.Right
+surfaceGui.Face = Enum.NormalId.Left
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36

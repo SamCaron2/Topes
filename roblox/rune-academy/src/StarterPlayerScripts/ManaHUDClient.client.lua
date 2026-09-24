@@ -1,16 +1,17 @@
 -- Middle-left Mana counter (icon + amount, no word, no background pill),
 -- an Arcane Dust counter below that, a Rebirths counter below that, then
--- an Ether counter, a Ley Shard counter, then an Astral Shard counter
--- below that - all five below Mana start hidden until the player has at
--- least one of each (the server only fires their Updated event once they
--- do), so Arcane Dust only shows up after first stepping on
--- ArcaneDustPad, Rebirths only once actually unlocked, Ether only after
--- first clicking the Ether Shroud, Ley Shard only after the first
--- levitation payout on EtherIsland, and Astral Shard only after the first
--- Ley Shard -> Astral Shard conversion - reflowLayout keeps the visible
--- rows stacked with no gap either way. Styled after a typical
--- incremental-game HUD: icon sitting right next to a bold number colored
--- to match the icon, nothing else around it.
+-- an Ether counter, a Ley Shard counter, an Astral Shard counter, then a
+-- Celestial Shard counter below that - all six below Mana start hidden
+-- until the player has at least one of each (the server only fires their
+-- Updated event once they do), so Arcane Dust only shows up after first
+-- stepping on ArcaneDustPad, Rebirths only once actually unlocked, Ether
+-- only after first clicking the Ether Shroud, Ley Shard only after the
+-- first levitation payout on EtherIsland, Astral Shard only after the
+-- first Ley Shard -> Astral Shard conversion, and Celestial Shard only
+-- after the first Astral Shard -> Celestial Shard conversion -
+-- reflowLayout keeps the visible rows stacked with no gap either way.
+-- Styled after a typical incremental-game HUD: icon sitting right next to
+-- a bold number colored to match the icon, nothing else around it.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,6 +26,7 @@ local arcaneDustUpdatedEvent = remotes:WaitForChild("ArcaneDustUpdated")
 local etherUpdatedEvent = remotes:WaitForChild("EtherUpdated")
 local leyShardUpdatedEvent = remotes:WaitForChild("LeyShardUpdated")
 local astralShardUpdatedEvent = remotes:WaitForChild("AstralShardUpdated")
+local celestialShardUpdatedEvent = remotes:WaitForChild("CelestialShardUpdated")
 
 local MANA_ICON_ID = "rbxassetid://119417928367783"
 local REBIRTHS_ICON_ID = "rbxassetid://119426569971477"
@@ -34,6 +36,7 @@ local ARCANE_DUST_COLOR = Color3.fromRGB(60, 190, 230) -- matches the dust icon'
 local ETHER_COLOR = Color3.fromRGB(150, 60, 220) -- matches the Ether Shroud's own purple
 local LEY_SHARD_COLOR = Color3.fromRGB(90, 220, 190) -- matches the Ley Shard Mat's own teal
 local ASTRAL_SHARD_COLOR = Color3.fromRGB(160, 140, 255) -- matches Card 2's own violet
+local CELESTIAL_SHARD_COLOR = Color3.fromRGB(255, 215, 0) -- matches Card 3's own gold
 local ICON_SIZE = 46
 local ICON_TEXT_GAP = 6
 
@@ -213,8 +216,12 @@ local astralShardRow, astralShardText = createCounterRow("AstralShardCounter", 0
 astralShardRow.Visible = false
 astralShardText.Text = "0"
 
+local celestialShardRow, celestialShardText = createCounterRow("CelestialShardCounter", 0, CELESTIAL_SHARD_COLOR, nil, false, nil, buildGemIcon(CELESTIAL_SHARD_COLOR))
+celestialShardRow.Visible = false
+celestialShardText.Text = "0"
+
 local ROW_SPACING = ICON_SIZE + 14
-local orderedRows = { manaRow, arcaneDustRow, rebirthsRow, etherRow, leyShardRow, astralShardRow }
+local orderedRows = { manaRow, arcaneDustRow, rebirthsRow, etherRow, leyShardRow, astralShardRow, celestialShardRow }
 
 local function reflowLayout()
 	local nextY = 0
@@ -276,6 +283,15 @@ astralShardUpdatedEvent.OnClientEvent:Connect(function(amount)
 	astralShardRow.Visible = amount > 0
 	astralShardText.Text = NumberFormat.format(amount)
 	if wasVisible ~= astralShardRow.Visible then
+		reflowLayout()
+	end
+end)
+
+celestialShardUpdatedEvent.OnClientEvent:Connect(function(amount)
+	local wasVisible = celestialShardRow.Visible
+	celestialShardRow.Visible = amount > 0
+	celestialShardText.Text = NumberFormat.format(amount)
+	if wasVisible ~= celestialShardRow.Visible then
 		reflowLayout()
 	end
 end)

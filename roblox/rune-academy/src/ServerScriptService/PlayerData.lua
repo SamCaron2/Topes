@@ -325,6 +325,20 @@ function PlayerData.load(player: Player)
 	data.leyShardSpeedLevel = 10
 	data.leyShardManaBoostLevel = 50
 
+	-- TEMP: testing only - per direct request ("spawn me in already
+	-- completing these cards"), also skips straight past floor Tiles 4-5
+	-- (Celestial Shard's own real unlock still costs 5,000,000 Astral
+	-- Shard normally) and maxes all 3 Celestial Shard columns, so the
+	-- converter card and board are immediately usable/testable at full
+	-- strength. Remove these lines once you're done testing.
+	data.leyShardFloorTile4 = true
+	data.leyShardFloorTile5 = true
+	data.astralShard = 1e13
+	data.celestialShard = 1e13
+	data.celestialConversionBoostLevel = 50
+	data.celestialAstralBoostLevel = 25
+	data.celestialManaBoostLevel = 50
+
 	sessions[player] = data
 
 	-- Real leaderstats for the current game, replacing the old Ascensions/

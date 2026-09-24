@@ -50,11 +50,11 @@ while true do
 end
 
 -- Same rotation as CelestialShardBoard (its own long axis runs along Z) -
--- "Right" is the same guess that board's own client makes for its
--- readable face; flip to Left if it renders backwards.
+-- same Left face fix as that board (see its own client's header comment)
+-- since the original "Right" guess rendered blank/backwards in-game.
 local surfaceGui = Instance.new("SurfaceGui")
 surfaceGui.Name = "CelestialShardConversionBoardGui"
-surfaceGui.Face = Enum.NormalId.Right
+surfaceGui.Face = Enum.NormalId.Left
 surfaceGui.Adornee = board
 surfaceGui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 surfaceGui.PixelsPerStud = 36
