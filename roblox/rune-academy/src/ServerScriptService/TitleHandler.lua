@@ -83,6 +83,21 @@ function TitleHandler.grantManualTitle(player: Player, key: string)
 	data.unlockedTitles[key] = true
 end
 
+-- Unlocks every title in GameConfig.Titles at once, regardless of category
+-- (earned or manual) - called from the username-allowlist check below, per
+-- direct request ("Give Username: Wettz access to all the titles").
+function TitleHandler.grantAllTitles(player: Player)
+	local data = PlayerData.get(player)
+	if not data then
+		return
+	end
+
+	data.unlockedTitles = data.unlockedTitles or {}
+	for _, title in GameConfig.Titles do
+		data.unlockedTitles[title.key] = true
+	end
+end
+
 local function applyAttributesFor(player: Player, title)
 	player:SetAttribute("Title", title and title.displayName or nil)
 	player:SetAttribute("TitleColor", title and title.color or nil)
@@ -141,6 +156,11 @@ local function checkAllowlists(player: Player)
 	for _, userId in GameConfig.TesterUserIds do
 		if player.UserId == userId then
 			TitleHandler.grantManualTitle(player, "Tester")
+		end
+	end
+	for _, username in GameConfig.AllTitlesUsernames do
+		if player.Name == username then
+			TitleHandler.grantAllTitles(player)
 		end
 	end
 end

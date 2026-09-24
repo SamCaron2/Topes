@@ -262,6 +262,14 @@ GameConfig.OwnerUserIds = { 11620037282 } -- Sam Caron (Kharened), per direct re
 GameConfig.AdminUserIds = {}
 GameConfig.TesterUserIds = {}
 
+-- Usernames (not UserIds - a username can be checked straight off
+-- Player.Name, no async lookup needed) auto-granted EVERY title in the
+-- list below on join, regardless of category (earned or manual) - per
+-- direct request ("Give Username: Wettz access to all the titles").
+-- Doesn't touch equippedTitle - they still have to pick one from the
+-- Profile tab like anyone else, just with every option unlocked already.
+GameConfig.AllTitlesUsernames = { "Wettz" }
+
 GameConfig.Titles = {
 	{ key = "OG", displayName = "OG", color = Color3.fromRGB(255, 215, 0), condition = { type = "joinWindow" } },
 	{ key = "Fan", displayName = "Fan", color = Color3.fromRGB(255, 105, 180), condition = { type = "groupMember" } },

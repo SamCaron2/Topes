@@ -188,7 +188,16 @@ from that earlier design.
   for dead scaffolding alongside the actually-dead Gems/Scrolls/Ascension
   system), then restored per direct follow-up report ("Where did titles
   go on profile section? My username and title also have stopped
-  appearing").
+  appearing"). `checkAllowlists` grants Owner/Admin/Tester by UserId
+  (`GameConfig.OwnerUserIds`/`AdminUserIds`/`TesterUserIds`), and now also
+  a new `grantAllTitles` (unlocks every title in `GameConfig.Titles` at
+  once, regardless of category) for any username listed in
+  `GameConfig.AllTitlesUsernames` - per direct request ("Give Username:
+  Wettz access to all the titles"). Checked straight off `Player.Name`
+  (no async UserId lookup needed, unlike the UserId lists above, since a
+  username is already right there on the Player instance) - doesn't touch
+  `equippedTitle`, so they still pick one from the Profile tab like anyone
+  else, just with every option already unlocked.
 - `LeaderboardHandler.lua` — the 4 global leaderboards (Playtime, Robux
   Spent, Total Mana, Runes Opened) shown on the Leaderboard island's sign
   boards, backed by one `OrderedDataStore` per stat so rankings persist
