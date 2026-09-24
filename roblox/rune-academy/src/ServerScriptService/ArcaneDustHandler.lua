@@ -9,6 +9,7 @@ local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local EtherDustBoostHandler = require(script.Parent.EtherDustBoostHandler)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
+local GamePassBoostHandler = require(script.Parent.GamePassBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -43,6 +44,7 @@ function ArcaneDustHandler.collect(player: Player): number?
 		* UpgradeTreeHandler.getDustMultiplier(player)
 		* EtherDustBoostHandler.getMultiplier(player)
 		* RuneCollectionHandler.getMultiplier(player)
+		* GamePassBoostHandler.getDustMultiplier(player)
 	data.arcaneDust = (data.arcaneDust or 0) + amountForLevel(level) * multiplier
 	return data.arcaneDust
 end

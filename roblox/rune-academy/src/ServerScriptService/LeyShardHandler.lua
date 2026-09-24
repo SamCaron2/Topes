@@ -22,12 +22,15 @@
 -- every later grind. Also folds in LeyShardFloorTileHandler's own
 -- multiplier - EtherIsland's own walk-over floor tile(s), paid in Ley
 -- Shard, a one-time purchase like the SecondIsland Upgrade Tree's own
--- tiles rather than a leveled upgrade.
+-- tiles rather than a leveled upgrade. Also folds in
+-- GamePassBoostHandler's own multiplier - any owned Robux gamepass perk
+-- that boosts Ley Shard (VIPPass, the Starter Pack).
 
 local PlayerData = require(script.Parent.PlayerData)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
 local AstralShardLeyBoostHandler = require(script.Parent.AstralShardLeyBoostHandler)
 local LeyShardFloorTileHandler = require(script.Parent.LeyShardFloorTileHandler)
+local GamePassBoostHandler = require(script.Parent.GamePassBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -63,6 +66,7 @@ function LeyShardHandler.collect(player: Player): number?
 			* RuneCollectionHandler.getMultiplier(player)
 			* AstralShardLeyBoostHandler.getMultiplier(player)
 			* LeyShardFloorTileHandler.getLeyShardMultiplier(player)
+			* GamePassBoostHandler.getLeyShardMultiplier(player)
 	)
 	data.leyShard = (data.leyShard or 0) + amount
 	return data.leyShard

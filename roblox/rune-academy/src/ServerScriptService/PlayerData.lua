@@ -33,26 +33,6 @@ local AUTOSAVE_INTERVAL = 120
 local PlayerData = {}
 local sessions = {} -- [player] = dataTable
 
--- Builds the { [zoneKey] = { currencies = { [currencyKey] = {...} }, floorTiles = {} } }
--- shape entirely from GameConfig.Zones, so a new/renamed zone or currency
--- never needs a matching change here.
-local function defaultZoneState()
-	local zones = {}
-	for _, zone in GameConfig.Zones do
-		local currencies = {}
-		for _, currency in zone.currencies do
-			currencies[currency.key] = {
-				amount = 0,
-				upgradeLevels = {}, -- [slotId] = level
-				selfPrestigeTier = 0, -- count of selfPrestigeTiers purchased so far
-				chainBonusMultiplier = 1, -- permanent bonus from being chain-reset INTO repeatedly
-			}
-		end
-		zones[zone.key] = { currencies = currencies, floorTiles = {} } -- floorTiles: [tileKey] = true
-	end
-	return zones
-end
-
 local function defaultData()
 	local stats = {}
 	for statName, statInfo in GameConfig.Stats do
@@ -60,11 +40,10 @@ local function defaultData()
 	end
 
 	return {
-		zones = defaultZoneState(),
 		-- Mana + the 4 fields below all get reset to these same defaults by
 		-- RebirthHandler.rebirth() - keep that function's reset list in sync
 		-- if any of these are renamed or a new Mana-side upgrade is added.
-		mana = 0, -- collected from ManaNodes on the ground; not a Zone/ResourceEngine currency yet
+		mana = 0, -- collected from ManaNodes on the ground
 		manaYieldLevel = 1, -- "Mana Per Pickup" upgrade level, 1-100, +1 Mana per pickup per level
 		manaSpawnSpeedLevel = 1, -- "Mana Spawn Speed" upgrade level, 1-10, faster ManaNode respawns per level
 		walkSpeedLevel = 1, -- "Walking Speed" upgrade level, 1-10, 1x-3x Humanoid.WalkSpeed
@@ -207,19 +186,25 @@ local function defaultData()
 		-- rolls, or Mana cost per tick. Never reset.
 		ruinRuneTier = 0,
 
-		gems = 0, -- global premium currency, outside any zone/chain
+		-- Stats (Power/Fortune/Focus/Haste/Familiar): only Fortune has any
+		-- live gameplay effect (RuneHandler.weightedPick biases Rune Altar
+		-- odds by it) - the other 4 are written by Rune ranks' statBoosts
+		-- but never read by anything active. Left as-is (not part of the
+		-- Power Store cleanup below) since Fortune is load-bearing for a
+		-- real, currently-used mechanic.
 		stats = stats,
-		scrolls = 0,
+
 		runesOpened = 0,
 		runesOwned = {}, -- [rankName] = count
-		ascensionCount = 0,
+
+		-- Power Store bookkeeping (StoreHandler/GamePassBoostHandler) -
+		-- generic, not tied to any one grant shape, so these survived the
+		-- Gems/Scrolls/Ascension/Titles cleanup below untouched.
 		robuxSpent = 0,
-		playtimeSeconds = 0,
 		ownedPasses = {}, -- [gamePassKey] = true, gates one-time gamepass grants from reapplying
 		purchaseHistory = {}, -- bounded list of processed receiptInfo.PurchaseId, guards against double-granting a dev product
-		unlockedTitles = {}, -- [titleKey] = true
-		equippedTitle = nil,
-		firstJoinedAt = nil, -- os.time() the first time this player's data was ever loaded; drives the OG title
+
+		playtimeSeconds = 0,
 	}
 end
 
@@ -258,10 +243,6 @@ function PlayerData.load(player: Player)
 	else
 		data = defaultData()
 	end
-	if not data.firstJoinedAt then
-		data.firstJoinedAt = os.time()
-	end
-
 	-- TEMP: testing only - spawns in already past Tier 3 with every
 	-- Upgrade Tree tile already bought (per direct request), so
 	-- SecondIsland, the Fantasy Ruin, and the Ether Shroud/board are all
@@ -302,28 +283,24 @@ function PlayerData.load(player: Player)
 
 	sessions[player] = data
 
+	-- Real leaderstats for the current game, replacing the old Ascensions/
+	-- Scrolls/Gems placeholders (leftover from the scrapped Mana/Coins
+	-- design, removed in the Power Store cleanup) - Mana and Rebirths are
+	-- this game's two most central currencies, so they're what shows on
+	-- Roblox's default leaderboard now.
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 	leaderstats.Parent = player
 
-	-- No per-currency leaderstats yet - GameConfig.Zones is empty pending
-	-- the new vision. Add one NumberValue per currency worth showing here
-	-- once there's something to show, same pattern as before.
+	local mana = Instance.new("NumberValue")
+	mana.Name = "Mana"
+	mana.Value = data.mana or 0
+	mana.Parent = leaderstats
 
-	local ascensions = Instance.new("IntValue")
-	ascensions.Name = "Ascensions"
-	ascensions.Value = data.ascensionCount
-	ascensions.Parent = leaderstats
-
-	local scrolls = Instance.new("IntValue")
-	scrolls.Name = "Scrolls"
-	scrolls.Value = data.scrolls or 0
-	scrolls.Parent = leaderstats
-
-	local gems = Instance.new("NumberValue")
-	gems.Name = "Gems"
-	gems.Value = data.gems or 0
-	gems.Parent = leaderstats
+	local rebirths = Instance.new("NumberValue")
+	rebirths.Name = "Rebirths"
+	rebirths.Value = data.rebirths or 0
+	rebirths.Parent = leaderstats
 
 	return data
 end
@@ -385,7 +362,7 @@ task.spawn(function()
 	end
 end)
 
--- Drives the playtime-based titles (Newbie/Regular/VIP/No Life). Ticks every
+-- Tracks playtime for the Profile screen's "Time Played" stat. Ticks every
 -- session in memory once a second rather than per-player loops.
 task.spawn(function()
 	while true do
@@ -397,18 +374,16 @@ task.spawn(function()
 end)
 
 -- leaderstats NumberValues only reflect data at the moment they're created
--- otherwise - this is what keeps them live on the Leaderboard as a player
--- actually plays, instead of only updating on rejoin. Add a currency's
--- Value assignment here once it has a leaderstat again (see load() above).
+-- otherwise - this is what keeps Mana/Rebirths live on the Leaderboard as a
+-- player actually plays, instead of only updating on rejoin.
 task.spawn(function()
 	while true do
 		task.wait(0.5)
 		for player, data in sessions do
 			local leaderstats = player:FindFirstChild("leaderstats")
 			if leaderstats then
-				leaderstats.Ascensions.Value = data.ascensionCount
-				leaderstats.Scrolls.Value = data.scrolls
-				leaderstats.Gems.Value = data.gems
+				leaderstats.Mana.Value = data.mana or 0
+				leaderstats.Rebirths.Value = data.rebirths or 0
 			end
 		end
 	end

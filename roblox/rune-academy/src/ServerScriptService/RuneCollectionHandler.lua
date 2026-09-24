@@ -17,6 +17,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local PlayerData = require(script.Parent.PlayerData)
+local GamePassBoostHandler = require(script.Parent.GamePassBoostHandler)
 
 local PER_COPY_BONUS = 0.2
 local RANK_CAP_MULTIPLIER = 5
@@ -37,10 +38,14 @@ function RuneCollectionHandler.getRankMultiplier(player: Player, rankName: strin
 end
 
 -- Combined bonus from every rank owned - applied to Mana (ManaHandler),
--- Rebirths (RebirthHandler), Ether (EtherHandler), and Arcane Dust
--- (ArcaneDustHandler) alike, per direct request.
+-- Rebirths (RebirthHandler), Ether (EtherHandler), Arcane Dust
+-- (ArcaneDustHandler), and Ley Shard (LeyShardHandler) alike, per direct
+-- request. Also folds in GamePassBoostHandler's own Rune-focused gamepass
+-- bonus (FortunesFavorPass) - since this one combined multiplier already
+-- cascades into 5 different currencies, that pass's payoff compounds
+-- across the whole economy, same reasoning as everything else it grants.
 function RuneCollectionHandler.getMultiplier(player: Player): number
-	local multiplier = 1
+	local multiplier = GamePassBoostHandler.getRuneCollectionMultiplier(player)
 	for _, rank in GameConfig.RuneRanks do
 		multiplier *= RuneCollectionHandler.getRankMultiplier(player, rank.name)
 	end

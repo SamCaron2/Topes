@@ -4,15 +4,17 @@
 -- uploaded icon images now; Profile gets the player's own live avatar
 -- headshot instead (fetched via GetUserThumbnailAsync, no upload needed -
 -- see below). Hovering grows the icon slightly to show what's highlighted.
--- Profile, Runes, and Settings are all wired to their own panels
--- (ProfileClient/RunesMenuClient/SettingsClient, via the
--- OpenProfileRequested/OpenRunesRequested/OpenSettingsRequested
--- BindableEvents below) - per direct request ("clicking the runes
--- button... nothing is happening" and "add some relevant settings in the
--- settings section"), Runes opens the same Rune Altar tier list the
--- physical board on SecondIsland shows, so it's checkable from anywhere,
--- not just standing at the Altar. Store still just needs to exist on
--- screen for now (nothing to sell yet).
+-- Profile, Runes, Settings, and now Store are all wired to their own
+-- panels (ProfileClient/RunesMenuClient/SettingsClient/StoreClient, via
+-- the OpenProfileRequested/OpenRunesRequested/OpenSettingsRequested/
+-- OpenStoreRequested BindableEvents below) - per direct request
+-- ("clicking the runes button... nothing is happening" and "add some
+-- relevant settings in the settings section"), Runes opens the same Rune
+-- Altar tier list the physical board on SecondIsland shows, so it's
+-- checkable from anywhere, not just standing at the Altar. Store opens
+-- the actual Store panel now too, per direct request ("can I have you
+-- implement our store?") - previously it only existed on screen with
+-- nothing to sell yet.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -227,6 +229,14 @@ openSettingsEvent.Parent = screenGui
 
 buttonsByName["Settings"].MouseButton1Click:Connect(function()
 	openSettingsEvent:Fire()
+end)
+
+local openStoreEvent = Instance.new("BindableEvent")
+openStoreEvent.Name = "OpenStoreRequested"
+openStoreEvent.Parent = screenGui
+
+buttonsByName["Store"].MouseButton1Click:Connect(function()
+	openStoreEvent:Fire()
 end)
 
 -- Profile gets the PLAYER'S OWN avatar headshot instead of a placeholder

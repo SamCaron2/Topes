@@ -3,13 +3,15 @@
 -- Shroud (see WorldBuilder) instead of auto-collected like Mana or
 -- walked-over like Arcane Dust, per direct request. Mirrors
 -- ArcaneDustHandler's exact shape and yield curve for consistency. The
--- Rune collection bonus (RuneCollectionHandler) is the only multiplier on
--- Ether so far - added per direct follow-up request ("have it multiply
--- other stuff too like rebirths, ether and dust please").
+-- Rune collection bonus (RuneCollectionHandler, added per direct
+-- follow-up request "have it multiply other stuff too like rebirths,
+-- ether and dust please") and any owned Robux gamepass perk that boosts
+-- Ether (GamePassBoostHandler - VIPPass, the Starter Pack) both fold in.
 
 local PlayerData = require(script.Parent.PlayerData)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
+local GamePassBoostHandler = require(script.Parent.GamePassBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -40,7 +42,8 @@ function EtherHandler.collect(player: Player): number?
 		return nil
 	end
 	local level = data.etherYieldLevel or 1
-	data.ether = (data.ether or 0) + amountForLevel(level) * RuneCollectionHandler.getMultiplier(player)
+	data.ether = (data.ether or 0)
+		+ amountForLevel(level) * RuneCollectionHandler.getMultiplier(player) * GamePassBoostHandler.getEtherMultiplier(player)
 	return data.ether
 end
 

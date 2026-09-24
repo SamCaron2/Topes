@@ -1,8 +1,7 @@
--- Server-authoritative Mana collection and its one upgrade so far: a player
--- touches a ManaNode part on the ground and gets Mana per their current
--- "Mana Per Pickup" level (1-100). Kept separate from ResourceEngine since
--- this is a fresh, much simpler mechanic for the new vision - no Zones
--- wired to it yet.
+-- Server-authoritative Mana collection: a player touches a ManaNode part
+-- on the ground and gets Mana per their current "Mana Per Pickup" level
+-- (1-100), scaled by every multiplier source in the game (see
+-- effectiveAmountForLevel below).
 
 local PlayerData = require(script.Parent.PlayerData)
 local RebirthShopHandler = require(script.Parent.RebirthShopHandler)
@@ -11,6 +10,7 @@ local WizardTierHandler = require(script.Parent.WizardTierHandler)
 local UpgradeTreeHandler = require(script.Parent.UpgradeTreeHandler)
 local RuneCollectionHandler = require(script.Parent.RuneCollectionHandler)
 local LeyShardManaBoostHandler = require(script.Parent.LeyShardManaBoostHandler)
+local GamePassBoostHandler = require(script.Parent.GamePassBoostHandler)
 
 local MAX_YIELD_LEVEL = 100
 
@@ -43,9 +43,10 @@ local ManaHandler = {}
 -- the Upgrade Tree's own Mana tiles (x2 each, x4 combined once both are
 -- bought), the Rune collection bonus (RuneCollectionHandler - +0.2x per
 -- copy owned of each Rune rank, capped at x5 per rank, all 9 ranks' own
--- multipliers combined together), and the Ley Shard board's own "More
--- Mana" column (LeyShardManaBoostHandler - 1x-5.9x, paid in Ley Shard).
--- Floored to keep Mana a whole number.
+-- multipliers combined together), the Ley Shard board's own "More
+-- Mana" column (LeyShardManaBoostHandler - 1x-5.9x, paid in Ley Shard),
+-- and any owned Robux gamepass perks (GamePassBoostHandler - VIPPass/
+-- DoubleManaPass/the Starter Pack). Floored to keep Mana a whole number.
 local function effectiveAmountForLevel(player: Player, level: number): number
 	return math.floor(
 		amountForLevel(level)
@@ -55,6 +56,7 @@ local function effectiveAmountForLevel(player: Player, level: number): number
 			* UpgradeTreeHandler.getManaMultiplier(player)
 			* RuneCollectionHandler.getMultiplier(player)
 			* LeyShardManaBoostHandler.getMultiplier(player)
+			* GamePassBoostHandler.getManaMultiplier(player)
 	)
 end
 

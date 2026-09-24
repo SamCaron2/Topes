@@ -1,5 +1,9 @@
--- Server-authoritative Rune gacha pulls. Client only ever asks "pull one rune" -
--- all odds math and reward granting happens here so it can't be spoofed.
+-- Server-authoritative Rune gacha rolls, granted only by standing on the
+-- Rune Altar (collectAtAltar below) - all odds math and reward granting
+-- happens here so it can't be spoofed. An older Scroll-costed manual
+-- "pull one rune" version of this (RuneHandler.pull) existed before the
+-- Altar mechanic replaced it and was removed as dead code (no client ever
+-- called it) during the Power Store cleanup.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
@@ -38,36 +42,6 @@ local function weightedPick(fortune: number)
 	return GameConfig.RuneRanks[1]
 end
 
-function RuneHandler.pull(player: Player)
-	local data = PlayerData.get(player)
-	if not data then
-		return nil, "No data loaded"
-	end
-
-	if data.scrolls < GameConfig.ScrollCostPerPull then
-		return nil, "Not enough Scrolls"
-	end
-
-	data.scrolls -= GameConfig.ScrollCostPerPull
-
-	local fortune = data.stats.Fortune or 1
-	local rank = weightedPick(fortune)
-
-	-- Rune Bulk (Upgrade Tree Tile 5) multiplies how many of this rank a
-	-- single pull actually grants - banked here now even with no pull UI
-	-- wired up yet, per direct request ("we can do that another time I
-	-- just want it on the tile").
-	local runeBulk = UpgradeTreeHandler.getRuneBulkMultiplier(player)
-	data.runesOpened += runeBulk
-	data.runesOwned[rank.name] = (data.runesOwned[rank.name] or 0) + runeBulk
-
-	for statName, multiplier in rank.statBoosts do
-		data.stats[statName] = (data.stats[statName] or 1) * multiplier
-	end
-
-	return rank, nil
-end
-
 -- The Rune Altar (RuinRuneCircle on the Fantasy Ruin): stand on it and it
 -- periodically spends Mana for a chance-based Rune, no clicking involved -
 -- per direct correction ("There is no clicking on a ruin you just sit and
@@ -75,9 +49,6 @@ end
 -- WorldBuilder's proximity loop for whichever player is currently standing
 -- on it; safely no-ops (returns nil) if not unlocked or Mana is too low,
 -- same "silently do nothing" shape as every other collection handler here.
--- Separate from `pull` above (that one is the older Scroll-costed manual
--- pull, unrelated to standing on the Altar) so RuinRuneHandler's Altar-only
--- upgrades (Rune Luck/Bulk/Familiar) never leak into it.
 function RuneHandler.collectAtAltar(player: Player)
 	local data = PlayerData.get(player)
 	if not data or not RuinRuneHandler.isUnlocked(player) then

@@ -1,20 +1,20 @@
 # Rune Academy
 
-Incremental/idle Roblox game.
+Incremental/idle Roblox game. A wizard-themed progression across 4
+islands (Starting Island, SecondIsland, EtherIsland, LeaderboardIsland),
+built from scratch after an earlier Mana/Coins-era design (generic
+`ResourceEngine`/`Zones`, Gems/Scrolls/Ascension/Titles) was scrapped -
+see `## What's still here` below for the full, current file-by-file
+breakdown of everything that actually exists today. A handful of that
+scrapped design's files (`ResourceEngine.lua`, `ResetHandler.lua`,
+`TitleHandler.lua`, `FriendBoostHandler.lua`, `TitleDisplayClient.client.lua`,
+plus the Gems/Scrolls/Ascension/Titles fields in `PlayerData`/
+`GameConfig`) were finally removed during the Power Store build-out (see
+`StoreHandler.lua` below) once it became clear nothing in the current
+game used them.
 
-> **Full reset in progress.** The Mana/Coins economy and its world
-> (kiosks, floor tiles, the Rune Altar) were scrapped on request — the
-> world is back to just a baseplate, `GameConfig.Zones` and
-> `AscensionTiers` are empty, and every `StarterPlayerScripts` file was
-> removed. Everything below `## What's still here` describes the reusable
-> backend infrastructure that survived the reset (Runes, Titles, Power
-> Store, the generic ResourceEngine); the sections after that describe
-> the OLD scrapped design and are kept only as reference for mechanics
-> that may come back, not as a description of the current game. A new
-> vision is being defined from scratch, one piece at a time.
-
-See `DESIGN.md` for the full (mostly historical, pending rewrite) system
-design notes.
+See `DESIGN.md` for the (historical, pending rewrite) system design notes
+from that earlier design.
 
 ## Setup (do this on your gaming PC Monday)
 
@@ -30,16 +30,20 @@ design notes.
    ```
 5. In Studio, open the Rojo plugin panel and click **Connect**. Everything
    in `src/` will sync into the place.
-6. Studio should now show just the baseplate — nothing auto-generates a
-   world right now (see the reset note above). Building starts fresh once
-   the new vision is specified.
+6. `WorldBuilder.server.lua` auto-generates the entire world (islands,
+   kiosks, boards, nodes) fresh every time the server starts - nothing to
+   build by hand in Studio.
 
-## What's still here (survived the reset)
+## File-by-file breakdown
 
-- `GameConfig.lua` — every tunable number lives here: the multi-currency
-  `Zones` config (upgrades, self-prestige tiers, chain resets, floor
-  tiles), stat definitions, Rune rarity odds + boosts, Ascension tiers.
-  Change balance here, not in the handler scripts.
+- `GameConfig.lua` — every tunable number lives here: `Stats`/`RuneRanks`
+  (Rune Altar odds/boosts - see `RuneHandler.lua`/`RuneCollectionHandler.lua`
+  below) and the Store's `DevProducts`/`GamePasses`/`StarterPack` (see
+  `StoreHandler.lua` below). Change balance here, not in the handler
+  scripts. Used to also hold a generic multi-currency `Zones` config,
+  Ascension tiers, and Titles - all removed as dead weight during the
+  Power Store cleanup once it was clear nothing in the current game read
+  them (see the top-of-file note).
 - `NumberFormat.lua` — plain comma-separated whole numbers below a
   million ("999,000"), then a 2-decimal suffix from a million up
   ("5.32B" for 5,324,222,143) - suffix ladder M, B, T, Qd, Qt, St, SEt,
@@ -59,10 +63,12 @@ design notes.
   it's toggled) and `collectionPopupsEnabled` (the Rune Altar's floating
   "+N RankName" text - read directly by `RuneAltarClient`, no event
   needed since it's already checked fresh every time a Rune is collected).
-- `PlayerData.lua` — DataStore load/save/autosave, leaderstats, and
-  `defaultData()` builds every zone/currency's save-data shape straight
-  from `GameConfig.Zones` (add a currency to config, its save slot exists
-  automatically — no separate PlayerData change needed).
+- `PlayerData.lua` — DataStore load/save/autosave, and `defaultData()`
+  builds every currency/upgrade-level field this game actually has (see
+  each currency's own handler below for what each field means). Real
+  leaderstats now too - `Mana`/`Rebirths` NumberValues, replacing the old
+  Ascensions/Scrolls/Gems placeholders (removed along with the rest of
+  that scrapped system during the Power Store cleanup).
   `PlayerData.load` also has a block of TEMP testing-only overrides,
   clearly marked for removal, that force-set generous currency amounts and
   skip past every prior milestone on EVERY join (regardless of what's
@@ -77,48 +83,61 @@ design notes.
   the floor tile upgrades looking "greyed out" - no sign at all, since
   `UpgradeTreeClient` never builds one while `unlocked` is false - until
   the SecondIslandGate was manually re-unlocked by hand each time.
-- `ResourceEngine.lua` — the generic engine every currency runs on:
-  server-authoritative collect (click/stand, distance + debounce checked),
-  buy upgrade (one/max), self-prestige, chain reset, sell (see below), and
-  floor tile purchases. All currencies go through this one module. An
-  upgrade slot's `kind` changes what its levels do: `"yield"` (default)
-  multiplies that currency's own production; `"tickInterval"` instead
-  controls how often `collect()` can fire (a real duration, e.g. Mana's
-  1.0s → 0.1s Scrap Respawn upgrade), read via
-  `getCollectDebounceSeconds`; `"sellRate"` boosts a `sellInto` conversion
-  rate instead of production. A slot's `costCurrency` (optional, defaults
-  to the currency it's on) lets it be bought with a DIFFERENT currency —
-  e.g. all of Mana's upgrades cost Coins, matching the reference game.
-  `sellInto` is a separate mechanic from `chainReset`: it converts ANY
-  amount of a currency into another at an upgradeable rate, at ANY time
-  (no threshold, no upgrade reset) — Mana → Coins uses this, not a
-  chain reset, since you can cash out partial Mana whenever you want.
-- `RuneHandler.lua` — server-authoritative gacha pull, Fortune-weighted odds
-  (`pull`, the older Scroll-costed manual pull - no UI wired to it). Also
-  `collectAtAltar`: the Rune Altar's own tick logic (stand on
-  `RuinRuneCircle`, called once per tick by `WorldBuilder`'s proximity
-  loop) - spends `RuinRuneHandler.getManaCostPerTick` Mana, then rolls
-  `1 + RuinRuneHandler.getExtraRolls` independent Runes via the same
-  `weightedPick` odds table, Fortune boosted by `RuinRuneHandler
-  .getLuckMultiplier` and bulk boosted by `UpgradeTreeHandler
-  .getRuneBulkMultiplier * RuinRuneHandler.getBulkMultiplier`; returns nil
-  (no-op) if not unlocked or Mana is too low. Kept separate from `pull` so
-  the Altar's own upgrades never leak into the unrelated Scroll pull.
-- `ResetHandler.lua` — Ascension only (per-currency resets live in
-  ResourceEngine now). `GameConfig.AscensionTiers` is empty right now, so
-  `ascend()` just returns "No further Ascension tiers" — safe no-op, not
-  a bug.
+- `RuneHandler.lua` — `collectAtAltar`: the Rune Altar's own tick logic
+  (stand on `RuinRuneCircle`, called once per tick by `WorldBuilder`'s
+  proximity loop) - spends `RuinRuneHandler.getManaCostPerTick` Mana, then
+  rolls `1 + RuinRuneHandler.getExtraRolls` independent Runes via
+  `weightedPick`'s Fortune-weighted odds table (`GameConfig.RuneRanks`),
+  Fortune boosted by `RuinRuneHandler.getLuckMultiplier` and bulk boosted
+  by `UpgradeTreeHandler.getRuneBulkMultiplier * RuinRuneHandler
+  .getBulkMultiplier`; returns nil (no-op) if not unlocked or Mana is too
+  low. Used to also have `pull`, an older Scroll-costed manual pull with
+  no UI ever wired to it - removed as dead code during the Power Store
+  cleanup.
 - `Main.server.lua` — wires up RemoteEvents/Functions between client and
   the handlers above.
-- `StoreHandler.lua` — the Power Store. Processes GamePass and Developer
-  Product purchases server-side, grants stat multipliers/Gems/Scrolls/an
-  instant Ascension, tracks Robux spent for the leaderboard, and guards
-  against double-granting a retried purchase.
-- `TitleHandler.lua` — unlocks and equips Titles (`GameConfig.Titles`),
-  mirrors the equipped one onto Player attributes (`Title`/`TitleColor`/
-  `TitleRainbow`) - read client-side by `TitleDisplayClient` to draw the
-  floating username/title label above each player's head, no remote round
-  trip needed.
+- `GamePassBoostHandler.lua` — permanent-perk hooks for Robux gamepasses
+  and the Starter Pack (`GameConfig.GamePasses`/`GameConfig.StarterPack`),
+  added for the Power Store per direct request ("can I have you implement
+  our store? ... I want a game pass, also smaller micro transactions, a
+  starter pack"). One getter per boosted system
+  (`getManaMultiplier`/`getDustMultiplier`/`getEtherMultiplier`/
+  `getLeyShardMultiplier`/`getRuneCollectionMultiplier`/
+  `hasEarlyAutoMana`), each folding together every owned pass's
+  contribution to that one field straight out of GameConfig (no
+  multiplier values hardcoded a second time here) - same "one small
+  handler per boost source" convention as `UpgradeTreeHandler`/
+  `WizardTierHandler`/`LeyShardFloorTileHandler`. Read by `ManaHandler`,
+  `ArcaneDustHandler`, `EtherHandler`, `LeyShardHandler`, and
+  `RuneCollectionHandler` as one more multiplier factor apiece, and by
+  `Main.server.lua`'s Auto Mana loop (`hasEarlyAutoMana`, alongside
+  `WizardTierHandler.hasAutoMana`).
+- `StoreHandler.lua` — the Store. Processes GamePass and Developer
+  Product purchases server-side (`ProcessReceipt`/
+  `PromptGamePassPurchaseFinished`, with `purchaseHistory`/`ownedPasses`
+  idempotency guards so a retried purchase never grants twice), tracks
+  Robux spent, and re-verifies gamepass ownership on join in case a
+  purchase was missed while offline. Rebuilt from scratch per the same
+  direct request as `GamePassBoostHandler` above - the purchase-processing
+  plumbing itself was already solid from the earlier, scrapped design, so
+  only `applyGrant` (now handles `manaAmount`/`arcaneDustAmount` direct
+  currency grants; every other grant field is just a flag read later by
+  `GamePassBoostHandler`) and GameConfig's actual product/pass content
+  changed. The Starter Pack is handled as a `GamePass` under the hood
+  throughout (folded into the same `ALL_PASSES` list `GameConfig.GamePasses`
+  builds) since it's one-time by nature just like every other pass -
+  `StoreClient` just gives it its own banner treatment. `getCatalog`
+  feeds `StoreClient` the whole store (prices, names, descriptions, and
+  owned state) in one round trip. `ProcessReceipt`/
+  `PromptGamePassPurchaseFinished` are Roblox-driven callbacks rather than
+  requests routed through `Main.server.lua`'s usual `OnServerInvoke`
+  wrappers, so a direct currency grant here fires `ManaUpdated`/
+  `ArcaneDustUpdated` itself (looked up lazily via
+  `ReplicatedStorage.Remotes`, not at module-load time - `StoreHandler` is
+  `require`d by `Main.server.lua` BEFORE that same script creates the
+  Remotes folder, so a `WaitForChild` at the top of this file would
+  deadlock Main's own thread) - same direct-remotes-access exception
+  `WorldBuilder.server.lua`'s own background loops already make.
 - `LeaderboardHandler.lua` — the 4 global leaderboards (Playtime, Robux
   Spent, Total Mana, Runes Opened) shown on the Leaderboard island's sign
   boards, backed by one `OrderedDataStore` per stat so rankings persist
@@ -147,11 +166,6 @@ design notes.
   threshold and leaving the balance untouched. Calling `unlock` on an
   already-unlocked player is a harmless no-op success, so a stale/retried
   client call can't double-charge them.
-- `FriendBoostHandler.lua` — tracks how many of a player's Roblox friends
-  are in the same server (live, never saved); `ResourceEngine` applies
-  `GameConfig.FriendBoost` on top of any currency flagged
-  `friendBoost = true`, once a currency has that flag again.
-
 - `WorldBuilder.server.lua` — generates world content on server start.
   Builds a 120x120 floating grass island (`StartingIsland`, Roblox's
   built-in Grass material, no image asset needed) 60 studs up, and lifts
@@ -553,8 +567,9 @@ design notes.
   include all four, so the board always shows
   the real effective yield. `buyYieldUpgrade` takes an optional `"max"`
   mode that buys as many levels in a row as currently affordable.
-  Deliberately kept separate from `ResourceEngine`/`GameConfig.Zones`
-  for now — a fresh, much simpler mechanic until the new vision needs more.
+  Also folds in `GamePassBoostHandler.getManaMultiplier` - any owned
+  Robux gamepass perk that boosts Mana (VIPPass, DoubleManaPass, the
+  Starter Pack).
 - `ManaSpawnHandler.lua` — the "Mana Spawn Speed" upgrade (level 1-10,
   same `UpgradeCost` curve as every other Mana upgrade). Two effects per
   level, both linear: respawn delay 2.0s → 0.2s, and live node count 3 →
@@ -569,8 +584,10 @@ design notes.
   1-100), its own `arcaneDust` currency and `arcaneDustYieldLevel` field.
   Every collect is also scaled by `WizardTierHandler`'s flat dust
   multiplier (1x until Tier 1, then 5x), `UpgradeTreeHandler`'s Dust tiles
-  (x2 each), and `EtherDustBoostHandler`'s "More Dust" upgrade (1x-6x,
-  paid in Ether).
+  (x2 each), `EtherDustBoostHandler`'s "More Dust" upgrade (1x-6x,
+  paid in Ether), `RuneCollectionHandler`'s combined Rune-ownership bonus,
+  and `GamePassBoostHandler.getDustMultiplier` - any owned Robux gamepass
+  perk that boosts Arcane Dust (VIPPass, the Starter Pack).
 - `ArcaneDustSpawnHandler.lua` — the "Grant Speed" upgrade for
   `ArcaneDustPad` (level 1-10, its grant interval going 1.5s → 0.5s while
   you stand on the pad - lowered from an original 2.0s → 0.2s per direct
@@ -682,14 +699,18 @@ design notes.
   `.rebirth` (multiplying the Mana→Rebirths conversion rate itself, same
   spot as the Rebirth Shop/Wizard Tier/Upgrade Tree multipliers),
   `EtherHandler.collect` (its first multiplier of any kind - Ether had
-  none before this), and `ArcaneDustHandler.collect` (alongside Wizard
-  Tier/Upgrade Tree/Ether Dust Boost). `getState` packages every rank's
-  name/odds/owned count/current multiplier for the odds card below ("it
-  tells you that too") and is exposed through a new
+  none before this), `ArcaneDustHandler.collect` (alongside Wizard
+  Tier/Upgrade Tree/Ether Dust Boost), and `LeyShardHandler.collect`
+  (alongside Astral Shard Ley Boost/the Ley floor tiles). `getState`
+  packages every rank's name/odds/owned count/current multiplier for the
+  odds card below ("it tells you that too") and is exposed through a new
   `GetRuneCollectionState` RemoteFunction in `Main.server.lua`; its
   `totalMultiplier` field (renamed from `totalManaMultiplier` once the
   bonus stopped being Mana-only) is shown on the card as "Total Bonus
-  (Mana/Rebirths/Ether/Dust)".
+  (Mana/Rebirths/Ether/Dust)". Also folds in
+  `GamePassBoostHandler.getRuneCollectionMultiplier` - FortunesFavorPass's
+  own bonus, which correctly compounds across all 5 currencies since this
+  one combined multiplier already cascades into every one of them.
 - `UpgradeTreeHandler.lua` — the full 9-tile ground upgrade tree:
   walk-over tiles, only reachable once `WizardTierHandler` reports Tier
   3+, each a ONE-TIME purchase (not a leveled upgrade like everything
@@ -737,7 +758,9 @@ design notes.
   request - a `ClickDetector` on the Ether Shroud (`WorldBuilder`) fires
   `collect` server-side. Mirrors `ArcaneDustHandler`'s exact shape and
   yield curve for its own "More Ether" upgrade (level 1-100, paid in
-  Ether).
+  Ether). Folds in `RuneCollectionHandler`'s combined Rune-ownership bonus
+  and `GamePassBoostHandler.getEtherMultiplier` - any owned Robux gamepass
+  perk that boosts Ether (VIPPass, the Starter Pack).
 - `EtherClickSpeedHandler.lua` — the Ether board's "Click Speed" column
   (level 1-10): how long you have to wait between clicks before the
   Shroud pays out again, 1.1s at level 1 down to 0.1s at level 10, exact
@@ -822,7 +845,9 @@ design notes.
   the one thing that survives every reset and speeds up every later grind.
   Also folds in `LeyShardFloorTileHandler.getLeyShardMultiplier` -
   EtherIsland's own walk-over floor tiles, also a permanent one-time
-  purchase (see below).
+  purchase (see below) - and `GamePassBoostHandler.getLeyShardMultiplier`,
+  any owned Robux gamepass perk that boosts Ley Shard (VIPPass, the
+  Starter Pack).
 - `AstralShardConversionHandler.lua` — Astral Shard, Card 2 of the 3-card
   progression, sitting physically next to the Ley Shard board on
   EtherIsland - per direct request ("to the right of ley shards we want
@@ -1074,70 +1099,39 @@ design notes.
   Hovering tweens the icon up to 1.15x size (centered growth, not
   top-anchored, so it doesn't push
   into the label) to show what's highlighted. Profile, Runes, and Settings
-  are all wired to their own panels - clicking any of the three fires an
-  `OpenProfileRequested`/`OpenRunesRequested`/`OpenSettingsRequested`
-  `BindableEvent` (all parented under this script's own `SideMenuHUD`
-  `ScreenGui` so `ProfileClient`/`RunesMenuClient`/`SettingsClient` can
+  are all wired to their own panels, and Store now is too - clicking any
+  of the four fires an `OpenProfileRequested`/`OpenRunesRequested`/
+  `OpenSettingsRequested`/`OpenStoreRequested` `BindableEvent` (all
+  parented under this script's own `SideMenuHUD` `ScreenGui` so
+  `ProfileClient`/`RunesMenuClient`/`SettingsClient`/`StoreClient` can
   find them reliably regardless of which script runs first) instead of
   building the panel itself, keeping the icon grid and the panels it opens
   as separate concerns. Runes and Settings were both previously unwired
   ("clicking the runes button... nothing is happening" / "add some
-  relevant settings in the settings section," per direct reports) - only
-  Store still just needs to exist on screen for now (nothing to sell yet).
+  relevant settings in the settings section," per direct reports), and
+  Store used to just exist on screen doing nothing at all ("nothing to
+  sell yet") until the actual Store panel was built (see
+  `StoreClient.client.lua` below) per direct request ("can I have you
+  implement our store?").
 - `ProfileClient.client.lua` — the Profile panel opened by that event: a
   dark modal card (dimmed background `Frame` with `Active = true` so
-  clicks don't pass through to the side menu underneath) with two pages
-  toggled by a `statsTabButton`/`titlesTabButton` tab bar at the top
-  (`TAB_COLOR_ACTIVE`/`TAB_COLOR_INACTIVE` highlight whichever's open) -
-  originally a one-way "Titles ➜" button plus a separate "⬅ Back" button,
-  replaced per direct request after those arrow glyphs turned out not to
-  be in Roblox's default font, rendering as an empty box next to the text.
-  The "Stats" page (named per direct request - was unnamed before) - what
-  was originally asked for, per DESIGN.md's "Main profile screen" - shows
-  the player's own avatar/name up top, then the 4 stats specifically
-  requested: Time Played, Total Mana (now exposed by `GetProfile` as
+  clicks don't pass through to the side menu underneath) showing a single
+  "Stats" page - what was originally asked for, per DESIGN.md's "Main
+  profile screen" - the player's own avatar/name up top, then the 4 stats
+  specifically requested: Time Played, Total Mana (`GetProfile`'s
   `totalManaEarned`, the same lifetime figure the leaderboard uses - not
   the live spendable `mana` balance also in that payload), Runes Opened,
-  and Robux Spent. The "Titles" page lists every `GameConfig.Titles` entry
-  (all 14), colored by its own title color when unlocked or grayed out
-  when not, each with a button to its right - always visible now, per
-  direct request ("there should be a button... that says locked when you
-  have not earned them and when you have earned the titles the red locked
-  button turns into a green equipped button"): a red, inactive "Locked"
-  button (`COLOR_TITLE_LOCKED_BUTTON`) when not yet unlocked (with
-  `describeCondition`'s plain-English rendering of its `condition` still
-  shown below it - none of the config entries carry a human-readable
-  string, so this builds one: "Play for 7 days", "Spend R$1,000 total",
-  "Join the group", "Own the ElitePass gamepass", "Join during launch
-  week", "Granted manually"), a green "Equip" button once unlocked, or a
-  green "Equipped" tag (`COLOR_EQUIPPED_TAG`, changed from its old gold to
-  green per that same request) for whichever one is currently worn -
-  calling the already-existing (but previously uncalled from any client)
-  `EquipTitle` remote either way. Only one title can ever be equipped at a
-  time - already guaranteed by `data.equippedTitle` being a single value
-  server-side (`TitleHandler.equipTitle` just overwrites it), so no new
-  code was needed for that part of the request. Both pages re-fetch fresh
-  from `GetProfile` every time the panel opens rather than staying
-  subscribed to live updates, since a modal stat/title screen doesn't need
-  to track changes while it's closed.
-- `TitleDisplayClient.client.lua` — the floating username + equipped
-  title above every player's head, own included, per direct request ("I
-  want it to say your username above your head and underneath the
-  username is your title. Have it be [None] if they don't equip
-  anything") - this is exactly what `TitleHandler`'s own comments already
-  described but never actually got built until now. Reads Player
-  attributes only (`Title`/`TitleColor`/`TitleRainbow`) for every player,
-  own included, live via `GetAttributeChangedSignal` so (re)equipping
-  updates the label immediately for anyone standing nearby - no remote
-  round trip. Shows `[None]` in gray when `Title` is unset. A rainbow
-  title (`TitleRainbow`, e.g. the "Rich" title) is driven by one shared
-  `RunService.Heartbeat` loop cycling every displayed rainbow label
-  through the same hue clock (`RAINBOW_CYCLE_SECONDS` = 3), rather than a
-  separate loop per player - implements the "animated hue cycle
-  client-side" `GameConfig.Titles` itself already promised in a comment.
-  Sets `Humanoid.NameDisplayDistance = 0` on every character so Roblox's
-  own default floating nameplate doesn't also show, stacking a second
-  username tag on top of this one.
+  and Robux Spent. Used to also have a "Titles" page (toggled by a
+  `statsTabButton`/`titlesTabButton` tab bar), listing every
+  `GameConfig.Titles` entry with a Locked/Equip/Equipped button - removed
+  along with the rest of the Titles system during the Power Store cleanup
+  (per direct request to implement a real store: "can I have you
+  implement our store?" - digging into the store code surfaced this whole
+  Titles/Gems/Scrolls/Ascension system as leftover scaffolding from an
+  earlier, scrapped design that nothing in the current game actually
+  used). Re-fetches fresh from `GetProfile` every time the panel opens
+  rather than staying subscribed to live updates, since a modal stat
+  screen doesn't need to track changes while it's closed.
 - `RunesMenuClient.client.lua` — the Runes panel opened by
   `OpenRunesRequested`, per direct request after the side-menu Runes icon
   turned out to do nothing at all when clicked. Same dark-modal styling as
@@ -1165,6 +1159,33 @@ design notes.
   actually change something already built in this game, rather than
   inventing toggles for systems (music, graphics quality) that don't
   exist yet.
+- `StoreClient.client.lua` — the Store panel opened by
+  `OpenStoreRequested`, per direct request ("can I have you implement our
+  store? Make it look good I want a game pass, also smaller micro
+  transactions, a starter pack"). Same dark-modal styling as every other
+  panel, scrolled (`AutomaticCanvasSize`, same pattern the old Titles page
+  used) since there's a lot to fit: a featured, gold-stroked "NEW PLAYER
+  DEAL" Starter Pack banner up top (hidden entirely once owned - a
+  one-time deal has nothing left to show once bought), then a "Game
+  Passes" section (4 cards) and a "Micro Transactions" section (6 cards,
+  grouped "Mana"/"Arcane Dust") below it. Pulls the whole catalog -
+  prices, names, descriptions, and owned state - from one
+  `GetStoreCatalog` round trip; every card's Buy button just fires the
+  already-existing `RequestPurchase` remote (already wired server-side to
+  `StoreHandler.promptPurchase` from an earlier pass at this file, before
+  there was anything to actually sell) with `"pass"`/`"product"` and the
+  item's key - the real Robux prompt is native Roblox UI from there.
+  `buildCard`'s Buy button is wired to a `MouseButton1Click` connection
+  exactly ONCE at build time, reading whatever `onBuy` closure `render()`
+  most recently stashed on the row (`row.onBuy`), rather than
+  reconnecting on every render - `render()` re-runs every time the panel
+  opens and after a gamepass purchase completes, so reconnecting there
+  instead would stack a fresh connection each time and fire the purchase
+  prompt multiple times per click after a few opens. Listens to
+  `MarketplaceService.PromptGamePassPurchaseFinished` client-side to
+  re-fetch the catalog the instant a gamepass purchase succeeds, so an
+  owned pass's card flips to "Owned" immediately without closing and
+  reopening the panel.
 - `GraphicsSettingsClient.client.lua` — applies `ClientSettings
   .reducedEffects` by walking `SecondIslandDecor`/`EtherIslandDecor`/
   `LeaderboardDecor` (checked by name, not required to exist yet - the
@@ -1570,22 +1591,15 @@ design notes.
 
 ## Manual steps required before everything works
 
-1. **Power Store**: `GameConfig.DevProducts` and `GameConfig.GamePasses`
-   list every product with a placeholder `id = 0`. In Studio: **Home →
-   Monetize** (or the game's page on the Creator Dashboard) → create each
-   GamePass and Developer Product listed there with matching prices, then
-   paste the real asset ID back into `GameConfig.lua`. Nothing will prompt
-   a real purchase until that's done — `StoreHandler.promptPurchase`
-   silently no-ops on `id = 0` on purpose, so a half-configured store can't
+1. **The Store**: `GameConfig.DevProducts`, `GameConfig.GamePasses`, and
+   `GameConfig.StarterPack` list every item with a placeholder `id = 0`.
+   In Studio: **Home → Monetize** (or the game's page on the Creator
+   Dashboard) → create each GamePass and Developer Product listed there
+   with matching prices (`priceRobuxHint` on each entry), then paste the
+   real asset ID back into `GameConfig.lua`. Nothing will prompt a real
+   purchase until that's done — `StoreHandler.promptPurchase` silently
+   no-ops on `id = 0` on purpose, so a half-configured store can't
    accidentally prompt Studio's test/placeholder asset IDs.
-2. **Titles**: three `GameConfig` values are placeholders until you fill
-   them in —
-   - `ReleaseTimestampUnix` (nil right now): set to the real launch time so
-     the OG title means something. The OG condition never unlocks while
-     this is nil.
-   - `FanGroupId` (0 right now): your Roblox group's id, for the Fan title.
-   - `OwnerUserIds` / `AdminUserIds` / `TesterUserIds` (all empty): add your
-     own UserId to `OwnerUserIds` so you get the Owner title on join.
 
 ## One-time cleanup if Studio still shows old world parts
 
@@ -1611,14 +1625,15 @@ delete it by hand in Workspace if you want it gone for good.
 
 ## Not yet built (next steps)
 
-Everything client-facing and every currency/zone. `GameConfig.Zones` and
-`GameConfig.AscensionTiers` are empty, `StarterPlayerScripts` is empty,
-and there's no world content at all beyond the baseplate. The plan is to
-rebuild one piece at a time as the new vision is specified — nothing
-speculative gets added ahead of that.
+The Store's first pass covers Mana/Arcane Dust dev products, 4 gamepasses,
+and the Starter Pack - natural next additions once these convert well:
+Ether/Ley Shard/Astral Shard currency packs (same pattern as the Mana/Dust
+ones), and temporary boost-potion dev products (e.g. "2x Mana for 1
+hour" - would need an expiry timestamp field on `PlayerData`, left out of
+this first pass to avoid extra stateful complexity before there's real
+sales data to justify it). See `GameConfig.lua`'s own Store comment for
+the full grant-shape reference.
 
-An in-game admin command to grant Tester/Admin manually (instead of only
-via the `GameConfig` UserId allowlists), OrderedDataStore-backed
-leaderboards, and a community-codes module are still open ideas from the
-old design and may or may not carry over — see DESIGN.md for the
-(historical) detail.
+An in-game admin command system, a community-codes module, and anything
+else from the old scrapped design's `DESIGN.md` are still open ideas that
+may or may not carry over, unrelated to the current game's own plans.

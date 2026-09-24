@@ -1,34 +1,24 @@
 -- The Profile panel: opened by clicking the Profile icon in the side menu
--- (SideMenuClient fires OpenProfileRequested). Two pages toggled by a
--- "Stats"/"Titles" tab bar at the top (per direct request - was
--- previously a one-way "Titles ➜" button + a separate "⬅ Back" button,
--- and those arrow glyphs weren't in Roblox's default font, rendering as
--- an empty box next to the text) - "Stats" (avatar, name, and the 4
--- stats requested: Time Played, Total Mana, Runes Opened, Robux Spent;
--- named "Stats" per direct request, was unnamed before) and "Titles"
--- (every GameConfig.Titles entry, locked ones grayed out with their
--- unlock condition, unlocked ones with an Equip/Unequip button). Both
--- pages pull from the existing GetProfile/EquipTitle remotes, which were
--- already wired server-side but never called from any client script until
--- now.
+-- (SideMenuClient fires OpenProfileRequested). A single "Stats" page -
+-- avatar, name, and the 4 stats requested: Time Played, Total Mana, Runes
+-- Opened, Robux Spent - pulling from the GetProfile remote. Used to also
+-- have a "Titles" tab/page (every GameConfig.Titles entry, locked ones
+-- grayed out with their unlock condition, unlocked ones with an
+-- Equip/Unequip button), removed along with the rest of the Titles
+-- system during the Power Store cleanup (it was leftover from an earlier,
+-- scrapped design - nothing in the current game ever unlocked a title).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local NumberFormat = require(ReplicatedStorage.Modules.NumberFormat)
-local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local getProfileFunction = remotes:WaitForChild("GetProfile")
-local equipTitleFunction = remotes:WaitForChild("EquipTitle")
 
 local GOLD = Color3.fromRGB(255, 220, 90)
 local TEXT_STROKE_TRANSPARENCY = 0.4
-local COLOR_LOCKED = Color3.fromRGB(90, 90, 90)
-local COLOR_EQUIP = Color3.fromRGB(70, 190, 60)
-local COLOR_TITLE_LOCKED_BUTTON = Color3.fromRGB(200, 55, 55)
-local COLOR_EQUIPPED_TAG = Color3.fromRGB(40, 200, 120)
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ProfileUI"
@@ -82,46 +72,23 @@ closeButton.MouseButton1Click:Connect(function()
 	screenGui.Enabled = false
 end)
 
--- Tab bar: "Stats"/"Titles", replacing the old one-way "Titles ➜" +
--- "⬅ Back" buttons. Built before either page so both can reference it.
-local TAB_COLOR_ACTIVE = Color3.fromRGB(90, 15, 15)
-local TAB_COLOR_INACTIVE = Color3.fromRGB(50, 45, 65)
-
-local tabBar = Instance.new("Frame")
-tabBar.Position = UDim2.new(0, 20, 0, 12)
-tabBar.Size = UDim2.new(0, 220, 0, 36)
-tabBar.BackgroundTransparency = 1
-tabBar.Parent = panel
-
-local tabLayout = Instance.new("UIListLayout")
-tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.Padding = UDim.new(0, 8)
-tabLayout.Parent = tabBar
-
-local function createTabButton(text: string): TextButton
-	local tabButton = Instance.new("TextButton")
-	tabButton.Size = UDim2.new(0, 106, 1, 0)
-	tabButton.BackgroundColor3 = TAB_COLOR_INACTIVE
-	tabButton.Font = Enum.Font.GothamBold
-	tabButton.TextScaled = true
-	tabButton.TextColor3 = GOLD
-	tabButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-	tabButton.Text = text
-	tabButton.Parent = tabBar
-
-	local tabButtonCorner = Instance.new("UICorner")
-	tabButtonCorner.CornerRadius = UDim.new(0.3, 0)
-	tabButtonCorner.Parent = tabButton
-
-	return tabButton
-end
-
-local statsTabButton = createTabButton("Stats")
-local titlesTabButton = createTabButton("Titles")
+-- Title label where the Stats/Titles tab bar used to sit, before the
+-- Titles page was removed - "Stats" per the same direct request that
+-- originally named this page ("was unnamed before").
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Position = UDim2.new(0, 20, 0, 12)
+titleLabel.Size = UDim2.new(0, 160, 0, 36)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextScaled = true
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.TextColor3 = GOLD
+titleLabel.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
+titleLabel.Text = "Stats"
+titleLabel.Parent = panel
 
 -- ===========================================================================
--- Stats page (named "Stats" per direct request - was unnamed before):
--- avatar + name, then the 4 requested stats.
+-- Stats page: avatar + name, then the 4 requested stats.
 local profilePage = Instance.new("Frame")
 profilePage.Position = UDim2.new(0, 0, 0, 40)
 profilePage.Size = UDim2.new(1, 0, 1, -40)
@@ -232,189 +199,6 @@ local function renderProfilePage(profile)
 	robuxSpentValue.Text = ("R$%s"):format(NumberFormat.format(profile.robuxSpent or 0))
 end
 
--- ===========================================================================
--- Titles page: every GameConfig.Titles entry, locked ones grayed out with
--- their unlock condition spelled out, unlocked ones with an Equip/Unequip
--- button.
--- Navigation back to Stats is the tab bar now (no more separate "⬅ Back"
--- button), and the active tab already reads "Titles," so no separate
--- header label either - both removed the tofu-box arrow glyph and the
--- redundant "Titles" text in one go.
-local titlesPage = Instance.new("Frame")
-titlesPage.Position = UDim2.new(0, 0, 0, 40)
-titlesPage.Size = UDim2.new(1, 0, 1, -40)
-titlesPage.BackgroundTransparency = 1
-titlesPage.Visible = false
-titlesPage.Parent = panel
-
-local titlesScroll = Instance.new("ScrollingFrame")
-titlesScroll.Position = UDim2.new(0, 20, 0, 8)
-titlesScroll.Size = UDim2.new(1, -40, 1, -28)
-titlesScroll.BackgroundTransparency = 1
-titlesScroll.BorderSizePixel = 0
-titlesScroll.ScrollBarThickness = 6
-titlesScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-titlesScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-titlesScroll.Parent = titlesPage
-
-local titlesListLayout = Instance.new("UIListLayout")
-titlesListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-titlesListLayout.Padding = UDim.new(0, 8)
-titlesListLayout.Parent = titlesScroll
-
--- Every GameConfig condition type in plain English - none of the config
--- entries carry a human-readable description, so this is what builds one.
-local function describeCondition(title)
-	local condition = title.condition
-	if condition.type == "playtimeSeconds" then
-		local hours = condition.value / 3600
-		if hours < 24 then
-			return ("Play for %g hour%s"):format(hours, hours == 1 and "" or "s")
-		end
-		return ("Play for %g day%s"):format(hours / 24, hours / 24 == 1 and "" or "s")
-	elseif condition.type == "robuxSpent" then
-		return ("Spend R$%s total"):format(NumberFormat.format(condition.value))
-	elseif condition.type == "groupMember" then
-		return "Join the group"
-	elseif condition.type == "gamePassOwned" then
-		return ("Own the %s gamepass"):format(condition.passKey)
-	elseif condition.type == "joinWindow" then
-		return "Join during launch week"
-	end
-	return "Granted manually"
-end
-
-local titleRows = {} -- [key] = { equipText = TextButton, nameLabel = TextLabel }
-local currentProfile = nil
-
-local function updateTitleRowVisual(title)
-	local row = titleRows[title.key]
-	if not row or not currentProfile then
-		return
-	end
-
-	local unlocked = currentProfile.unlockedTitles and currentProfile.unlockedTitles[title.key]
-	local equipped = currentProfile.equippedTitle == title.key
-
-	row.nameLabel.TextColor3 = unlocked and title.color or COLOR_LOCKED
-
-	-- Always visible now (per direct request) - a red "Locked" button when
-	-- not yet earned, turning into a green Equip/Equipped button once it
-	-- is, rather than hiding the button entirely while locked.
-	row.actionButton.Visible = true
-	row.conditionLabel.Visible = not unlocked
-
-	if not unlocked then
-		row.actionButton.Active = false
-		row.actionButton.Text = "Locked"
-		row.actionButton.BackgroundColor3 = COLOR_TITLE_LOCKED_BUTTON
-	elseif equipped then
-		row.actionButton.Active = true
-		row.actionButton.Text = "Equipped"
-		row.actionButton.BackgroundColor3 = COLOR_EQUIPPED_TAG
-	else
-		row.actionButton.Active = true
-		row.actionButton.Text = "Equip"
-		row.actionButton.BackgroundColor3 = COLOR_EQUIP
-	end
-end
-
-local function buildTitleRow(layoutOrder: number, title)
-	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, 54)
-	row.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	row.BackgroundTransparency = 0.92
-	row.BorderSizePixel = 0
-	row.LayoutOrder = layoutOrder
-	row.Parent = titlesScroll
-
-	local rowCorner = Instance.new("UICorner")
-	rowCorner.CornerRadius = UDim.new(0.2, 0)
-	rowCorner.Parent = row
-
-	local nameText = Instance.new("TextLabel")
-	nameText.Size = UDim2.new(0.5, 0, 0.5, 0)
-	nameText.Position = UDim2.new(0.04, 0, 0.08, 0)
-	nameText.BackgroundTransparency = 1
-	nameText.Font = Enum.Font.GothamBold
-	nameText.TextScaled = true
-	nameText.TextXAlignment = Enum.TextXAlignment.Left
-	nameText.TextColor3 = title.color
-	nameText.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-	nameText.Text = title.displayName
-	nameText.Parent = row
-
-	local conditionLabel = Instance.new("TextLabel")
-	conditionLabel.Size = UDim2.new(0.92, 0, 0.4, 0)
-	conditionLabel.Position = UDim2.new(0.04, 0, 0.55, 0)
-	conditionLabel.BackgroundTransparency = 1
-	conditionLabel.Font = Enum.Font.Gotham
-	conditionLabel.TextScaled = true
-	conditionLabel.TextXAlignment = Enum.TextXAlignment.Left
-	conditionLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-	conditionLabel.Text = describeCondition(title)
-	conditionLabel.Parent = row
-
-	local actionButton = Instance.new("TextButton")
-	actionButton.AnchorPoint = Vector2.new(1, 0.5)
-	actionButton.Position = UDim2.new(0.96, 0, 0.5, 0)
-	actionButton.Size = UDim2.new(0, 100, 0, 34)
-	actionButton.Font = Enum.Font.GothamBold
-	actionButton.TextScaled = true
-	actionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	actionButton.TextStrokeTransparency = TEXT_STROKE_TRANSPARENCY
-	actionButton.Parent = row
-
-	local actionButtonCorner = Instance.new("UICorner")
-	actionButtonCorner.CornerRadius = UDim.new(0.3, 0)
-	actionButtonCorner.Parent = actionButton
-
-	actionButton.MouseButton1Click:Connect(function()
-		if not currentProfile then
-			return
-		end
-		local equipped = currentProfile.equippedTitle == title.key
-		local success = equipTitleFunction:InvokeServer(equipped and nil or title.key)
-		if success then
-			currentProfile.equippedTitle = equipped and nil or title.key
-			for _, otherTitle in GameConfig.Titles do
-				updateTitleRowVisual(otherTitle)
-			end
-		end
-	end)
-
-	titleRows[title.key] = { nameLabel = nameText, conditionLabel = conditionLabel, actionButton = actionButton }
-end
-
-for index, title in GameConfig.Titles do
-	buildTitleRow(index, title)
-end
-
-local function renderTitlesPage()
-	for _, title in GameConfig.Titles do
-		updateTitleRowVisual(title)
-	end
-end
-
--- ===========================================================================
-local function selectStatsTab()
-	profilePage.Visible = true
-	titlesPage.Visible = false
-	statsTabButton.BackgroundColor3 = TAB_COLOR_ACTIVE
-	titlesTabButton.BackgroundColor3 = TAB_COLOR_INACTIVE
-end
-
-local function selectTitlesTab()
-	profilePage.Visible = false
-	titlesPage.Visible = true
-	statsTabButton.BackgroundColor3 = TAB_COLOR_INACTIVE
-	titlesTabButton.BackgroundColor3 = TAB_COLOR_ACTIVE
-	renderTitlesPage()
-end
-
-statsTabButton.MouseButton1Click:Connect(selectStatsTab)
-titlesTabButton.MouseButton1Click:Connect(selectTitlesTab)
-
 local sideMenuHUD = player:WaitForChild("PlayerGui"):WaitForChild("SideMenuHUD")
 local openProfileEvent = sideMenuHUD:WaitForChild("OpenProfileRequested")
 
@@ -425,9 +209,7 @@ openProfileEvent.Event:Connect(function()
 	end
 
 	screenGui.Enabled = true
-	selectStatsTab()
 
 	local profile = getProfileFunction:InvokeServer()
-	currentProfile = profile
 	renderProfilePage(profile)
 end)
